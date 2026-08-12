@@ -380,6 +380,30 @@ churchAura() {
       this.zoneTitle = name;
       this.zoneT = 2.2;
       if (name && !this.visited[name]) { this.visited[name] = true; this.stats.exploration++; }
+      // Mensagem ao entrar na área de proteção da igreja
+      if (name === 'Cidade') {
+        const msgEl = document.createElement('div');
+        msgEl.id = 'church-protection-msg';
+        msgEl.textContent = 'VOCÊ ENTROU NA AREA DE PROTEÇÃO DA IGREJA';
+        msgEl.style.position = 'absolute';
+        msgEl.style.top = '20px';
+        msgEl.style.left = '50%';
+        msgEl.style.transform = 'translateX(-50%)';
+        msgEl.style.color = '#ffff00';
+        msgEl.style.fontWeight = '800';
+        msgEl.style.letterSpacing = '4px';
+        msgEl.style.textShadow = '0 0 12px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.7)';
+        msgEl.style.transition = 'opacity 2s, top 0.5s';
+        msgEl.style.opacity = '1';
+        const existing = document.getElementById('church-protection-msg');
+        if (existing) existing.remove();
+        document.body.appendChild(msgEl);
+        setTimeout(() => {
+          msgEl.style.top = '0px';
+          msgEl.style.opacity = '0';
+        }, 100);
+        setTimeout(() => msgEl.remove(), 2200);
+      }
       const el = byId('zonetitle');
       el.textContent = name;
       el.classList.remove('show');
