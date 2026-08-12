@@ -620,7 +620,7 @@ doTalk(npc) {
       passagemAleatoria = randArr(BIBLIA_PASSAGENS[casta]);
     }
     const baseLine = (npc.lines && npc.lines[casta]) || (npc.text || '...');
-    const finalLine = passageAleatoria ? passageAleatoria : baseLine;
+    const finalLine = passagemAleatoria ? passagemAleatoria : baseLine;
     this.state = 'talk';
     // Confissão só disponível a Padre (ordained=true) e Bispo (ordained=true).
     // Verificar se é o Bispo central da cidade (kind === 'church' e id === 'bispo_central')
