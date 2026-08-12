@@ -354,7 +354,9 @@ const GAME = {
     list.push(id);
     this.sfx.upgrade();
     this.banner('LORE: ' + found.title, '#ffe9b0', 2.5);
+    this.state = 'talk';
     this.showDialog('📖 ' + found.title, found.text, '<button class="btn" id="dlgOk">Entendido</button>');
+    byId('dlgOk').onclick = () => this.closeDialog();
     if (casta === 'clero') this.blessingFx(this.player, '#ffe66d', 12);
   },
 
@@ -406,6 +408,19 @@ const GAME = {
     if (e.code === 'F3') { e.preventDefault(); this.toggleCheatBar(); return; }
     if (typing) return;
 
+    // Em estados de overlay (diálogo/loja/forja/etc.), bloqueamos as teclas de
+    // jogo para não dispararem combate/movimento, mas deixamos Escape/Enter livres.
+    const inOverlay = this.state === 'talk' || this.state === 'building' ||
+      this.state === 'shop' || this.state === 'forge' || this.state === 'skills' ||
+      this.state === 'guide' || this.state === 'bossintro' || this.state === 'cheats';
+
+    if (inOverlay) {
+      if (e.code === 'Escape') { e.preventDefault(); this.closeOverlay(); return; }
+      if (e.code === 'Enter' && this.state === 'bossintro') { e.preventDefault();
+        byId('bossintro').classList.add('hidden'); this.state = 'play'; return; }
+      return; // ignore qualquer outra tecla de jogo durante overlays
+    }
+
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyF', 'KeyP', 'KeyX', 'KeyG', 'KeyU'].includes(e.code)) e.preventDefault();
     this.keys[e.code] = true;
     this.sfx.unlock();
@@ -422,9 +437,9 @@ const GAME = {
     } else if (this.state === 'paused') {
       if (e.code === 'KeyP' || e.code === 'Escape') this.pause(false);
     } else if (this.state === 'death') {
-      if (e.code === 'Enter') this.respawn();
-    } else {
-      if (e.code === 'Escape') this.closeOverlay();
+      if (e.code === 'Enter' || e.code === 'Escape') this.respawn();
+    } else if (this.state === 'win') {
+      if (e.code === 'Enter' || e.code === 'Escape') this.toMenu();
     }
   },
 
@@ -499,8 +514,11 @@ const GAME = {
 
   // Diálogo genérico com NPC
   showDialog(title, body, buttonsHtml) {
-    byId('dialogPanel').innerHTML = `<h2>${title}</h2><div class="dlgbody">${body}</div><div class="dlgbtns">${buttonsHtml || ''}</div>`;
+    byId('dialogPanel').innerHTML = `<h2>${title}</h2><div class="dlgbody">${body}</div><div class="dlgbtns">${buttonsHtml || '<button class="btn" id="dlgOk">Continuar</button>'}</div>`;
     byId('dialog').classList.remove('hidden');
+    // Seguro: se o caller não criou um handler para dlgOk, liga-o a closeDialog.
+    const ok = byId('dlgOk');
+    if (ok && !ok.onclick) ok.onclick = () => this.closeDialog();
   },
 
   closeDialog() {
@@ -704,6 +722,8 @@ const GAME = {
     byId('bld').classList.add('hidden');
     byId('dialog').classList.add('hidden');
     byId('bossintro').classList.add('hidden');
+    // Restauro robusto do estado play: se o jogador não estiver em menu/morte/vitória,
+    // o jogo volta sempre ao jogável — inclusive se state ficou "preso".
     if (this.state !== 'death' && this.state !== 'win' && this.state !== 'menu') this.state = 'play';
   },
 
@@ -1362,7 +1382,7 @@ const GAME = {
       x: p.x + Math.cos(p.aimAng) * 16, y: p.y + Math.sin(p.aimAng) * 16,
       vx: Math.cos(p.aimAng) * 420, vy: Math.sin(p.aimAng) * 420,
       dmg, type: s.type, color: '#ffb020', size: 8, life: 1.6,
-      aoe: s.radius, explode: true, owner: 'player', trail: true
+      aoe: s.radius, explode: true, clearTree: true, owner: 'player', trail: true
     }));
     this.sfx.skill();
   },

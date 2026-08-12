@@ -14,37 +14,50 @@ const CASTAS = {
 const SUBCLASSES = {
   padre: {
     id: 'padre', casta: 'clero', name: 'Padre', color: '#f2e2a8', accent: '#c9a227',
-    desc: 'Reza e a luz divina queima quem chega perto.',
+    desc: 'Sacerdote: confessa, cura e enfrenta o maligno com orações de libertação.',
     hp: 120, speed: 240, str: 8, int: 18, jump: 780,
+    ordained: true, exorcistLevel: 1,
     weapon: { name: 'Cajado do Pastor', base: 12, color: '#8a5a2b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.15, type: T.HOLY, radius: 150, cd: 0.7, color: '#fff3b0' },
     aura: { radius: 95, dmg: 0.4, tick: 0.6 },
     skills: [
-      { id: 'heal', name: 'Luz Curadora', key: 'Q', cd: 7, color: '#ffe66d', desc: 'Cura 40% da vida máxima.', heal: 0.4 },
-      { id: 'holyWave', name: 'Onda Sagrada', key: 'E', cd: 5, color: '#fff3b0', desc: 'Onda sagrada que atravessa inimigos.', dmg: 1.5, type: T.HOLY, speed: 430, size: 14, pierce: true }
+      { id: 'confession', name: 'Confissão', key: 'Q', cd: 9, color: '#ffe66d',
+        desc: 'Permite ouvir confissões e cura 35% da vida própria. Reforça a alma (+dano temporário).',
+        heal: 0.35, dmgBuff: 0.25, dmgDur: 10 },
+      { id: 'uncao', name: 'Unção dos Enfermos', key: 'E', cd: 22, color: '#ffd27f',
+        desc: 'Cura massiva (70%) se a vida estiver baixa; caso contrário, cura 35%. Purga veneno.',
+        healLow: 0.70, healHigh: 0.35, lowThreshold: 0.30, purge: true }
     ]
   },
   bispo: {
     id: 'bispo', casta: 'clero', name: 'Bispo', color: '#e8b0b0', accent: '#a23b3b',
-    desc: 'Tanque sagrado: aura enorme e lenta, escudo e julgamento.',
+    desc: 'Plenitude do sacerdócio: exorcismo solene, autoridade e milagres.',
     hp: 165, speed: 205, str: 12, int: 16, jump: 760,
+    ordained: true, exorcistLevel: 2,
     weapon: { name: 'Báculo Episcopal', base: 17, color: '#7a3b3b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.5, type: T.HOLY, radius: 205, cd: 0.9, color: '#ffe9b0' },
     aura: { radius: 145, dmg: 0.55, tick: 0.6 },
     skills: [
       { id: 'shield', name: 'Escudo Divino', key: 'Q', cd: 12, color: '#ffd27f', desc: 'Absorve 90 de dano por 7s.', shield: 90, dur: 7 },
-      { id: 'julgamento', name: 'Julgamento', key: 'E', cd: 6, color: '#fff3b0', desc: 'Raiada sagrada devastadora.', dmg: 2.4, type: T.HOLY, speed: 540, size: 18 }
+      { id: 'grande_exorcismo', name: 'Grande Exorcismo', key: 'E', cd: 30, color: '#fff3b0',
+        desc: 'Purga todos os inimigos visíveis com luz sagrada. Após usar, fica exausto por 20s (lento e enfraquecido).',
+        dmg: 9999, type: T.HOLY, fatigue: 20 }
     ]
   },
   diacono: {
     id: 'diacono', casta: 'clero', name: 'Diácono', color: '#c8e8e0', accent: '#2f8a8a',
-    desc: 'Ágil e veloz com dardos perseguidores.',
+    desc: 'Servo: batiza, proclama, abençoa. Utilidade e caridade — não exorciza nem confessa.',
     hp: 105, speed: 275, str: 9, int: 18, jump: 800,
+    ordained: false, exorcistLevel: 0,
     weapon: { name: 'Cajado da Devoção', base: 12, color: '#2f8a8a', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.HOLY, speed: 620, cd: 0.32, color: '#d8fff0', size: 8, pierce: true },
     skills: [
-      { id: 'homing', name: 'Dardo Sagrado', key: 'Q', cd: 3.5, color: '#fff7cc', desc: 'Dardo que persegue o inimigo mais próximo.', dmg: 1.35, type: T.HOLY, speed: 380, size: 9, homing: true },
-      { id: 'bless', name: 'Bênção', key: 'E', cd: 14, color: '#ffe66d', desc: '+50% de dano e +25% de velocidade por 8s.', dmg: 0.5, spd: 0.25, dur: 8 }
+      { id: 'batismo', name: 'Batismo', key: 'Q', cd: 7, color: '#bfe8ff',
+        desc: 'Acolhe um fiel próximo: cura o jogador e cria uma onda de luz que empurra e fere os inimigos ao redor.',
+        heal: 0.20, dmg: 1.0, type: T.HOLY, radius: 110 },
+      { id: 'caridade', name: 'Bênção da Caridade', key: 'E', cd: 14, color: '#ffe66d',
+        desc: 'Bênção generosa: +45% de dano e +20% de velocidade por 10s.',
+        dmg: 0.45, spd: 0.20, dur: 10 }
     ]
   },
   guerreiro: {
@@ -76,7 +89,7 @@ const SUBCLASSES = {
     weapon: { name: 'Chave de Grifo', base: 14, color: '#d35400', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.1, type: T.PHYS, range: 70, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
-      { id: 'grenade', name: 'Granada', key: 'Q', cd: 5, color: '#ffb020', desc: 'Granada que explode em área.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
+      { id: 'grenade', name: 'Granada', key: 'Q', cd: 5, color: '#ffb020', desc: 'Granada que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
       { id: 'overclock', name: 'Sobrecarga', key: 'E', cd: 15, color: '#7cffb0', desc: 'Overclock: muito dano e velocidade por 6s.', dmg: 0.6, spd: 0.35, dur: 6 }
     ]
   },

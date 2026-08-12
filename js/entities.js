@@ -32,7 +32,7 @@ class Player {
     this.dashDmg = 0;
     this.dashType = T.PHYS;
     this.dashHit = new Set();
-    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0 };
+    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0, fatigue: 0 };
     this.cd = {};
     this.extraSkills = [];
     this.mw = null;
@@ -61,6 +61,17 @@ class Player {
     st.dur -= dt;
     if (st.dur <= 0) { st.dmg = 0; st.spd = 0; st.regen = 0; }
     if (st.shieldT > 0) st.shieldT -= dt; else st.shield = 0;
+    // Fadiga espiritual (de Examplexorcismo): lentidão visível e leve enfraquecimento.
+    if (st.fatigue > 0) {
+      st.fatigue -= dt;
+      if (Math.random() < 0.25) {
+        g.particles.push(new Particle({
+          x: this.x + rand(-12, 12), y: this.y + rand(-8, 14),
+          vx: rand(-10, 10), vy: 8 + Math.random() * 10, life: 0.6,
+          color: '#7a7a8a', size: 2 + Math.random(), grav: 40
+        }));
+      }
+    }
     if (st.regen > 0 && this.hp < this.maxHp) {
       this.hp = Math.min(this.maxHp, this.hp + this.maxHp * st.regen * dt);
       if (Math.random() < 0.15) {
@@ -71,7 +82,9 @@ class Player {
     const ix = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0);
     const iy = (K.KeyS || K.ArrowDown ? 1 : 0) - (K.KeyW || K.ArrowUp ? 1 : 0);
     const run = K.ShiftLeft || K.ShiftRight;
-    const base = this.spd * (run ? RUN : 1) * (1 + (st.spd || 0));
+    // Fadiga corta a velocidade à metade e impede correr.
+    const exhaustMul = st.fatigue > 0 ? 0.5 : 1;
+    const base = this.spd * (run && st.fatigue <= 0 ? RUN : 1) * (1 + (st.spd || 0)) * exhaustMul;
 
     let mx = 0, my = 0;
     if (ix !== 0 || iy !== 0) { const l = Math.hypot(ix, iy); mx = ix / l; my = iy / l; }
@@ -129,6 +142,25 @@ class Player {
       ctx.beginPath();
       ctx.arc(0, fy - 16, s.aura.radius * 0.32, 0, 6.283);
       ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Fadiga espiritual: aura cinzenta abatida quando o clero está exausto.
+    if (this.status.fatigue > 0) {
+      const k = Math.min(1, this.status.fatigue / 20);
+      ctx.globalAlpha = 0.18 + Math.sin(t * 2) * 0.06;
+      ctx.fillStyle = '#5a5a6a';
+      ctx.beginPath();
+      ctx.arc(0, fy - 14, 20 + Math.sin(t * 3) * 2, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 0.6 * k;
+      ctx.strokeStyle = '#8a8a9a';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(0, fy - 14, 24, 0, 6.283);
+      ctx.stroke();
+      ctx.setLineDash([]);
       ctx.globalAlpha = 1;
     }
 

@@ -10,6 +10,11 @@ function mulberry32(a) {
 // Sólidos: blocos que impedem passagem
 const SOLIDS = new Set(['t', 'r', 'w', 'h', 'v', 'q', 'l', 'k', 'o', 'T']);
 
+// Sólidos com hitbox reduzida (árvores e rochas do cenário): o jogador pode
+// aproximar-se visualmente antes de colidir, dando margem para "espremer" entre elas.
+const SHRINK = new Set(['t', 'r']);
+const SHRINK_INSET = 9; // px de margem interna em cada lado do tile
+
 // Chars sobre os quais pode nascer spawn (permitem andar)
 const WALK_SPAWN = new Set(['g', 'p', 'y', 'c', 'f', 'z', 'b', 'x', 's', 'd']);
 
@@ -296,48 +301,68 @@ class World {
     ch.tiles[ty % CHUNK][tx % CHUNK] = c;
   }
 
+  // Sólidos: blocos que impedem passagem
+  // 't' (árvores) e 'r' (rochas) têm hitbox reduzida — só o miolo do tile é sólido,
+  // permitindo que o jogador se acerque visualmente sem encostar cedo demais.
   isSolid(tx, ty) {
     return SOLIDS.has(this.tileAt(tx, ty));
   }
 
-  solidPixel(x, y) {
-    return this.isSolid(Math.floor(x / TILE), Math.floor(y / TILE));
-  }
-
+  // Hitbox "magra" para árvores e rochas: testa apenas a parte central do tile.
+  // `b` é a box do jogador/monstro em pixéis. Devolve true se colide com tiles sólidos.
   solidBox(b) {
     const x0 = Math.floor(b.x / TILE), x1 = Math.floor((b.x + b.w - 1) / TILE);
     const y0 = Math.floor(b.y / TILE), y1 = Math.floor((b.y + b.h - 1) / TILE);
     for (let ty = y0; ty <= y1; ty++) {
       for (let tx = x0; tx <= x1; tx++) {
-        if (this.isSolid(tx, ty)) return true;
+        const c = this.tileAt(tx, ty);
+        if (!SOLIDS.has(c)) continue;
+        if (!SHRINK.has(c)) return true;          // outros sólidos usam o tile inteiro
+        const inset = SHRINK_INSET;
+        const bx = tx * TILE + inset, by = ty * TILE + inset;
+        const bw = TILE - inset * 2, bh = TILE - inset * 2;
+        if (b.x < bx + bw && b.x + b.w > bx && b.y < by + bh && b.y + b.h > by) return true;
       }
     }
     return false;
+  }
+
+  // Testa colisão num único ponto — útil para projéteis, equiparando sempre a tile inteira.
+  solidPixel(x, y) {
+    return this.isSolid(Math.floor(x / TILE), Math.floor(y / TILE));
   }
 
   gateBox() { return null; }
 
   move(e, dx, dy) {
     const b = e.box();
-    if (!this.solidBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h }) && !this.gateBox()) e.x += dx;
-    if (!this.solidBox({ x: e.x - b.w / 2, y: b.y + dy, w: b.w, h: b.h }) && !this.gateBox()) e.y += dy;
+    // Eixo X — testa a box deslocada horizontalmente.
+    if (!this.solidBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h })) e.x += dx;
+    // Eixo Y — recálcula a box a partir da posição X actual (já andou ou não).
+    const bx = e.x - b.w / 2;
+    if (!this.solidBox({ x: bx, y: b.y + dy, w: b.w, h: b.h })) e.y += dy;
   }
 
-  destroyTrees(cx, cy, r) {
+  // Destrói árvores ('t') e rochas do cenário ('r') dentro do raio.
+  // Usado por granadas e outras explosões para limpar o terreno.
+  destroyScenery(cx, cy, r) {
     const x0 = Math.floor((cx - r) / TILE), x1 = Math.floor((cx + r) / TILE);
     const y0 = Math.floor((cy - r) / TILE), y1 = Math.floor((cy + r) / TILE);
     for (let ty = Math.max(0, y0); ty <= Math.min(this.rows - 1, y1); ty++) {
       for (let tx = Math.max(0, x0); tx <= Math.min(this.cols - 1, x1); tx++) {
-        const gx = tx, gy = ty;
         if (Math.hypot((tx + 0.5) * TILE - cx, (ty + 0.5) * TILE - cy) <= r) {
-          if (this.tileAt(tx, ty) === 't') {
+          const c = this.tileAt(tx, ty);
+          if (c === 't' || c === 'r') {
             this.setTile(tx, ty, 'g');
-            this.destroyedKeys.add(gx + ',' + gy);
+            this.destroyedKeys.add(tx + ',' + ty);
           }
         }
       }
     }
   }
+
+  // Compatibilidade: qualquer chamada antiga a destroyTrees é redirecionada.
+  destroyTrees(cx, cy, r) { this.destroyScenery(cx, cy, r); }
 
   // carrega/descarrega chunks ao redor do jogador (apenas dados importantes persistem)
   updateChunks(cam, player) {
