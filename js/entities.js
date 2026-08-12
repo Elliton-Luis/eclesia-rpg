@@ -365,20 +365,7 @@ class Player {
         ctx.fillRect(-8, -6, 16, 12);
         ctx.fillStyle = '#f0f4ff';
         ctx.fillRect(-5, -4, 10, 4);
-} else if (this.kind === 'chest') {
-      ctx.globalAlpha = 0.3;
-      ctx.fillStyle = '#ffd23f';
-      ctx.beginPath(); ctx.arc(0, 0, 15, 0, 6.283); ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#8a5a2b';
-      ctx.fillRect(-8, -7, 16, 14);
-      ctx.fillStyle = '#5f3a17';
-      ctx.fillRect(-8, -1, 16, 6);
-      ctx.fillStyle = '#ffd23f';
-      ctx.fillRect(-1.5, -7, 3, 14);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillRect(-5, -7, 2, 14);
-    } else {
+      } else {
         const pulse = 5 + Math.sin(this.game.time * 8) * 1.5;
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = this.weapon.color;
@@ -1827,7 +1814,26 @@ class Pickup {
   update(dt, g) {
     this.t += dt;
     const p = g.player;
-    if (Math.hypot(this.x - p.x, this.y - p.y) < this.radius() + p.w / 2 + 6) {
+    const d = Math.hypot(this.x - p.x, this.y - p.y);
+
+    // Atração magnética: dentro de um raio ampliado, o item é puxado para o jogador.
+    const magnet = 96;                 // raio de atração ao redor do jogador
+    const pickupR = this.radius() + p.w / 2 + 6;
+    if (d < magnet && d > pickupR) {
+      const pull = 1 - d / magnet;     // 0 longe, 1 perto
+      const ang = Math.atan2(p.y - this.y, p.x - this.x);
+      const sp = 260 * pull + 140;
+      this.x += Math.cos(ang) * sp * dt;
+      this.y += Math.sin(ang) * sp * dt;
+      // pequena faísca de magnet
+      if (Math.random() < 0.18) {
+        g.particles.push(new Particle({ x: this.x, y: this.y, vx: 0, vy: 0, life: 0.25,
+          color: this.kind === 'coin' ? '#ffd23f' : this.kind === 'heart' ? '#ff5c7a' : '#ffe66d',
+          size: 2, grav: 0 }));
+      }
+    }
+
+    if (d < pickupR) {
       this.collect(g);
       return true;
     }

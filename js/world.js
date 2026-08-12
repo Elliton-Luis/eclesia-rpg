@@ -142,7 +142,7 @@ class World {
 
   // layout fixo da Vila de Pedra
   townChar(gx, gy) {
-    // praça central + ruas de pedra
+    // praça central + ruas de pedra (a igreja ocupa o centro da praça)
     const inPlaza =
       (gx >= 112 && gx <= 123 && gy >= 115 && gy <= 124) ||
       (gx >= 113 && gx <= 122 && gy >= 128 && gy <= 130) ||
