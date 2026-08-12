@@ -128,7 +128,7 @@ const SUBCLASSES = {
   }
 };
 
-const SUB_ORDER = ['padre', 'bispo', 'diacono', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
+const SUB_ORDER = ['bispo', 'padre', 'diacono', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
 const CASTA_ORDER = ['clero', 'populum', 'mago'];
 
 const MAX_EXTRA_SKILLS = 3;
@@ -552,7 +552,8 @@ const LORE = {
     { id: 'chamado', title: 'O Chamado', text: 'Uma voz ao amanhecer disse: "Anda, as almas desta terra temem. Vai e acolhe-as." O Senhor vos envia a Eclésia para consolar e conduzir.' },
     { id: 'confissao', title: 'O Peso das Confissões', text: 'Cada confissão ouvida é uma alma que se deixa guiar. Vossa fé vos fortalece — e a elas traz paz.' },
     { id: 'travessia', title: 'A Travessia', text: 'Três pilares guardam o caminho: o Chefe Tribal, o Rei da Noite e o Guardião do Execra. Derrotai-os e o altar do Demônio se abrirá.' },
-    { id: 'promessa', title: 'A Promessa', text: 'No leste, um selo profano esconde o altar de Mastema. Fechai-o para sempre e guiai as almas do Senhor a Ele.' }
+    { id: 'promessa', title: 'A Promessa', text: 'No leste, um selo profano esconde o altar de Mastema. Fechai-o para sempre e guiai as almas do Senhor a Ele.' },
+    { id: 'servico', title: 'O Servo fiel', text: 'O Diácono que serve sem buscar glória é o coração da Igreja. Quem alimenta o pobre, visita o enfermo e batiza com humor guarda o tesouro do Céu.' }
   ],
   populum: [
     { id: 'fronteira', title: 'A Fronteira', text: 'O povo de Eclésia vive sob o jugo de bestas e bandos. A vila pede: espadas, flechas e engenho bastam?' },
@@ -570,7 +571,7 @@ const LORE = {
 
 // Habilitação de lore por casta ao entrar em zonas especiais
 const LORE_ZONE = {
-  clero: [['sagrado', 'chamado'], ['cova', 'promessa']],
+  clero: [['sagrado', 'chamado'], ['sagrado', 'servico'], ['cova', 'promessa']],
   populum: [['forte', 'forte']],
   mago: [['torre', 'torre']]
 };

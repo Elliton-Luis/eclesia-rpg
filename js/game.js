@@ -296,6 +296,7 @@ const GAME = {
     this.checkZone();
 
     this.shake = Math.max(0, this.shake - dt * 30);
+    if (this.shake > 15) this.shake = 15; // limite máximo de tremor para nãoOfuscar a visão
     this.redFlash = Math.max(0, this.redFlash - dt * 0.7);
     if (this.bannerT > 0) { this.bannerT -= dt; if (this.bannerT <= 0) byId('banner').classList.add('hidden'); }
 
@@ -528,13 +529,25 @@ const GAME = {
 
   doTalk(npc) {
     const casta = this.player.sub.casta;
+    const sub = this.player.sub;
     const line = (npc.lines && npc.lines[casta]) || (npc.text || '...');
     this.state = 'talk';
-    if (npc.event && npc.event === 'confess' && casta === 'clero' && !npc.eventDone) {
-      // Confissão: interação exclusiva do Clero
+    // Confissão só disponível a Padre (ordained=true) e Bispo (ordained=true).
+    // Diácono não confessa, mas recebe linha de diálogo normal (caridade/info).
+    if (npc.event && npc.event === 'confess' && ((sub.ordained && casta === 'clero') || (sub.casta === 'clero' && sub.exorcistLevel >= 1))) {
+      // Confissão: interação exclusiva do Clero (Padre/Bispo)
       this.blessingFx(this.player, '#ffe66d', 14);
       this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
       byId('dlgConfess').onclick = () => this.doConfession(npc);
+      return;
+    }
+    // Diálogo alternativo para Diácono (caridade / informação)
+    if (npc.event && npc.event === 'confess' && !sub.ordained && sub.casta === 'clero' && sub.exorcistLevel === 0) {
+      // Diácono: interação de caridade, não absolvição.
+      this.showDialog('⛪ Caridade', `"${line}"<div class="confessTag">— O SENHOR OUVE, mas o Diácono oferece consolo e orientação.</div>`, '<button class="btn" id="dlgOk">Continuar</button>');
+      byId('dlgOk').onclick = () => this.closeDialog();
+      this.text(this.player.x, this.player.y - 24, 'Conselho recebido: pratique caridade', '#ffe66d', 14);
+      this.hud();
       return;
     }
     const extra = npc.eventDone ? '' : this.classEventButton(npc, casta);
@@ -607,10 +620,27 @@ const GAME = {
   openBuilding(npc) {
     const p = this.player;
     const casta = p.sub.casta;
+    const sub = p.sub;
     const gold = p.gold;
     let html = '';
     if (npc.kind === 'church') {
       html = `<h2><span class="bldIcon">⛪</span> ${npc.name}</h2><div class="bldSub">Casa do Clero — lugar seguro</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      // Ações específicas por grau
+      // Diácono: Proclamar Palavra (não cura/missa, mas bénção de estudo)
+      if (!sub.ordained && sub.exorcistLevel === 0) {
+        html += `<div class="item"><div><b>Proclamar Palavra</b><div class="desc">Ler o Evangelho para a assembleia. +10 de inteligência temporário. (Grátis)</div></div><button class="btn" data-bact="proclaim">Proclamar</button></div>`;
+      }
+      // Padre: Missa (cura total + buff)
+      if (sub.ordained && sub.exorcistLevel >= 1) {
+        html += `<div class="item"><div><b>Missa</b><div class="desc">Celebrar a Eucaristia. Cura total e +30 de vida máxima. (100 ●)</div></div><button class="btn" data-bact="mass">Missa</button></div>`;
+      }
+      // Bispo: Crisma e Ordenação
+      if (sub.exorcistLevel >= 2) {
+        html += `<div class="item"><div><b>Crisma</b><div class="desc">Administrar Crisma/Confirmação. +40 de vida máxima e +2 inteligência permanentes. (200 ●)</div></div><button class="btn" data-bact="chrism">Crisma</button></div>`;
+        html += `<div class="item"><div><b>Ordenar</b><div class="desc">Ordenar novo Diácono/Padre. Recompensa divina única. (300 ●)</div></div><button class="btn" data-bact="ordain">Ordenar</button></div>`;
+      }
+      // Padre também pode fazer Missa se exorcistLevel == 1 (já coberto acima)
+      // Todas as classes podem rezar (grátis)
       html += `<div class="item"><div><b>Rezar</b><div class="desc">Recupera toda a vida. (Grátis)</div></div><button class="btn" data-bact="pray">Rezar</button></div>`;
       html += `<div class="item"><div><b>Estudar Escrituras</b><div class="desc">+15 de vida máxima.<br>Custo crescente.</div></div><button class="btn" data-bact="bless">${100 + (this.shopN.igrejabless || 0) * 60}</button></div>`;
       html += `<div class="item"><div><b>Liturgia</b><div class="desc">Um trecho da palavra. Descobre parte da lore do Clero.</div></div><button class="btn" data-bact="liturgia">Ouvir</button></div>`;
@@ -635,6 +665,7 @@ const GAME = {
   buildingAction(npc, act) {
     const p = this.player;
     const casta = p.sub.casta;
+    const sub = p.sub;
     const ok = (goldCost) => { if (this.cheats.gold) return true; if (p.gold >= goldCost) { p.gold -= goldCost; return true; } this.banner('Ouro insuficiente', '#ff5c5c', 1.5); return false; };
 
     if (npc.kind === 'church') {
@@ -654,6 +685,37 @@ const GAME = {
       } else if (act === 'liturgia') {
         if (casta === 'clero') this.discoverLore('clero', this.loreDiscovered.clero.includes('chamado') ? 'promessa' : 'chamado');
         else this.discoverLore(casta === 'mago' ? 'mago' : 'populum', casta === 'mago' ? 'veo' : 'fronteira');
+      } else if (act === 'proclaim' && !sub.ordained && sub.exorcistLevel === 0) {
+        // Diácono: Proclamar Palavra
+        p.int += 10; // bônus temporário simples via status
+        this.burst(p.x, p.y - 20, '#bfe8ff', 12, 200);
+        this.text(p.x, p.y - 30, 'INT +10 TEMP.', '#bfe8ff', 16);
+        this.sfx.buff();
+        this.banner('Palavra proclamada: inteligência +10 (10s)', '#bfe8ff', 2);
+        // Aplicar exaustão leve (metade velocidade 10s)
+        p.status.fatigue = Math.max(p.status.fatigue || 0, 10);
+        this.openBuilding(npc);
+      } else if (act === 'mass' && sub.ordained && sub.exorcistLevel >= 1) {
+        // Padre: Missa
+        p.hp = p.maxHp + 30;
+        p.maxHp += 30;
+        this.blessingFx(p, '#ffe66d', 16);
+        this.sfx.heal();
+        this.banner('Missa celebrada: vida +30 (permanente)', '#ffe66d', 3);
+        this.openBuilding(npc);
+      } else if (act === 'chrism' && sub.exorcistLevel >= 2) {
+        // Bispo: Crisma
+        p.maxHp += 40; p.int += 2;
+        this.sparkleFx(p, '#7a6bd8', 16);
+        this.sfx.upgrade();
+        this.banner('Crisma administrado: vida +40, inteligência +2 (permanentes)', '#7a6bd8', 3);
+        this.openBuilding(npc);
+      } else if (act === 'ordain' && sub.exorcistLevel >= 2) {
+        // Bispo: Ordenar (premiação única)
+        this.banner('Um novo ministro ungido surge em Eclésia.', '#c0392b', 3);
+        this.sfx.buy();
+        this.stats.powerups++;
+        this.openBuilding(npc);
       }
     } else if (npc.kind === 'tavern') {
       if (act === 'drink') {
@@ -863,6 +925,11 @@ const GAME = {
       this.sfx.throw();
       this.hud();
     } else if (id === 'exorcismo') {
+      // Bloqueia Diácono de usar exorcismo moderno.
+      if (p.sub.exorcistLevel === 0) {
+        this.banner('Apenas Padres e Bispos podem realizar exorcismos.', '#ff5c5c', 2);
+        return;
+      }
       p.items[id]--;
       const x0 = this.cam.x, x1 = this.cam.x + this.cw;
       const y0 = this.cam.y, y1 = this.cam.y + this.ch;
@@ -874,10 +941,15 @@ const GAME = {
           n++;
         }
       }
-      this.burst(p.x, p.y, '#fff3b0', 20, 300);
-      this.ring(p.x, p.y, 260, 0.8, '#fff3b0', 6);
-      this.shake += 10;
-      this.banner(n > 0 ? 'Exorcismo! ' + n + ' monstros purgados' : 'Exorcismo! Nada à vista', '#fff3b0', 2);
+      // Aplica fadiga a Padre (level 1) ou Bispo (level 2).
+      if (p.sub.exorcistLevel >= 1) {
+        p.status.fatigue = Math.max(p.status.fatigue || 0, s.cd || 20); // 20s de fadiga
+        // Efeito visual: reduzir velocidade à metade por 20s já tratado no update do Player.
+        this.burst(p.x, p.y, '#fff3b0', 20, 300);
+        this.ring(p.x, p.y, 260, 0.8, '#fff3b0', 6);
+        this.shake += 10;
+        this.banner(p.sub.exorcistLevel === 2 ? 'Grande Exorcismo! ' + n + ' monstros purgados' : 'Exorcismo! ' + n + ' monstros purgados', '#fff3b0', 2);
+      }
       this.hud();
     }
   },
