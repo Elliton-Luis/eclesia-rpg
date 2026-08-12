@@ -622,6 +622,38 @@ function circleRect(c, r, rc) {
   return Math.hypot(c.x - cx, c.y - cy) < r;
 }
 
+// Passagens bíblicas para leituras aleatórias no clero
+const BIBLIA_PASSAGENS = {
+  clero: [
+    '"O Senhor é o meu pastor; nada me faltarei." - Salmo 23:1',
+    '"Eu vim para que tenham vida, e a tenham em abundância." - João 10:10',
+    '"Acredita em mim, e serás salvo." - Atos 16:31',
+    '"A graça do nosso Senhor Jesus Cristo, o amor de Deus e a comunhão do Espírito Santo esteja com todos vós." - 2 Coríntios 13:14',
+    '"Louvo-Te, Senhor, de todo o coração; narro todas as Tuas maravilhas." - Salmo 9:1',
+    '"Sejam bondosos e compassivos uns para com os outros, perdoando-vos como também Deus vos perdoou em Cristo." - Efésios 4:32',
+    '"Posso tudo naquele que me fortalece." - Filipenses 4:13',
+    '"O Senhor está próximo de todos os que O invocam, de todos os que O invocam com sinceridade." - Salmo 145:18'
+  ],
+  populum: [
+    '"Coragem, fiéis! A luz vence as trevas." - Isaías 54:17',
+    '"Não tema, pois eu sou contigo; não se assuste, pois eu sou o seu Deus." - Isaías 41:10',
+    '"Entregue ao Senhor o seu caminho, e nele confia." - Salmo 37:5',
+    '"O justo clama, e o Senhor o ouve; livra-o de todas as suas angústias." - Salmo 34:17',
+    '"Alegrai-vos no Senhor, ó justos; louvável é o louvo dos retos." - Salmo 33:1',
+    '"Louvai ao Senhor, porque é bom; cantar a seu nome é agradável, ó quasi." - Salmo 135:3'
+  ],
+  mago: [
+    '"O conhecimento é o caminho da sabedoria." - Provérbios 4:7',
+    '"A ciência infla, mas o amor edifica." - 1 Coríntios 8:1',
+    '"Buscai primeiro o Reino de Deus e a sua justiça." - Mateus 6:33',
+    '"A começar das entranhas do homem, vêm os pensamentos maus." - Mateus 15:19',
+    '"Quantas vezes perdoará meu irmão? Até sete vezes? Disse-lhe Jesus: Até setenta vezes sete." - Mateus 18:21-22',
+    '"A palavra do Senhor é como fogo, como martelo que parte a rocha." - Jeremias 23:29'
+  ]
+};
+
+function randArr(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
 // Estatística de recompensa usada pelo kill: ouro/min share escalam com o tier do monstro + perigo da região
 function dangerLoot(danger) {
   return {

@@ -264,6 +264,15 @@ const GAME = {
       }
     }
 
+    // Reduzir fadiga após proclamação da palavra
+    if (p.status.fatigue > 0) {
+      p.status.fatigue -= dt;
+      if (p.status.fatigue <= 0) {
+        p.status.fatigue = 0;
+        p.int = Math.max(0, p.int - 5); // remover bônus temporário de inteligência
+      }
+    }
+
     const au = p.sub.aura;
     if (au && !p.dying) this.tickAura(dt);
 
@@ -321,31 +330,46 @@ const GAME = {
     const p = this.player;
     if (!p) return;
     const TILE = 32;
+    // Centro fixo da cidade: levemente deslocado para baixo e direita da posição original
+    // Original: gx 117, gy 118 -> Novo: gx 118, gy 120 (um tile para baixo e um para a direita)
+    const CITY_CENTER_GX = 118;
+    const CITY_CENTER_GY = 120;
     const gx = Math.floor(p.x / TILE);
     const gy = Math.floor(p.y / TILE);
-    // Igreja central: gx 117-122, gy 118-123
-    const inChurchArea = gx >= 117 && gx <= 122 && gy >= 118 && gy <= 123;
-    if (inChurchArea) {
-      // Matar monstros próximos da igreja
+    // Aura da Igreja Central: barreira fixa ao redor da cidade
+    // A barreira é um círculo estático ao redor do centro da cidade (gx 118, gy 120)
+    // O jogador pode entrar e sair livremente; monstros que entrarem são purificados
+    // Raio de 30 tiles (960px) - cobre a área da cidade visível
+    // A barreira está ativa sempre que o jogador está na zona da cidade
+    const inCity = gx >= 90 && gx <= 160 && gy >= 80 && gy <= 160;
+    if (inCity) {
+      const cx = CITY_CENTER_GX * TILE;  // posição FIXA do centro da cidade (3776 pixels)
+      const cy = CITY_CENTER_GY * TILE;
+      // Efeito visual: único círculo marcando o domínio da igreja no chão
+      // Apenas um círculo externo delicado mostrando o alcance da cidade
+      this.ring(cx, cy, 960, 0.15, '#ffff00', 1);  // Círculo externo 30 tiles - amarelo claro
+      // Burst central indicando a presença da barreira (sempre visível quando na cidade)
+      this.burst(cx, cy, '#ffe66d', 2, 60);
+      // Monstros que ENTRARAM na área da barreira (30 tiles raio) morrem silenciosamente
+      // A barreira é fixa ao redor da cidade - jogadores podem entrar e sair livremente
+      // Monstros são afetados quando tocam na barreira ao entrar na área da cidade
       this.monsters.forEach(m => {
-        const dx = Math.abs(m.x - p.x);
-        const dy = Math.abs(m.y - p.y);
-        if (dx <= 80 && dy <= 80) {
-          m.hp = 0;
-          m.dying = true;
-          m.dieT = 0.1;
-          this.stats.dmgDealt += m.def.dmg;
-          this.text(m.x, m.y - 20, 'Slain by aura', '#ffe66d', 12);
+        const dx = m.x - cx;
+        const dy = m.y - cy;
+        const d = Math.hypot(dx, dy);
+        // Se monstro estiver dentro do raio da barreira (30 tiles = 960px) e não estiver morto
+        if (d <= 960 && !m.dead) {
+          // Monstros dentro da área central da cidade (próximo ao centro da igreja) são purificados
+          if (d <= 640) {  // Área central 20 tiles - efeito forte
+            m.hp = 0;
+            m.dying = true;
+            m.dieT = 0.1;
+            // Morte pela barreira da igreja - silenciosa, sem drop
+            this.stats.churchProtected += 1;
+          }
         }
       });
       this.monsters = this.monsters.filter(m => !m.dead);
-      // Efeito visual: aura dourada
-      const cx = p.x;
-      const cy = p.y;
-      this.ring(cx, cy, 80, 0.5, '#ffe66d', 4);
-      this.burst(cx, cy, '#ffe66d', 8, 180);
-      this.ring(cx, cy, 60, 0.3, '#ffd700', 3);
-      this.ring(cx, cy, 40, 0.2, '#ffecb3', 2);
     }
   },
 
@@ -565,7 +589,15 @@ const GAME = {
 doTalk(npc) {
     const casta = this.player.sub.casta;
     const sub = this.player.sub;
-    const line = (npc.lines && npc.lines[casta]) || (npc.text || '...');
+    // Busca uma passagem bíblica aleatória baseada na casta do NPC/clero
+    let passagemAleatoria = '';
+    if (npc.kind === 'church' && npc.lines && npc.lines.clero) {
+      passagemAleatoria = randArr(npc.lines.clero);
+    } else if (npc.kind === 'church' && BIBLIA_PASSAGENS[casta]) {
+      passagemAleatoria = randArr(BIBLIA_PASSAGENS[casta]);
+    }
+    const baseLine = (npc.lines && npc.lines[casta]) || (npc.text || '...');
+    const finalLine = passageAleatoria ? passageAleatoria : baseLine;
     this.state = 'talk';
     // Confissão só disponível a Padre (ordained=true) e Bispo (ordained=true).
     // Verificar se é o Bispo central da cidade (kind === 'church' e id === 'bispo_central')
@@ -574,13 +606,13 @@ doTalk(npc) {
     // Se for o Bispo central, permitir confissão para Padre e Bispo (os que têm ordained=true)
     if (isCentralBishop && npc.event && npc.event === 'confess' && ((sub.ordained && casta === 'clero') || (sub.casta === 'clero' && sub.exorcistLevel >= 1))) {
       this.blessingFx(this.player, '#ffe66d', 14);
-      this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
+      this.showDialog('⛪ Confissão', `"${finalLine}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
       byId('dlgConfess').onclick = () => this.doConfession(npc);
       return;
     }
     // Se for o Bispo central e for Diácono, diálogo alternativo
     if (isCentralBishop && npc.event && npc.event === 'confess' && !sub.ordained && sub.exorcistLevel === 0) {
-      this.showDialog('⛪ Caridade', `"${line}"<div class="confessTag">— O SENHOR OUVE, mas o Bispo Cedric oferece consolo e orientação espiritual.</div>`, '<button class="btn" id="dlgOk">Continuar</button>');
+      this.showDialog('⛪ Caridade', `"${finalLine}"<div class="confessTag">— O SENHOR OUVE, mas o Bispo Cedric oferece consolo e orientação espiritual.</div>`, '<button class="btn" id="dlgOk">Continuar</button>');
       byId('dlgOk').onclick = () => this.closeDialog();
       this.text(this.player.x, this.player.y - 24, 'Conselho espiritual recebido', '#ffe66d', 14);
       this.hud();
@@ -589,12 +621,12 @@ doTalk(npc) {
     // Confissão para outros NPCs (pároco, etc.) - regras antigas
     if (npc.event && npc.event === 'confess' && casta === 'clero' && !npc.eventDone) {
       this.blessingFx(this.player, '#ffe66d', 14);
-      this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
+      this.showDialog('⛪ Confissão', `"${finalLine}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
       byId('dlgConfess').onclick = () => this.doConfession(npc);
       return;
     }
     const extra = npc.eventDone ? '' : this.classEventButton(npc, casta);
-    this.showDialog(npc.name, `"${line}"`, extra + '<button class="btn ghost" id="dlgOk">Continuar</button>');
+    this.showDialog(npc.name, `"${finalLine}"`, extra + '<button class="btn ghost" id="dlgOk">Continuar</button>');
     byId('dlgOk').onclick = () => this.closeDialog();
     if (extra) {
       const btn = byId('dlgEvent');
@@ -735,13 +767,28 @@ doTalk(npc) {
         else this.discoverLore(casta === 'mago' ? 'mago' : 'populum', casta === 'mago' ? 'veo' : 'fronteira');
       } else if (act === 'proclaim' && !sub.ordained && sub.exorcistLevel === 0) {
         // Diácono: Proclamar Palavra
-        p.int += 10; // bônus temporário simples via status
-        this.burst(p.x, p.y - 20, '#bfe8ff', 12, 200);
-        this.text(p.x, p.y - 30, 'INT +10 TEMP.', '#bfe8ff', 16);
+        // Verificar cooldown - não permitir proclamar novamente enquanto fatigue durar
+        if (p.status.fatigue > 0) {
+          this.banner('Cansaço: espere a proclamação terminar', '#ffb020', 1.5);
+          this.openBuilding(npc);
+          return;
+        }
+        // Escolher passagem bíblica aleatória para a proclamação
+        const passagens = [
+          '"O Senhor é o meu pastor; nada me faltarei." - Salmo 23:1',
+          '"Eu vim para que tenham vida, e a tenham em abundância." - João 10:10',
+          '"Acredita em mim, e serás salvo." - Atos 16:31',
+          '"A graça do nosso Senhor Jesus Cristo, o amor de Deus e a comunhão do Espírito Santo esteja com todos vós." - 2 Coríntios 13:14',
+          '"Posso tudo naquele que me fortalece." - Filipenses 4:13'
+        ];
+        const passagem = passagens[Math.floor(Math.random() * passagens.length)];
+        // Bônus temporário de inteligência com exaustão após
+        p.int += 5; // bônus menor, temporário
+        p.status.fatigue = 20; // 20s de exaustão após proclamar
+        this.burst(p.x, p.y - 20, '#bfe8ff', 8, 150);
+        this.text(p.x, p.y - 30, 'INT +5 TEMP.', '#bfe8ff', 14);
         this.sfx.buff();
-        this.banner('Palavra proclamada: inteligência +10 (10s)', '#bfe8ff', 2);
-        // Aplicar exaustão leve (metade velocidade 10s)
-        p.status.fatigue = Math.max(p.status.fatigue || 0, 10);
+        this.banner('Palavra proclamada: ' + passagem, '#bfe8ff', 3);
         this.openBuilding(npc);
       } else if (act === 'mass' && sub.ordained && sub.exorcistLevel >= 1) {
         // Padre: Missa
