@@ -445,6 +445,7 @@ const NPC_DEFS = [
   { id: 'guia', name: 'Cronista', kind: 'guide', x: 116, y: 124, color: '#27ae60', accent: '#a8e6a1',
     text: 'Olá, viajante! Eclésia é vasta e perigosa. Derrote o Chefe Tribal na floresta (Cristal da Floresta), o Rei da Noite nas Catacumbas (Cristal Sombrio) e o Titã na Gruta do Execra (Coroa). Cada casta tem um desafio final próprio, no canto mais distante do mapa. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' },
   { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0' },
+  { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 119, y: 119, color: '#e8b0b0', accent: '#a23b3b' },
   { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },
   { id: 'erudito', name: 'Erudito Tior', kind: 'tower', x: 120, y: 136, color: '#7a6bd8', accent: '#c0b4ff' },
   // Vila — interações por casta

@@ -293,6 +293,9 @@ const GAME = {
 
     this.npcs.forEach(n => { n.bobT += dt; });
 
+    // Nova lógica: aura da Igreja Central protege a cidade
+    this.churchAura();
+
     this.checkZone();
 
     this.shake = Math.max(0, this.shake - dt * 30);
@@ -312,6 +315,38 @@ const GAME = {
     if (npc) it.innerHTML = `Pressione <b>F</b> — Falar com ${npc.name}`;
 
     this.hud();
+  },
+
+  churchAura() {
+    const p = this.player;
+    if (!p) return;
+    const TILE = 32;
+    const gx = Math.floor(p.x / TILE);
+    const gy = Math.floor(p.y / TILE);
+    // Igreja central: gx 117-122, gy 118-123
+    const inChurchArea = gx >= 117 && gx <= 122 && gy >= 118 && gy <= 123;
+    if (inChurchArea) {
+      // Matar monstros próximos da igreja
+      this.monsters.forEach(m => {
+        const dx = Math.abs(m.x - p.x);
+        const dy = Math.abs(m.y - p.y);
+        if (dx <= 80 && dy <= 80) {
+          m.hp = 0;
+          m.dying = true;
+          m.dieT = 0.1;
+          this.stats.dmgDealt += m.def.dmg;
+          this.text(m.x, m.y - 20, 'Slain by aura', '#ffe66d', 12);
+        }
+      });
+      this.monsters = this.monsters.filter(m => !m.dead);
+      // Efeito visual: aura dourada
+      const cx = p.x;
+      const cy = p.y;
+      this.ring(cx, cy, 80, 0.5, '#ffe66d', 4);
+      this.burst(cx, cy, '#ffe66d', 8, 180);
+      this.ring(cx, cy, 60, 0.3, '#ffd700', 3);
+      this.ring(cx, cy, 40, 0.2, '#ffecb3', 2);
+    }
   },
 
   checkZone() {
@@ -527,27 +562,35 @@ const GAME = {
     if (this.state !== 'win' && this.state !== 'death' && this.state !== 'menu') this.state = 'play';
   },
 
-  doTalk(npc) {
+doTalk(npc) {
     const casta = this.player.sub.casta;
     const sub = this.player.sub;
     const line = (npc.lines && npc.lines[casta]) || (npc.text || '...');
     this.state = 'talk';
     // Confissão só disponível a Padre (ordained=true) e Bispo (ordained=true).
-    // Diácono não confessa, mas recebe linha de diálogo normal (caridade/info).
-    if (npc.event && npc.event === 'confess' && ((sub.ordained && casta === 'clero') || (sub.casta === 'clero' && sub.exorcistLevel >= 1))) {
-      // Confissão: interação exclusiva do Clero (Padre/Bispo)
+    // Verificar se é o Bispo central da cidade (kind === 'church' e id === 'bispo_central')
+    const isCentralBishop = npc.id === 'bispo_central';
+    
+    // Se for o Bispo central, permitir confissão para Padre e Bispo (os que têm ordained=true)
+    if (isCentralBishop && npc.event && npc.event === 'confess' && ((sub.ordained && casta === 'clero') || (sub.casta === 'clero' && sub.exorcistLevel >= 1))) {
       this.blessingFx(this.player, '#ffe66d', 14);
       this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
       byId('dlgConfess').onclick = () => this.doConfession(npc);
       return;
     }
-    // Diálogo alternativo para Diácono (caridade / informação)
-    if (npc.event && npc.event === 'confess' && !sub.ordained && sub.casta === 'clero' && sub.exorcistLevel === 0) {
-      // Diácono: interação de caridade, não absolvição.
-      this.showDialog('⛪ Caridade', `"${line}"<div class="confessTag">— O SENHOR OUVE, mas o Diácono oferece consolo e orientação.</div>`, '<button class="btn" id="dlgOk">Continuar</button>');
+    // Se for o Bispo central e for Diácono, diálogo alternativo
+    if (isCentralBishop && npc.event && npc.event === 'confess' && !sub.ordained && sub.exorcistLevel === 0) {
+      this.showDialog('⛪ Caridade', `"${line}"<div class="confessTag">— O SENHOR OUVE, mas o Bispo Cedric oferece consolo e orientação espiritual.</div>`, '<button class="btn" id="dlgOk">Continuar</button>');
       byId('dlgOk').onclick = () => this.closeDialog();
-      this.text(this.player.x, this.player.y - 24, 'Conselho recebido: pratique caridade', '#ffe66d', 14);
+      this.text(this.player.x, this.player.y - 24, 'Conselho espiritual recebido', '#ffe66d', 14);
       this.hud();
+      return;
+    }
+    // Confissão para outros NPCs (pároco, etc.) - regras antigas
+    if (npc.event && npc.event === 'confess' && casta === 'clero' && !npc.eventDone) {
+      this.blessingFx(this.player, '#ffe66d', 14);
+      this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
+      byId('dlgConfess').onclick = () => this.doConfession(npc);
       return;
     }
     const extra = npc.eventDone ? '' : this.classEventButton(npc, casta);
@@ -567,7 +610,8 @@ const GAME = {
     return '';
   },
 
-  // Confissão do Clero: cura + bênção temporária de dano + ganho permanente de vida
+// Confissão do Clero: cura + bênção temporária de dano + ganho permanente de vida
+  // Se for confissão no Bispo Central (npc.id === 'bispo_central'), também aplica buff de Fé temporário.
   doConfession(npc) {
     const p = this.player;
     p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.5));
@@ -581,12 +625,16 @@ const GAME = {
     npc.confessed = true;
     this.healEffect(p);
     this.blessingFx(p, '#fff3b0', 20);
-    this.text(p.x, p.y - 30, 'BÊNÇÃO +10 VIDA', '#ffe66d', 16);
-    this.text(p.x, p.y - 46, 'DANO +35% TEMP.', '#fff3b0', 14);
+    // Se for o Bispo Central, aplicar buff de Fé temporário
+    if (npc.id === 'bispo_central') {
+      p.status.faith = (p.status.faith || 0) + 0.15; // +15% de dano e velocidade por 30s
+      p.status.faithT = 30;
+      this.banner('Bispo Cedric: +15% de Fé temporária!', '#a23b3b', 3);
+    }
     this.sfx.heal();
     this.sfx.upgrade();
     this.discoverLore('clero', 'confissao');
-    this.showDialog('⛪ Confissão Aceita', '"Que a luz do Senhor vos cubra, filho."<div class="confessTag">+10 de vida · +2 inteligência · dano +35% (temporário)</div>', '<button class="btn" id="dlgOk2">Amém</button>');
+    this.showDialog('⛪ Confissão Aceita', '"Que a luz do Senhor vos cubra, filho."<div class="confessTag">+10 de vida · +2 inteligência · dano +35% (temporário)</div>' + (npc.id === 'bispo_central' ? '<div class="confessTag">+15% Fé temporária</div>' : ''), '<button class="btn" id="dlgOk2">Amém</button>');
     byId('dlgOk2').onclick = () => this.closeDialog();
     this.hud();
   },

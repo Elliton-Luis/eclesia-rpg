@@ -169,6 +169,10 @@ class World {
     };
 
     let c = '';
+    // igreja central na praça (gx 117-122, gy 118-123)
+    const centralChurch = (gx >= 117 && gx <= 122 && gy >= 118 && gy <= 123);
+    if (centralChurch) return 'p'; // mesma cor da pedra da praça para manter visual
+
     // igreja
     c = house([105, 108, 7, 5, 'f', 'none']);
     if (c) return c;

@@ -61,7 +61,7 @@ class Player {
     st.dur -= dt;
     if (st.dur <= 0) { st.dmg = 0; st.spd = 0; st.regen = 0; }
     if (st.shieldT > 0) st.shieldT -= dt; else st.shield = 0;
-    // Fadiga espiritual (de Examplexorcismo): lentidão visível e leve enfraquecimento.
+    // Fadiga espiritual (de exorcismo): lentidão visível e leve enfraquecimento.
     if (st.fatigue > 0) {
       st.fatigue -= dt;
       if (Math.random() < 0.25) {
@@ -71,6 +71,11 @@ class Player {
           color: '#7a7a8a', size: 2 + Math.random(), grav: 40
         }));
       }
+    }
+    // Fe de fé: bônus temporário decrescente
+    if (st.faithT > 0) {
+      st.faithT -= dt;
+      if (st.faithT <= 0) { st.faith = Math.max(0, st.faith - 0.02); }
     }
     if (st.regen > 0 && this.hp < this.maxHp) {
       this.hp = Math.min(this.maxHp, this.hp + this.maxHp * st.regen * dt);
