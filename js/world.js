@@ -7,156 +7,297 @@ function mulberry32(a) {
   };
 }
 
-const SOLIDS = new Set(['t', 'r', 'w', 'h', 'v']);
+// Sólidos: blocos que impedem passagem
+const SOLIDS = new Set(['t', 'r', 'w', 'h', 'v', 'q', 'l', 'k', 'o', 'T']);
 
-const ZONES = [
-  { name: 'Rio', x: 0, y: 14, w: 109, h: 2 },
-  { name: 'Prado Sereno', x: 2, y: 16, w: 17, h: 30 },
-  { name: 'Vila de Pedra', x: 26, y: 17, w: 22, h: 16 },
-  { name: 'Floresta dos Goblins', x: 49, y: 8, w: 27, h: 38 },
-  { name: 'Catacumbas', x: 76, y: 26, w: 17, h: 21 },
-  { name: 'Gruta do Execra', x: 96, y: 26, w: 13, h: 21 }
-];
+// Chars sobre os quais pode nascer spawn (permitem andar)
+const WALK_SPAWN = new Set(['g', 'p', 'y', 'c', 'f', 'z', 'b', 'x', 's', 'd']);
 
-const NPC_DEFS = [
-  { id: 'ferreiro', name: 'Ferreiro', kind: 'forge', x: 33, y: 19, color: '#b5651d', accent: '#ffb020' },
-  { id: 'vendedor', name: 'Vendedor', kind: 'shop', x: 42, y: 19, color: '#2980b9', accent: '#7ec8e3' },
-  { id: 'mestre', name: 'Mestre das Artes', kind: 'skills', x: 44, y: 26, color: '#8e44ad', accent: '#d8a1ff' },
-  { id: 'guia', name: 'Cronista', kind: 'guide', x: 37, y: 26, color: '#27ae60', accent: '#a8e6a1',
-    text: 'Olá, viajante! Derrote o Chefe Tribal na floresta para obter o Cristal da Floresta e abrir as Catacumbas. Lá, o Rei da Noite guarda o Cristal Sombrio. Com ele, você enfrentará o Titã do Execra na gruta proibida. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' }
-];
+const WILD_MONSTERS = [['slime', 3], ['rato', 2], ['wolf', 1], ['bat', 1]];
 
-const SPAWNS = [
-  {
-    zone: 'Prado Sereno',
-    defs: [
-      { kind: 'slime', x: 7 * TILE, y: 40 * TILE }, { kind: 'slime', x: 12 * TILE, y: 42 * TILE },
-      { kind: 'slime', x: 5 * TILE, y: 33 * TILE }, { kind: 'slime', x: 14 * TILE, y: 30 * TILE },
-      { kind: 'bat', x: 17 * TILE, y: 26 * TILE }, { kind: 'wolf', x: 4 * TILE, y: 44 * TILE },
-      { kind: 'bomber', x: 10 * TILE, y: 36 * TILE }
-    ]
-  },
-  {
-    zone: 'Floresta dos Goblins',
-    defs: [
-      { kind: 'goblin', x: 52 * TILE, y: 24 * TILE }, { kind: 'goblin', x: 55 * TILE, y: 30 * TILE },
-      { kind: 'goblin', x: 59 * TILE, y: 34 * TILE }, { kind: 'goblin', x: 58 * TILE, y: 26 * TILE },
-      { kind: 'archer', x: 53 * TILE, y: 18 * TILE }, { kind: 'archer', x: 64 * TILE, y: 22 * TILE },
-      { kind: 'bat', x: 64 * TILE, y: 16 * TILE }, { kind: 'bat', x: 70 * TILE, y: 20 * TILE },
-      { kind: 'bat', x: 66 * TILE, y: 40 * TILE }, { kind: 'bat', x: 74 * TILE, y: 32 * TILE },
-      { kind: 'slime', x: 62 * TILE, y: 44 * TILE }, { kind: 'wolf', x: 68 * TILE, y: 10 * TILE },
-      { kind: 'bomber', x: 56 * TILE, y: 40 * TILE }, { kind: 'bomber', x: 72 * TILE, y: 38 * TILE },
-      { kind: 'krol_chefe', x: 62 * TILE, y: 30 * TILE, bossRoom: true }
-    ]
-  },
-  {
-    zone: 'Catacumbas',
-    defs: [
-      { kind: 'slime', x: 78 * TILE, y: 40 * TILE }, { kind: 'slime', x: 86 * TILE, y: 44 * TILE },
-      { kind: 'skeleton', x: 82 * TILE, y: 34 * TILE }, { kind: 'skeleton', x: 89 * TILE, y: 42 * TILE },
-      { kind: 'spider', x: 80 * TILE, y: 30 * TILE }, { kind: 'spider', x: 88 * TILE, y: 28 * TILE },
-      { kind: 'wraith', x: 84 * TILE, y: 40 * TILE }, { kind: 'wraith', x: 76 * TILE, y: 34 * TILE },
-      { kind: 'gere_osso', x: 84 * TILE, y: 34 * TILE, bossRoom: true }
-    ]
-  },
-  {
-    zone: 'Gruta do Execra',
-    defs: [
-      { kind: 'golem', x: 100 * TILE, y: 40 * TILE }, { kind: 'golem', x: 105 * TILE, y: 42 * TILE },
-      { kind: 'shaman', x: 102 * TILE, y: 32 * TILE }, { kind: 'shaman', x: 104 * TILE, y: 44 * TILE },
-      { kind: 'wraith', x: 106 * TILE, y: 30 * TILE }, { kind: 'bomber', x: 98 * TILE, y: 36 * TILE },
-      { kind: 'titan', x: 103 * TILE, y: 36 * TILE, bossRoom: true }
-    ]
+const hash2 = (a, b) => {
+  let v = (a * 928371 + b * 123457 + WORLD_SEED * 7919) >>> 0;
+  v ^= v >>> 13;
+  v = (v * 1274126177) | 0;
+  return v ^ (v >>> 16);
+};
+
+function weightedPick(tbl, h) {
+  let sum = 0;
+  for (const e of tbl) sum += e[1];
+  let r = (h >>> 0) % sum;
+  for (const e of tbl) {
+    if (r < e[1]) return e[0];
+    r -= e[1];
   }
-];
+  return tbl[0][0];
+}
 
 class World {
   constructor() {
-    this.cols = 110;
-    this.rows = 50;
-    this.tiles = [];
-    this.gates = GATES.map(g => Object.assign({}, g, { open: false }));
+    this.cols = WORLD_W;
+    this.rows = WORLD_H;
+    this.chunks = new Map();
+    this.destroyedKeys = new Set();
+    this.gates = []; // mantido por compatibilidade; selos (NPCs) substituem os portões
   }
 
-  gateBox(b) {
-    for (const g of this.gates) {
-      if (g.open) continue;
-      const gb = { x: g.x, y: g.y, w: g.w, h: g.h };
-      if (rectOverlap(b, gb)) return g;
-    }
-    return null;
-  }
+  chunkKey(cx, cy) { return cx + '_' + cy; }
+  chunkSize() { return CHUNK; }
 
-  build() {
-    const W = this.cols, H = this.rows;
-    const rnd = mulberry32(20240811);
-    const map = [];
-    for (let y = 0; y < H; y++) {
-      map.push([]);
-      for (let x = 0; x < W; x++) map[y].push('g');
-    }
-    const rect = (x0, y0, x1, y1, c) => {
-      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-        if (y >= 0 && y < H && x >= 0 && x < W) map[y][x] = c;
+  // região com maior prioridade que cobre o tile
+  regionAt(gx, gy) {
+    let best = null;
+    for (const r of REGIONS) {
+      if (gx >= r.x && gx < r.x + r.w && gy >= r.y && gy < r.y + r.h) {
+        if (!best || r.priority > best.priority) best = r;
       }
+    }
+    return best;
+  }
+
+  regionOfChunk(cx, cy) {
+    return this.regionAt(cx * CHUNK, cy * CHUNK);
+  }
+
+  // char determinístico para um tile global
+  charFor(gx, gy) {
+    // borda do mundo -> rochas
+    if (gx <= 0 || gx >= WORLD_W - 1 || gy <= 3 || gy >= WORLD_H - 3) return 'r';
+    const r = this.regionAt(gx, gy);
+    if (!r) return this.wildChar(gx, gy);
+    const p = (hash2(gx, gy) >>> 0) % 1000 / 1000;
+    const d = r.decor;
+    const len = r.w, edgy = gx === r.x || gx === r.x + r.w - 1 || gy === r.y || gy === r.y + r.h - 1;
+
+    if (d === 'town') return this.townChar(gx, gy);
+    if (d === 'cave' || d === 'arcano') {
+      if (edgy) return 'v';
+      if (d === 'cave') {
+        if (p < 0.05) return 'r';
+        return 'c';
+      }
+      if (p < 0.15) return 'x';
+      return p < 0.55 ? 'f' : 'c';
+    }
+    if (d === 'hell') {
+      if (edgy) return 'v';
+      if (p < 0.16) return 'l';
+      if (p < 0.22) return 'r';
+      return 'c';
+    }
+    if (d === 'fort') {
+      if (edgy) return 'v';
+      if (p < 0.2) return 'h';
+      if (p < 0.42) return 'z';
+      if (p < 0.5) return 'g';
+      return 'g';
+    }
+    if (d === 'swamp') {
+      if (p < 0.26) return 'q';
+      if (p < 0.5) return 's';
+      if (p < 0.54) return 't';
+      return 'g';
+    }
+    if (d === 'rocky') {
+      if (p < 0.55) return 'r';
+      if (p < 0.58) return 't';
+      return 'g';
+    }
+    if (d === 'cemetery') {
+      if (p < 0.06) return 'b';
+      if (p < 0.1) return 't';
+      if (p < 0.13) return 'r';
+      return 'g';
+    }
+    if (d === 'ruins') {
+      if (p < 0.28) return 'x';
+      if (p < 0.72) return 'f';
+      return 'g';
+    }
+    if (d === 'fields') {
+      if (p < 0.55 && ((gx + len) & 1) === 0) return 'y';
+      if (p < 0.62) return 'g';
+      if (p < 0.66) return 't';
+      return 'g';
+    }
+    if (d === 'forest') {
+      const leafClear = this.destroyedKeys.has(gx + ',' + gy);
+      if (p < 0.4 && !leafClear) return 't';
+      if (p < 0.45) return 'r';
+      return 'g';
+    }
+    // grass / others
+    if (p < 0.07) return 't';
+    if (p < 0.1) return 'r';
+    return 'g';
+  }
+
+  wildChar(gx, gy) {
+    const p = (hash2(gx, gy) >>> 0) % 1000 / 1000;
+    if (p < 0.18) return 't';
+    if (p < 0.21) return 'r';
+    return 'g';
+  }
+
+  // layout fixo da Vila de Pedra
+  townChar(gx, gy) {
+    // praça central + ruas de pedra
+    const inPlaza =
+      (gx >= 112 && gx <= 123 && gy >= 115 && gy <= 124) ||
+      (gx >= 113 && gx <= 122 && gy >= 128 && gy <= 130) ||
+      (gx >= 108 && gx <= 112 && gy >= 129 && gy <= 130) ||
+      (gx >= 123 && gx <= 129 && gy >= 129 && gy <= 130) ||
+      (gx >= 107 && gx <= 109 && gy >= 113 && gy <= 133) ||
+      (gx >= 130 && gx <= 132 && gy >= 109 && gy <= 134);
+    if (inPlaza) return 'p';
+
+    const house = h => {
+      const r = h;
+      const inside = gx >= r[0] && gx < r[0] + r[2] && gy >= r[1] && gy < r[1] + r[3];
+      if (!inside) return '';
+      const core = gx > r[0] && gx < r[0] + r[2] - 1 && gy > r[1] && gy < r[1] + r[3] - 1;
+      if (gy === r[1] + r[3] - 1 && gx === Math.floor(r[0] + r[2] / 2) && r[5] !== 'none') return 'd';
+      if (core) return r[4] || 'f';
+      if (r[5] === 'center') return r[4] || 'h';
+      return 'h';
     };
 
-    rect(0, 0, W - 1, 3, 'r');
-    rect(0, 14, W - 1, 15, 'w');
-    rect(22, 14, 25, 15, 'p');
-    rect(58, 14, 62, 15, 'p');
+    let c = '';
+    // igreja
+    c = house([105, 108, 7, 5, 'f', 'none']);
+    if (c) return c;
+    c = house([106, 108, 6, 5, 'f', 'none']);
+    if (c) return c;
+    // cruzeiro no altar da igreja
+    if (gx === 108 && gy === 109) return 'k';
+    // taverna
+    c = house([124, 110, 5, 4, 'f', 'none']);
+    if (c) return c;
+    if (gx === 126 && gy === 111) return 'o';
+    // torre do erudito
+    c = house([121, 132, 4, 4, 'f', 'none']);
+    if (c) return c;
+    if (gx === 123 && gy === 133) return 'T';
+    // casas do mercado
+    c = house([106, 128, 4, 4]);
+    if (c) return c;
+    c = house([111, 128, 4, 4]);
+    if (c) return c;
+    c = house([116, 128, 4, 4]);
+    if (c) return c;
+    // casas residenciais
+    c = house([104, 116, 3, 4]);
+    if (c) return c;
+    c = house([128, 116, 3, 4]);
+    if (c) return c;
+    c = house([128, 121, 3, 4]);
+    if (c) return c;
+    c = house([104, 135, 3, 4]);
+    if (c) return c;
+    c = house([127, 135, 3, 4]);
+    if (c) return c;
+    // varredura base
+    const p2 = (hash2(gx, gy) >>> 0) % 1000 / 1000;
+    if (p2 < 0.04) return 't';
+    if (p2 < 0.06) return 'r';
+    return 'g';
+  }
 
-    rect(26, 22, 48, 30, 'z');
-    rect(26, 30, 48, 33, 'h');
-
-    rect(30, 17, 35, 21, 'h'); rect(31, 18, 34, 20, 'f'); map[21][32] = 'd';
-    rect(39, 17, 44, 21, 'h'); rect(40, 18, 43, 20, 'f'); map[21][41] = 'd';
-
-    rect(30, 10, 32, 14, 'h'); map[13][31] = 'd';
-    rect(42, 10, 44, 14, 'h'); map[13][43] = 'd';
-
-    for (let y = 8; y <= 45; y++) for (let x = 49; x <= 75; x++) {
-      if (map[y][x] === 'g' && rnd() < 0.32) map[y][x] = 't';
+  genChunk(cx, cy) {
+    const tiles = [];
+    const o = cx * CHUNK, ot = cy * CHUNK;
+    const region = this.regionOfChunk(cx, cy);
+    for (let ly = 0; ly < CHUNK; ly++) {
+      tiles.push([]);
+      for (let lx = 0; lx < CHUNK; lx++) {
+        tiles[ly].push(this.charFor(o + lx, ot + ly));
+      }
     }
-    rect(49, 18, 75, 34, 'g');
+    return { cx, cy, tiles, region: region ? region.id : null, spawns: this.genSpawns(cx, cy) };
+  }
 
-    for (let y = 12; y <= 46; y++) for (let x = 2; x <= 19; x++) {
-      if (map[y][x] === 'g' && rnd() < 0.08) map[y][x] = 't';
+  genSpawns(cx, cy) {
+    const o = cx * CHUNK, ot = cy * CHUNK;
+    const reg = this.regionOfChunk(cx, cy);
+    const defs = [];
+    const density = reg ? reg.density : 1;
+    const n = density + ((hash2(cx, cy) >>> 0) % 2);
+    const rnd = mulberry32(hash2(cx * 91, cy * 17));
+    const table = reg && reg.monsters.length ? reg.monsters : WILD_MONSTERS;
+
+    // escolhe pontos de spawn em tiles caminháveis
+    const candidates = [];
+    for (let ly = 0; ly < CHUNK; ly++) {
+      for (let lx = 0; lx < CHUNK; lx++) {
+        const gx = o + lx, gy = ot + ly;
+        if (WALK_SPAWN.has(this.charFor(gx, gy))) candidates.push([gx, gy]);
+      }
     }
-    for (let y = 16; y <= 45; y++) for (let x = 2; x <= 19; x++) {
-      if (map[y][x] === 'g' && rnd() < 0.03) map[y][x] = 'r';
+    const popPoints = [];
+    for (let k = 0; k < n && candidates.length; k++) {
+      const idx = Math.floor(rnd() * candidates.length);
+      const [gx, gy] = candidates[idx];
+      candidates.splice(idx, 1);
+      popPoints.push([gx, gy]);
     }
-
-    rect(76, 26, 92, 46, 'v'); rect(77, 27, 91, 45, 'c');
-    map[29][76] = 'c'; map[30][76] = 'c'; map[31][76] = 'c';
-    map[30][80] = 'r'; map[42][88] = 'r'; map[36][85] = 'r';
-
-    rect(96, 26, 108, 46, 'v'); rect(97, 27, 107, 45, 'c');
-    map[29][96] = 'c'; map[30][96] = 'c'; map[31][96] = 'c';
-    map[30][103] = 'r'; map[42][100] = 'r';
-
-    for (let y = 4; y <= 46; y++) for (let x = 20; x <= 48; x++) {
-      if (map[y][x] === 'g' && rnd() < 0.02) map[y][x] = 'r';
+    for (const [gx, gy] of popPoints) {
+      defs.push({
+        kind: weightedPick(table, hash2(gx * 13, gy * 29)),
+        x: (gx + 0.5) * TILE, y: (gy + 0.5) * TILE,
+        monster: null, cool: Math.random() * 4, bossRoom: false
+      });
     }
+    // monstro raro em regiões perigosas
+    if (reg && reg.rares && reg.rares.length && reg.danger >= 3) {
+      const chance = reg.danger >= 4 ? 26 : 12;
+      if ((hash2(cx, cy) >>> 0) % 100 < chance && popPoints.length) {
+        const [gx, gy] = popPoints[0];
+        defs.push({
+          kind: reg.rares[Math.floor(((hash2(cx * 3, cy * 7)) >>> 0) % reg.rares.length)],
+          x: (gx + 0.5) * TILE, y: (gy + 0.5) * TILE,
+          monster: null, cool: Math.random() * 6, bossRoom: false, rare: true
+        });
+      }
+    }
+    // chefe da região
+    if (reg && reg.boss) {
+      const bx = reg.boss.x, by = reg.boss.y;
+      if (bx >= o && bx < o + CHUNK && by >= ot && by < ot + CHUNK) {
+        defs.push({
+          kind: reg.boss.kind,
+          x: (bx + 0.5) * TILE, y: (by + 0.5) * TILE,
+          monster: null, cool: 0, bossRoom: true
+        });
+      }
+    }
+    return defs;
+  }
 
-    this.tiles = map;
+  getChunk(cx, cy) {
+    const key = this.chunkKey(cx, cy);
+    let ch = this.chunks.get(key);
+    if (!ch) {
+      ch = this.genChunk(cx, cy);
+      this.chunks.set(key, ch);
+    }
+    return ch;
+  }
+
+  tileAt(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= this.cols || ty >= this.rows) return 'r';
+    const ch = this.getChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
+    return ch.tiles[ty % CHUNK][tx % CHUNK];
+  }
+
+  setTile(tx, ty, c) {
+    if (tx < 0 || ty < 0 || tx >= this.cols || ty >= this.rows) return;
+    const ch = this.getChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
+    ch.tiles[ty % CHUNK][tx % CHUNK] = c;
   }
 
   isSolid(tx, ty) {
-    if (tx < 0 || ty < 0 || tx >= this.cols || ty >= this.rows) return true;
-    return SOLIDS.has(this.tiles[ty][tx]);
-  }
-
-  destroyTrees(cx, cy, r) {
-    const x0 = Math.floor((cx - r) / TILE), x1 = Math.floor((cx + r) / TILE);
-    const y0 = Math.floor((cy - r) / TILE), y1 = Math.floor((cy + r) / TILE);
-    for (let ty = Math.max(0, y0); ty <= Math.min(this.rows - 1, y1); ty++) {
-      for (let tx = Math.max(0, x0); tx <= Math.min(this.cols - 1, x1); tx++) {
-        if (this.tiles[ty][tx] === 't' && Math.hypot((tx + 0.5) * TILE - cx, (ty + 0.5) * TILE - cy) <= r) {
-          this.tiles[ty][tx] = 'g';
-        }
-      }
-    }
+    return SOLIDS.has(this.tileAt(tx, ty));
   }
 
   solidPixel(x, y) {
@@ -174,10 +315,126 @@ class World {
     return false;
   }
 
+  gateBox() { return null; }
+
   move(e, dx, dy) {
     const b = e.box();
-    if (!this.solidBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h }) && !this.gateBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h })) e.x += dx;
-    if (!this.solidBox({ x: e.x - b.w / 2, y: b.y + dy, w: b.w, h: b.h }) && !this.gateBox({ x: e.x - b.w / 2, y: b.y + dy, w: b.w, h: b.h })) e.y += dy;
+    if (!this.solidBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h }) && !this.gateBox()) e.x += dx;
+    if (!this.solidBox({ x: e.x - b.w / 2, y: b.y + dy, w: b.w, h: b.h }) && !this.gateBox()) e.y += dy;
+  }
+
+  destroyTrees(cx, cy, r) {
+    const x0 = Math.floor((cx - r) / TILE), x1 = Math.floor((cx + r) / TILE);
+    const y0 = Math.floor((cy - r) / TILE), y1 = Math.floor((cy + r) / TILE);
+    for (let ty = Math.max(0, y0); ty <= Math.min(this.rows - 1, y1); ty++) {
+      for (let tx = Math.max(0, x0); tx <= Math.min(this.cols - 1, x1); tx++) {
+        const gx = tx, gy = ty;
+        if (Math.hypot((tx + 0.5) * TILE - cx, (ty + 0.5) * TILE - cy) <= r) {
+          if (this.tileAt(tx, ty) === 't') {
+            this.setTile(tx, ty, 'g');
+            this.destroyedKeys.add(gx + ',' + gy);
+          }
+        }
+      }
+    }
+  }
+
+  // carrega/descarrega chunks ao redor do jogador (apenas dados importantes persistem)
+  updateChunks(cam, player) {
+    const ccx = Math.floor((cam.x + cam.w / 2) / (CHUNK * TILE));
+    const ccy = Math.floor((cam.y + cam.h / 2) / (CHUNK * TILE));
+    const R = 2;
+    const keep = new Set();
+    for (let dx = -R; dx <= R; dx++) {
+      for (let dy = -R; dy <= R; dy++) {
+        const cx = ccx + dx, cy = ccy + dy;
+        if (cx < 0 || cy < 0 || cx >= Math.ceil(this.cols / CHUNK) || cy >= Math.ceil(this.rows / CHUNK)) continue;
+        keep.add(this.chunkKey(cx, cy));
+        this.getChunk(cx, cy);
+      }
+    }
+    for (const [key, ch] of this.chunks) {
+      if (keep.has(key)) continue;
+      const ddx = ch.cx - ccx, ddy = ch.cy - ccy;
+      if (Math.hypot(ddx, ddy) > R + 1.6) this.unloadChunk(ch);
+    }
+  }
+
+  unloadChunk(ch) {
+    // remove monstros comuns do chunk (ressurgirão ao voltar); chefes persistem via g
+    for (const d of ch.spawns) {
+      if (d.monster && !d.monster.dead) {
+        if (d.bossRoom) { d.monster = null; continue; }
+        d.monster.dead = true;
+        d.monster = null;
+      } else if (d.monster && d.monster.dead) {
+        d.monster = null;
+      }
+    }
+    this.chunks.delete(this.chunkKey(ch.cx, ch.cy));
+  }
+
+  spawnPointUpdate(d, dt, g) {
+    const p = g.player;
+    if (d.monster) {
+      if (d.monster.dead) {
+        d.cool = d.bossRoom ? 999 : 6 + Math.random() * 6;
+        if (d.bossRoom && d.monster.def && d.monster.def.crystal && d.monster.def.finalBoss) d.cool = 999;
+        d.monster = null;
+      }
+      return;
+    }
+    if (d.cool > 0) { d.cool -= dt; return; }
+    const dd = Math.hypot(d.x - p.x, d.y - p.y);
+    if (dd > 1500) return;
+    if (dd < 210) { d.cool = 1 + Math.random() * 1.5; return; } // nunca nasce em cima do jogador
+
+    let m;
+    const def = MONSTERS[d.kind];
+    if (!def) { d.cool = 999; return; }
+    // chefe definitivo: só revive de novo se o final ainda não ocorreu
+    if (d.bossRoom && def.finalBoss && g.ending) { d.cool = 999; return; }
+    if (d.bossRoom) {
+      const crystal = def.crystal;
+      if (crystal && g.crystals[crystal]) { d.cool = 999; return; }
+      m = new Monster(def, d.x, d.y, g, true);
+      g.bossesActive.push(m);
+    } else {
+      m = new Monster(def, d.x, d.y, g);
+    }
+    if (g.world.solidBox(m.box())) {
+      let placed = false;
+      for (let r = 1; r <= 4 && !placed; r++) {
+        for (let dy = -r; dy <= r && !placed; dy++) {
+          for (let dx = -r; dx <= r && !placed; dx++) {
+            const nx = d.x + dx * TILE, ny = d.y + dy * TILE;
+            const b = { x: nx - m.w / 2, y: ny - m.h / 2, w: m.w, h: m.h };
+            if (!g.world.solidBox(b)) { m.x = nx; m.y = ny; placed = true; }
+          }
+        }
+      }
+    }
+    d.monster = m;
+    g.monsters.push(m);
+  }
+
+  update(dt, g) {
+    this.updateChunks(g.cam, g.player);
+    const p = g.player;
+    const px = p.x, py = p.y;
+    for (const ch of this.chunks.values()) {
+      const cx0 = ch.cx * CHUNK * TILE, cy0 = ch.cy * CHUNK * TILE;
+      const cx1 = cx0 + CHUNK * TILE, cy1 = cy0 + CHUNK * TILE;
+      if (px < cx0 - 1600 || px > cx1 + 1600 || py < cy0 - 1600 || py > cy1 + 1600) continue;
+      if (ch.region === 'vila') continue;
+      for (const d of ch.spawns) this.spawnPointUpdate(d, dt, g);
+    }
+  }
+
+  resetSpawns() {
+    for (const ch of this.chunks.values()) {
+      for (const d of ch.spawns) { d.monster = null; d.cool = 0; }
+    }
   }
 
   drawTile(ctx, tx, ty, c, t) {
@@ -190,6 +447,15 @@ class World {
           ctx.fillStyle = '#4a7c3c';
           ctx.fillRect(x + 6, y + 8, 4, 4);
           ctx.fillRect(x + 20, y + 20, 3, 3);
+        }
+        break;
+      case 'y':
+        ctx.fillStyle = '#c9b84b';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#a89a34';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(x + 4, y + 6 + i * 9, 24, 2);
+          ctx.fillRect(x + 8, y + 10 + i * 9, 16, 1);
         }
         break;
       case 'p':
@@ -235,6 +501,26 @@ class World {
         ctx.closePath();
         ctx.fill();
         break;
+      case 's':
+        ctx.fillStyle = '#5a4b3a';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#6f5a42';
+        ctx.beginPath();
+        ctx.ellipse(x + 16, y + 16, 8, 5, 0, 0, 6.283);
+        ctx.fill();
+        break;
+      case 'q':
+        ctx.fillStyle = '#3a5f4a';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.strokeStyle = 'rgba(90,150,110,0.5)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 2; i++) {
+          const yy = y + 10 + i * 14 + Math.sin(t * 2 + tx * 0.7 + i) * 2;
+          ctx.beginPath();
+          ctx.arc(x + 16, yy, 9, 0, 6.283);
+          ctx.stroke();
+        }
+        break;
       case 'w':
         ctx.fillStyle = '#3a6fa8';
         ctx.fillRect(x, y, TILE, TILE);
@@ -247,6 +533,89 @@ class World {
           ctx.lineTo(x + TILE - 2, yy);
           ctx.stroke();
         }
+        break;
+      case 'l':
+        ctx.fillStyle = '#c0392b';
+        ctx.fillRect(x, y, TILE, TILE);
+        const gl = 0.6 + Math.sin(t * 4 + tx * 0.6 + ty * 0.4) * 0.3;
+        ctx.fillStyle = 'rgba(255,140,40,' + gl.toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 16, 9, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,220,120,' + (gl * 0.8).toFixed(2) + ')';
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 16, 4, 0, 6.283);
+        ctx.fill();
+        break;
+      case 'b':
+        ctx.fillStyle = 'rgba(20,24,18,0.35)';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#9a9a9a';
+        ctx.fillRect(x + 9, y + 8, 14, 18);
+        ctx.fillStyle = '#c8c8c8';
+        ctx.fillRect(x + 11, y + 10, 10, 6);
+        ctx.fillStyle = '#6a6a6a';
+        ctx.fillRect(x + 15, y + 4, 2, 6);
+        ctx.fillRect(x + 12, y + 7, 8, 2);
+        break;
+      case 'x':
+        ctx.fillStyle = '#6a6058';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#7a7068';
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y + 24);
+        ctx.lineTo(x + 8, y + 4);
+        ctx.lineTo(x + 24, y + 7);
+        ctx.lineTo(x + 20, y + 26);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#55504a';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(x + 8 + i * 5, y + 12, 3, 3);
+        }
+        break;
+      case 'k':
+        ctx.fillStyle = '#c8bda0';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#4a4440';
+        ctx.beginPath();
+        ctx.moveTo(x - 2, y + 8);
+        ctx.lineTo(x + 16, y - 4);
+        ctx.lineTo(x + 34, y + 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffd76a';
+        ctx.fillRect(x + 15, y - 2, 3, 12);
+        ctx.fillRect(x + 9, y + 2, 15, 3);
+        break;
+      case 'o':
+        ctx.fillStyle = '#8a6a45';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#5a4435';
+        ctx.beginPath();
+        ctx.moveTo(x - 2, y + 10);
+        ctx.lineTo(x + 16, y - 3);
+        ctx.lineTo(x + 34, y + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#c9a050';
+        ctx.fillRect(x + 20, y + 14, 8, 8);
+        ctx.fillStyle = '#b5651d';
+        ctx.fillRect(x + 22, y + 16, 4, 4);
+        break;
+      case 'T':
+        ctx.fillStyle = '#6a5a4a';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#9a8a7a';
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 25, 11, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#4a6a8a';
+        ctx.fillRect(x + 13, y + 5, 6, 22);
+        ctx.fillStyle = '#7a9ac0';
+        ctx.beginPath();
+        ctx.arc(x + 16, y + 4, 4, 0, 6.283);
+        ctx.fill();
         break;
       case 'h':
         ctx.fillStyle = '#a08a68';
@@ -295,99 +664,14 @@ class World {
     const tx1 = Math.min(this.cols - 1, Math.ceil((cam.x + cam.w) / TILE) + 1);
     const ty0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
     const ty1 = Math.min(this.rows - 1, Math.ceil((cam.y + cam.h) / TILE) + 1);
+    let lastCh = null;
     for (let ty = ty0; ty <= ty1; ty++) {
       for (let tx = tx0; tx <= tx1; tx++) {
-        this.drawTile(ctx, tx, ty, this.tiles[ty][tx], t);
-      }
-    }
-    for (const g of this.gates) {
-      if (g.open) continue;
-      if (g.x + g.w < cam.x || g.x > cam.x + cam.w || g.y + g.h < cam.y || g.y > cam.y + cam.h) continue;
-      ctx.fillStyle = 'rgba(180,90,255,0.28)';
-      ctx.fillRect(g.x, g.y, g.w, g.h);
-      ctx.strokeStyle = '#b05cff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(g.x + 1, g.y + 1, g.w - 2, g.h - 2);
-      const n = 4;
-      for (let i = 0; i < n; i++) {
-        const gy = g.y + (g.h * (i + 0.5)) / n;
-        const ph = t * 3 + i;
-        ctx.globalAlpha = 0.5 + Math.sin(ph * 2) * 0.3;
-        ctx.strokeStyle = '#e0c0ff';
-        ctx.beginPath();
-        ctx.moveTo(g.x, gy - Math.sin(ph) * 4);
-        ctx.lineTo(g.x + g.w, gy + Math.cos(ph) * 4);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      ctx.font = '700 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#f0e0ff';
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 3;
-      ctx.strokeText(g.name, g.x + g.w / 2, g.y + g.h / 2);
-      ctx.fillText(g.name, g.x + g.w / 2, g.y + g.h / 2);
-    }
-  }
-}
-
-class Zone {
-  constructor(data) {
-    this.zoneName = data.zone;
-    this.defs = data.defs.map(d => ({ kind: d.kind, x: d.x, y: d.y, monster: null, cool: 0, bossRoom: !!d.bossRoom }));
-  }
-
-  reset() {
-    for (const d of this.defs) { d.monster = null; d.cool = 0; }
-  }
-
-  update(dt, g) {
-    const p = g.player;
-    const bossDefeated = g.defeatedBosses && g.defeatedBosses[this.zoneName];
-    const spawnMultiplier = bossDefeated ? 0.15 : 1; // Drastically reduce spawns after boss defeat
-    const spawnChance = bossDefeated ? 0.05 : 1; // Only 5% chance to spawn after boss defeat
-    
-    for (const d of this.defs) {
-      if (d.monster) {
-        if (d.monster.dead) { d.cool = d.kind === 'krol_chefe' || d.kind === 'gere_osso' || d.kind === 'titan' ? 999 : 6; d.monster = null; }
-        continue;
-      }
-      if (d.cool > 0) { d.cool -= dt; continue; }
-      if (Math.hypot(d.x - p.x, d.y - p.y) < 1400) {
-        // Skip spawning regular monsters if boss is defeated (low chance)
-        if (bossDefeated && !d.bossRoom && Math.random() > spawnChance) {
-          d.cool = 30 + Math.random() * 60; // Long cooldown
-          continue;
+        const cx = Math.floor(tx / CHUNK), cy = Math.floor(ty / CHUNK);
+        if (!lastCh || lastCh.cx !== cx || lastCh.cy !== cy) {
+          lastCh = this.getChunk(cx, cy);
         }
-        
-        let m = null;
-        if (d.bossRoom) {
-          const crystal = MONSTERS[d.kind].crystal;
-          if (g.crystals && g.crystals[crystal]) { d.cool = 999; continue; }
-          m = new Monster(MONSTERS[d.kind], d.x, d.y, g, true);
-          g.bossesActive.push(m);
-        } else {
-          m = new Monster(MONSTERS[d.kind], d.x, d.y, g);
-        }
-        if (g.world.solidBox(m.box())) {
-          let placed = false;
-          for (let r = 1; r <= 4 && !placed; r++) {
-            for (let dy = -r; dy <= r && !placed; dy++) {
-              for (let dx = -r; dx <= r && !placed; dx++) {
-                const nx = d.x + dx * TILE, ny = d.y + dy * TILE;
-                const b = { x: nx - m.w / 2, y: ny - m.h / 2, w: m.w, h: m.h };
-                if (!g.world.solidBox(b)) { m.x = nx; m.y = ny; placed = true; }
-              }
-            }
-          }
-        }
-        d.monster = m;
-        g.monsters.push(m);
-        
-        // Increase cooldown significantly after boss defeat
-        if (bossDefeated && !d.bossRoom) {
-          d.cool = (6 + Math.random() * 10) * (1 / spawnMultiplier);
-        }
+        this.drawTile(ctx, tx, ty, lastCh.tiles[ty % CHUNK][tx % CHUNK], t);
       }
     }
   }

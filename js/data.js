@@ -121,7 +121,6 @@ const CASTA_ORDER = ['clero', 'populum', 'mago'];
 const MAX_EXTRA_SKILLS = 3;
 
 const EXTRA_SKILLS = [
-  // { id, name, key, cd, color, cost, desc, ...efeito }
   { id: 'reza_maior', name: 'Reza Maior', key: 'R', cd: 9, color: '#fff3b0', cost: 150,
     desc: 'Aura sagrada que explode ao redor.', dmg: 1.3, type: T.HOLY, radius: 140 },
   { id: 'estrela', name: 'Estrela Cadente', key: 'R', cd: 8, color: '#ffd6ff', cost: 150,
@@ -177,91 +176,390 @@ const MODERN_ITEMS = {
 };
 
 const MONSTERS = {
-  slime: {
-    id: 'slime', name: 'Slime', color: '#6abf4b', dark: '#3f7a2e', size: 30,
+  slime: { id: 'slime', name: 'Slime', color: '#6abf4b', dark: '#3f7a2e', size: 30,
     hp: 30, dmg: 8, speed: 95, behavior: 'hop', gold: [3, 6],
-    resist: [T.PHYS], weak: [T.MAGIC], aggro: 340
-  },
-  bat: {
-    id: 'bat', name: 'Morcego', color: '#7a6ba8', dark: '#4b3f6b', size: 26,
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 340, tier: 1 },
+  bat: { id: 'bat', name: 'Morcego', color: '#7a6ba8', dark: '#4b3f6b', size: 26,
     hp: 22, dmg: 7, speed: 185, behavior: 'swoop', fly: true, gold: [4, 8],
-    resist: [T.MAGIC], weak: [T.PHYS], aggro: 420
-  },
-  wolf: {
-    id: 'wolf', name: 'Lobo', color: '#9a9aa0', dark: '#5f5f6a', size: 40,
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 420, tier: 1 },
+  wolf: { id: 'wolf', name: 'Lobo', color: '#9a9aa0', dark: '#5f5f6a', size: 40,
     hp: 70, dmg: 13, speed: 230, behavior: 'swoop', gold: [8, 14],
-    resist: [T.MAGIC], weak: [T.PHYS], aggro: 460
-  },
-  archer: {
-    id: 'archer', name: 'Arqueiro Goblin', color: '#7fbf4b', dark: '#4b7a2e', size: 32,
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 460, tier: 2 },
+  archer: { id: 'archer', name: 'Arqueiro Goblin', color: '#7fbf4b', dark: '#4b7a2e', size: 32,
     hp: 55, dmg: 12, speed: 145, behavior: 'range', gold: [10, 18],
-    resist: [T.HOLY], weak: [T.PHYS], aggro: 500, shots: 1
-  },
-  bomber: {
-    id: 'bomber', name: 'Bomba-viva', color: '#d966ff', dark: '#7a2e8a', size: 30,
+    resist: [T.HOLY], weak: [T.PHYS], aggro: 500, shots: 1, tier: 2 },
+  bomber: { id: 'bomber', name: 'Bomba-viva', color: '#d966ff', dark: '#7a2e8a', size: 30,
     hp: 26, dmg: 22, speed: 150, behavior: 'chase', gold: [6, 10],
-    resist: [T.MAGIC], weak: [T.PHYS], aggro: 300, explodeOnDeath: true
-  },
-  spider: {
-    id: 'spider', name: 'Aranha', color: '#9a4b8a', dark: '#5f2a55', size: 34,
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 300, explodeOnDeath: true, tier: 2 },
+  spider: { id: 'spider', name: 'Aranha', color: '#9a4b8a', dark: '#5f2a55', size: 34,
     hp: 45, dmg: 9, speed: 175, behavior: 'chase', gold: [7, 12],
-    resist: [T.PHYS], weak: [T.MAGIC], aggro: 400, venom: true
-  },
-  wraith: {
-    id: 'wraith', name: 'Espectro', color: '#9ad0e0', dark: '#5a8a9a', size: 34,
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 400, venom: true, tier: 2 },
+  wraith: { id: 'wraith', name: 'Espectro', color: '#9ad0e0', dark: '#5a8a9a', size: 34,
     hp: 65, dmg: 15, speed: 120, behavior: 'wraith', fly: true, gold: [14, 22],
-    resist: [T.PHYS], weak: [T.HOLY], aggro: 420, invokes: true
-  },
-  goblin: {
-    id: 'goblin', name: 'Goblin', color: '#8fbf4b', dark: '#5a7a2e', size: 34,
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 420, invokes: true, tier: 3 },
+  goblin: { id: 'goblin', name: 'Goblin', color: '#8fbf4b', dark: '#5a7a2e', size: 34,
     hp: 60, dmg: 14, speed: 150, behavior: 'chase', gold: [8, 15],
-    resist: [T.HOLY], weak: [T.PHYS], aggro: 380
-  },
-  skeleton: {
-    id: 'skeleton', name: 'Esqueleto', color: '#d9d0c0', dark: '#9a8f7a', size: 38,
+    resist: [T.HOLY], weak: [T.PHYS], aggro: 380, tier: 2 },
+  skeleton: { id: 'skeleton', name: 'Esqueleto', color: '#d9d0c0', dark: '#9a8f7a', size: 38,
     hp: 85, dmg: 16, speed: 105, behavior: 'chase', jump: 380, gold: [12, 20],
-    resist: [T.PHYS], weak: [T.HOLY], aggro: 360
-  },
-  golem: {
-    id: 'golem', name: 'Golem', color: '#9a9a9a', dark: '#5f5f5f', size: 52,
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 360, tier: 3 },
+  golem: { id: 'golem', name: 'Golem', color: '#9a9a9a', dark: '#5f5f5f', size: 52,
     hp: 240, dmg: 26, speed: 55, behavior: 'slowChase', gold: [25, 40],
-    resist: [T.PHYS], weak: [T.MAGIC], aggro: 330
-  },
-  shaman: {
-    id: 'shaman', name: 'Xamã', color: '#b58a4b', dark: '#7a5a2b', size: 34,
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 330, tier: 3 },
+  shaman: { id: 'shaman', name: 'Xamã', color: '#b58a4b', dark: '#7a5a2b', size: 34,
     hp: 70, dmg: 18, speed: 115, behavior: 'range', gold: [18, 30],
-    resist: [T.MAGIC], weak: [T.HOLY], aggro: 420, shots: 2
-  },
+    resist: [T.MAGIC], weak: [T.HOLY], aggro: 420, shots: 2, tier: 3 },
+  // --- Novos monstros (biomas) ---
+  rato: { id: 'rato', name: 'Rato', color: '#a0908a', dark: '#5f5248', size: 22,
+    hp: 18, dmg: 6, speed: 210, behavior: 'hop', gold: [2, 5],
+    resist: [], weak: [], aggro: 320, tier: 1 },
+  espantalho: { id: 'espantalho', name: 'Espantalho', color: '#c9a050', dark: '#8a6a2b', size: 44,
+    hp: 110, dmg: 16, speed: 115, behavior: 'chase', gold: [12, 20],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 360, tier: 2 },
+  javali: { id: 'javali', name: 'Javali', color: '#b5826a', dark: '#7a4b35', size: 44,
+    hp: 130, dmg: 22, speed: 200, behavior: 'swoop', gold: [16, 26],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 440, tier: 2 },
+  aguia: { id: 'aguia', name: 'Águia', color: '#c8b39a', dark: '#7a6a4b', size: 30,
+    hp: 60, dmg: 12, speed: 240, behavior: 'swoop', fly: true, gold: [12, 20],
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 480, tier: 2 },
+  crocodilo: { id: 'crocodilo', name: 'Crocodilo', color: '#4b8a4b', dark: '#2f5f2f', size: 56,
+    hp: 240, dmg: 32, speed: 95, behavior: 'slowChase', gold: [30, 48],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 360, tier: 3 },
+  lodo_corrupto: { id: 'lodo_corrupto', name: 'Lodo Corrupto', color: '#6a5a3a', dark: '#4b3f2b', size: 32,
+    hp: 60, dmg: 16, speed: 115, behavior: 'hop', gold: [16, 28],
+    resist: [T.MAGIC], weak: [T.HOLY], aggro: 320, venom: true, tier: 3 },
+  fogo_fatuo: { id: 'fogo_fatuo', name: 'Fogo-fátuo', color: '#bfe0a0', dark: '#7a9a4b', size: 30,
+    hp: 80, dmg: 14, speed: 145, behavior: 'wraith', fly: true, gold: [24, 40],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 440, invokes: true, tier: 3 },
+  zumbi: { id: 'zumbi', name: 'Zumbi', color: '#8a9a7a', dark: '#5a6a4b', size: 42,
+    hp: 145, dmg: 18, speed: 88, behavior: 'slowChase', gold: [20, 34],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 340, tier: 3 },
+  corvo: { id: 'corvo', name: 'Corvo', color: '#3a3a4a', dark: '#232330', size: 26,
+    hp: 40, dmg: 10, speed: 210, behavior: 'swoop', fly: true, gold: [8, 14],
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 460, tier: 2 },
+  necromante: { id: 'necromante', name: 'Necromante', color: '#7a5a6a', dark: '#4b3043', size: 36,
+    hp: 110, dmg: 20, speed: 130, behavior: 'range', gold: [34, 56],
+    resist: [T.HOLY], weak: [T.PHYS], aggro: 460, shots: 2, tier: 4 },
+  gargula: { id: 'gargula', name: 'Gárgula', color: '#6a6f7a', dark: '#3f434b', size: 46,
+    hp: 190, dmg: 22, speed: 115, behavior: 'swoop', fly: true, gold: [40, 66],
+    resist: [T.MAGIC], weak: [T.HOLY], aggro: 460, tier: 4 },
+  morteiro: { id: 'morteiro', name: 'Guerreiro-Morto', color: '#9a7a8a', dark: '#5f4850', size: 50,
+    hp: 260, dmg: 26, speed: 120, behavior: 'chase', gold: [48, 78],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 420, tier: 4 },
+  mumia: { id: 'mumia', name: 'Múmia', color: '#c8c0a8', dark: '#8a7a4b', size: 44,
+    hp: 200, dmg: 20, speed: 82, behavior: 'slowChase', gold: [34, 56],
+    resist: [T.MAGIC], weak: [T.HOLY], aggro: 340, tier: 4 },
+  minotauro: { id: 'minotauro', name: 'Minotauro', color: '#b58a4b', dark: '#7a5a2b', size: 62,
+    hp: 340, dmg: 30, speed: 105, behavior: 'slowChase', gold: [60, 100],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 400, tier: 4 },
+  demoninho: { id: 'demoninho', name: 'Demoninho', color: '#c05050', dark: '#7a2f2f', size: 34,
+    hp: 150, dmg: 20, speed: 190, behavior: 'chase', gold: [34, 58],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 420, tier: 5 },
+  soldado_leal: { id: 'soldado_leal', name: 'Soldado Leal', color: '#a8a09a', dark: '#5f5a55', size: 44,
+    hp: 200, dmg: 24, speed: 160, behavior: 'chase', gold: [46, 74],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 440, tier: 5 },
+  guarda_arquebus: { id: 'guarda_arquebus', name: 'Arquebuseiro', color: '#9ab0c0', dark: '#5f6a75', size: 36,
+    hp: 130, dmg: 22, speed: 130, behavior: 'range', gold: [42, 68],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 480, shots: 2, tier: 5 },
+  espectro_arcano: { id: 'espectro_arcano', name: 'Espectro Arcano', color: '#b8a8e0', dark: '#6a5a8a', size: 38,
+    hp: 150, dmg: 22, speed: 135, behavior: 'wraith', fly: true, gold: [48, 80],
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 460, invokes: true, tier: 5 },
+  homunculo: { id: 'homunculo', name: 'Homúnculo', color: '#d8a0b0', dark: '#8a5060', size: 32,
+    hp: 120, dmg: 18, speed: 180, behavior: 'chase', gold: [30, 50],
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 420, tier: 5 },
+  // --- Raros / especiais (recompensas pesadas) ---
+  lobisomem: { id: 'lobisomem', name: 'Lobisomem', color: '#8a6a4b', dark: '#4b352a', size: 56,
+    hp: 500, dmg: 40, speed: 235, behavior: 'swoop', gold: [320, 460],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 520, rare: true, tier: 4 },
+  gigante_pedra: { id: 'gigante_pedra', name: 'Gigante de Pedra', color: '#9a9aa0', dark: '#5f5f66', size: 84,
+    hp: 900, dmg: 50, speed: 70, behavior: 'slowChase', gold: [520, 720],
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 380, rare: true, tier: 4 },
+  sacerdote_necro: { id: 'sacerdote_necro', name: 'Sacerdote da Noite', color: '#7a6a9a', dark: '#4b3f5f', size: 40,
+    hp: 700, dmg: 38, speed: 130, behavior: 'range', gold: [480, 660], shots: 3,
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 500, rare: true, tier: 4 },
+  dragao_bebe: { id: 'dragao_bebe', name: 'Dragãozinho', color: '#d8a05c', dark: '#8a5a2f', size: 52,
+    hp: 420, dmg: 34, speed: 205, behavior: 'swoop', fly: true, gold: [400, 560],
+    resist: [T.MAGIC], weak: [T.PHYS], aggro: 500, rare: true, tier: 4 },
+  // --- Chefes (progressão) ---
   krol_chefe: {
     id: 'krol_chefe', name: 'Krol, Chefe Tribal', color: '#a14b3c', dark: '#5f2218', size: 46,
     hp: 420, dmg: 24, speed: 185, behavior: 'boss', gold: [120, 160],
-    resist: [T.HOLY], weak: [T.PHYS], aggro: 520, boss: true, crystal: 'floresta'
+    resist: [T.HOLY], weak: [T.PHYS], aggro: 520, boss: true, crystal: 'floresta', tier: 3
   },
   gere_osso: {
     id: 'gere_osso', name: 'Gere Osso, Rei da Noite', color: '#d9d0c0', dark: '#8a7a5a', size: 52,
     hp: 700, dmg: 28, speed: 105, behavior: 'boss', gold: [180, 240],
-    resist: [T.PHYS], weak: [T.HOLY], aggro: 520, boss: true, crystal: 'sombrio'
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 520, boss: true, crystal: 'sombrio', tier: 4
   },
   titan: {
     id: 'titan', name: 'Titã do Execra', color: '#8a6a4b', dark: '#4b352a', size: 76,
     hp: 1600, dmg: 40, speed: 95, behavior: 'boss', gold: [500, 500],
-    resist: [T.PHYS], weak: [T.MAGIC], aggro: 560, boss: true, crystal: 'final', final: true
+    resist: [T.PHYS], weak: [T.MAGIC], aggro: 560, boss: true, crystal: 'final', tier: 4
+  },
+  // --- Chefes finais por casta ---
+  demonio: {
+    id: 'demonio', name: 'Mastema, o Demônio', color: '#c0504a', dark: '#5f1f1f', size: 88,
+    hp: 2800, dmg: 60, speed: 122, behavior: 'boss', gold: [1500, 1500],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'clero', tier: 5
+  },
+  general: {
+    id: 'general', name: 'General Tarraske', color: '#a0a8a0', dark: '#4b524b', size: 82,
+    hp: 2600, dmg: 55, speed: 142, behavior: 'boss', gold: [1500, 1500],
+    resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'populum', tier: 5
+  },
+  arcano: {
+    id: 'arcano', name: 'O Arcano Devorador', color: '#a08ad8', dark: '#4b3f7a', size: 86,
+    hp: 3000, dmg: 60, speed: 118, behavior: 'boss', gold: [1500, 1500],
+    resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'mago', tier: 5
   }
 };
 
-const GATES = [
-  { id: 'caverna', x: 75 * TILE, y: 26 * TILE, w: TILE, h: 21 * TILE,
-    name: 'Portão das Catacumbas', flag: 'cristal_floresta',
-    msg: 'Um selo antigo bloqueia as catacumbas. Derrote o Chefe Tribal na floresta.' },
-  { id: 'gruta', x: 95 * TILE, y: 26 * TILE, w: TILE, h: 21 * TILE,
-    name: 'Portão do Execra', flag: 'cristal_sombrio',
-    msg: 'Um selo de sombras bloqueia a gruta. O Rei da Noite guarda a chave.' }
+// Finais por casta (introdução, título e mensagens)
+const FINAL_ENDINGS = {
+  demonio: {
+    casta: 'clero', poster: 'Padre',
+    title: 'A PROMESSA CUMPRIDA',
+    msg: 'Você guiou as almas do Senhor a Ele.',
+    intro: [
+      'As trevas se erguem de um altar profano no coração da terra.',
+      'Mastema, o Demônio, devora as almas que não descansam.',
+      'Derrotai-o e guiai os fiéis de Eclésia à luz do Senhor.'
+    ]
+  },
+  general: {
+    casta: 'populum', poster: 'Guerreiro',
+    title: 'A FRONTEIRA SEGURA',
+    msg: 'O General caiu. A fronteira do povo está segura.',
+    intro: [
+      'O General Tarraske sitiou as aldeias e escravizou a fronteira.',
+      'Suas guarnições cercam o forte ao sul-leste.',
+      'Derrotai o General e libertai o povo de Eclésia.'
+    ]
+  },
+  arcano: {
+    casta: 'mago', poster: 'Mago',
+    title: 'O VÉU REFEITO',
+    msg: 'O véu tornou a se fechar. O saber prevalece.',
+    intro: [
+      'O arcano uiva nas ruínas da Torre Perdida.',
+      'O Arcano Devorador corrói o que restou do saber.',
+      'Silenciai-o e o véu entre os mundos se refará.'
+    ]
+  }
+};
+
+// Cristais que destravam progressão
+const CRYSTALS = {
+  floresta: { name: 'Cristal da Floresta', color: '#5cff9a', hint: 'Krol, Chefe Tribal', gate: 'caverna' },
+  sombrio: { name: 'Cristal Sombrio', color: '#9a6bff', hint: 'Gere Osso, Rei da Noite', gate: 'gruta' },
+  final: { name: 'Coroa do Execra', color: '#ffd23f', hint: 'Titã do Execra', gate: 'arcano' }
+};
+
+// --- Mundo: dados da geração procedural ---
+const WORLD_W = 400;   // largura em tiles
+const WORLD_H = 240;   // altura em tiles
+const CHUNK = 16;      // tiles por lado de chunk
+const WORLD_SEED = 20240811;
+
+// Regiões: rects em tiles. decor controla o estilo visual, danger a dificuldade.
+// priority resolve sobreposição de retângulos (vila dentro do prado, etc.)
+const REGIONS = [
+  { id: 'vila', name: 'Vila de Pedra', x: 104, y: 108, w: 30, h: 36, decor: 'town', danger: 0, density: 0, priority: 9,
+    monsters: [], rares: [] },
+  { id: 'prado', name: 'Prado Sereno', x: 84, y: 90, w: 70, h: 76, decor: 'grass', danger: 1, density: 2, priority: 1,
+    monsters: [['slime', 4], ['rato', 2], ['bat', 2], ['wolf', 1]], rares: [] },
+  { id: 'campos', name: 'Campos de Trigo', x: 30, y: 100, w: 42, h: 56, decor: 'fields', danger: 1, density: 2, priority: 2,
+    monsters: [['rato', 3], ['espantalho', 3], ['slime', 1]], rares: [] },
+  { id: 'floresta', name: 'Floresta dos Goblins', x: 60, y: 44, w: 44, h: 40, decor: 'forest', danger: 2, density: 3, priority: 2,
+    monsters: [['goblin', 3], ['archer', 1], ['bat', 2], ['wolf', 2], ['bomber', 1]], rares: ['lobisomem'],
+    boss: { kind: 'krol_chefe', x: 78, y: 62 } },
+  { id: 'lobos', name: 'Bosque dos Lobos', x: 120, y: 30, w: 36, h: 27, decor: 'forest', danger: 2, density: 2, priority: 2,
+    monsters: [['wolf', 3], ['javali', 2], ['bat', 1]], rares: [] },
+  { id: 'norte', name: 'Campo do Norte', x: 156, y: 24, w: 70, h: 26, decor: 'grass', danger: 1, density: 1, priority: 1,
+    monsters: [['wolf', 2], ['rato', 2], ['slime', 1]], rares: [] },
+  { id: 'sagrado', name: 'Bosque Sagrado', x: 150, y: 58, w: 44, h: 40, decor: 'forest', danger: 2, density: 2, priority: 3,
+    monsters: [['corvo', 3], ['javali', 2], ['wolf', 1]], rares: [] },
+  { id: 'pantano', name: 'Pântano Sombrio', x: 210, y: 56, w: 42, h: 44, decor: 'swamp', danger: 3, density: 3, priority: 2,
+    monsters: [['lodo_corrupto', 3], ['fogo_fatuo', 2], ['crocodilo', 2], ['rato', 1]], rares: [] },
+  { id: 'ruinas', name: 'Ruínas de Aurelia', x: 160, y: 128, w: 40, h: 42, decor: 'ruins', danger: 3, density: 3, priority: 2,
+    monsters: [['gargula', 2], ['mumia', 2], ['esqueleto', 2], ['morteiro', 1]], rares: [] },
+  { id: 'cemiterio', name: 'Cemitério dos Esquecidos', x: 28, y: 170, w: 34, h: 44, decor: 'cemetery', danger: 3, density: 3, priority: 2,
+    monsters: [['zumbi', 3], ['corvo', 2], ['esqueleto', 2], ['necromante', 1]], rares: ['sacerdote_necro'],
+    boss: null },
+  { id: 'colinas', name: 'Colinas Rochosas', x: 240, y: 156, w: 36, h: 60, decor: 'rocky', danger: 3, density: 3, priority: 2,
+    monsters: [['golem', 2], ['minotauro', 2], ['aguia', 2], ['spider', 1]], rares: ['gigante_pedra'] },
+  { id: 'templo', name: 'Templo Ruinoso', x: 270, y: 60, w: 40, h: 44, decor: 'ruins', danger: 4, density: 3, priority: 2,
+    monsters: [['gargula', 3], ['morteiro', 2], ['esqueleto', 2], ['mumia', 2]], rares: ['dragao_bebe'] },
+  { id: 'varzea', name: 'Várzea Sul', x: 150, y: 190, w: 40, h: 40, decor: 'grass', danger: 1, density: 1, priority: 1,
+    monsters: [['rato', 3], ['slime', 2], ['wolf', 1]], rares: [] },
+  { id: 'catacumbas', name: 'Catacumbas', x: 64, y: 22, w: 18, h: 22, decor: 'cave', danger: 3, density: 3, priority: 2, indoor: true,
+    monsters: [['skeleton', 3], ['spider', 2], ['wraith', 1], ['slime', 1]], rares: [],
+    boss: { kind: 'gere_osso', x: 72, y: 34 } },
+  { id: 'gruta', name: 'Gruta do Execra', x: 86, y: 22, w: 14, h: 22, decor: 'cave', danger: 4, density: 3, priority: 2, indoor: true,
+    monsters: [['golem', 2], ['shaman', 2], ['wraith', 1], ['bomber', 1]], rares: [],
+    boss: { kind: 'titan', x: 93, y: 32 } },
+  { id: 'cova', name: 'Cova do Demônio', x: 322, y: 40, w: 38, h: 44, decor: 'hell', danger: 5, density: 3, priority: 3, indoor: true,
+    monsters: [['demoninho', 3], ['wraith', 2], ['gargula', 1]], rares: [],
+    boss: { kind: 'demonio', x: 340, y: 58 } },
+  { id: 'forte', name: 'Forte do General', x: 322, y: 176, w: 38, h: 52, decor: 'fort', danger: 5, density: 3, priority: 3,
+    monsters: [['soldado_leal', 3], ['guarda_arquebus', 2], ['demoninho', 1]], rares: [],
+    boss: { kind: 'general', x: 340, y: 202 } },
+  { id: 'torre', name: 'Torre Perdida', x: 12, y: 40, w: 30, h: 38, decor: 'arcane', danger: 5, density: 3, priority: 3, indoor: true,
+    monsters: [['espectro_arcano', 3], ['homunculo', 2], ['mumia', 1]], rares: [],
+    boss: { kind: 'arcano', x: 27, y: 58 } }
 ];
 
-const CRYSTALS = {
-  floresta: { name: 'Cristal da Floresta', color: '#5cff9a', hint: 'Krol, Chefe Tribal' },
-  sombrio: { name: 'Cristal Sombrio', color: '#9a6bff', hint: 'Gere Osso, Rei da Noite' },
-  final: { name: 'Coroa do Execra', color: '#ffd23f', hint: 'Titã do Execra' }
+// Selos: barreira de progressão (interagem com F). need = cristal requisitado.
+const SEALS = [
+  { id: 'selo_catacumbas', name: 'Selo das Catacumbas', need: 'floresta', x: 61, y: 33, color: '#b05cff', accent: '#e0c0ff',
+    msg: 'Um selo antigo bloqueia o caminho. Derrote o Chefe Tribal na floresta.' },
+  { id: 'selo_gruta', name: 'Selo do Execra', need: 'sombrio', x: 85, y: 33, color: '#9a6bff', accent: '#d0b0ff',
+    msg: 'Um selo de sombras bloqueia a gruta. O Rei da Noite guarda a chave.' },
+  { id: 'selo_profano', name: 'Selo Profano', need: 'sombrio', x: 319, y: 58, color: '#ff6b6b', accent: '#ffb0b0',
+    msg: 'As chamas do Demônio guardam este portal. O Cristal Sombrio é a chave.' },
+  { id: 'selo_forte', name: 'Portão do Forte', need: 'floresta', x: 319, y: 202, color: '#b5651d', accent: '#ffd27f',
+    msg: 'O Portão do Forte está trancado. O Cristal da Floresta é a chave.' },
+  { id: 'selo_arcano', name: 'Véu Arcano', need: 'final', x: 44, y: 58, color: '#7a6bd8', accent: '#c0b4ff',
+    msg: 'O véu resiste ao toque. Somente a Coroa do Execra o desfaz.' }
+];
+
+// NPCs espalhados pelo mundo. kind controla o tipo de interação.
+const NPC_DEFS = [
+  // Vila de Pedra — estabelecimentos
+  { id: 'ferreiro', name: 'Ferreiro', kind: 'forge', x: 111, y: 121, color: '#b5651d', accent: '#ffb020' },
+  { id: 'vendedor', name: 'Vendedor', kind: 'shop', x: 120, y: 121, color: '#2980b9', accent: '#7ec8e3' },
+  { id: 'mestre', name: 'Mestre das Artes', kind: 'skills', x: 128, y: 121, color: '#8e44ad', accent: '#d8a1ff' },
+  { id: 'guia', name: 'Cronista', kind: 'guide', x: 116, y: 124, color: '#27ae60', accent: '#a8e6a1',
+    text: 'Olá, viajante! Eclésia é vasta e perigosa. Derrote o Chefe Tribal na floresta (Cristal da Floresta), o Rei da Noite nas Catacumbas (Cristal Sombrio) e o Titã na Gruta do Execra (Coroa). Cada casta tem um desafio final próprio, no canto mais distante do mapa. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' },
+  { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0' },
+  { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },
+  { id: 'erudito', name: 'Erudito Tior', kind: 'tower', x: 120, y: 136, color: '#7a6bd8', accent: '#c0b4ff' },
+  // Vila — interações por casta
+  { id: 'santa_ana', name: 'Ana, a Lavadeira', kind: 'talk', x: 107, y: 132, color: '#b8a080', accent: '#d8c0a0',
+    event: 'confess', lines: {
+      clero: 'Padre, eu... roubei pão para os meus filhos. A fome me cegou.',
+      populum: 'A vida na vila é dura, viajante. Nem sempre temos o que comer.',
+      mago: 'Sussurram que magos andam sumidos pelas ruínas. Tome cuidado.'
+    } },
+  { id: 'guarda_bira', name: 'Guarda Bira', kind: 'talk', x: 125, y: 132, color: '#8a9a8a', accent: '#c8d8c8',
+    event: 'war', lines: {
+      clero: 'A reza não afasta o lobo, mas talvez acalme o medo. Boa noite, padre.',
+      populum: 'Um bom soldado se mede pelo aço. Prove seu valor em campo e terá meu respeito.',
+      mago: 'Feiticeiros... sustento que valem tanto quanto mãos firmes. Humpf.'
+    } },
+  { id: 'coroinha', name: 'Coroinha Benjamim', kind: 'talk', x: 113, y: 117, color: '#e8d8b0', accent: '#ffd76a',
+    event: 'lore', lines: {
+      clero: 'O Pároco diz que o Senhor fala pelos ventos do leste. Ouviu? Eu ouvi.',
+      populum: 'Corro até o poço e volto. A vila inteira me conhece!',
+      mago: 'O homem do livro lê palavras que brilham. Juro que brilham!'
+    } },
+  // Campos de Trigo
+  { id: 'fazendeiro', name: 'Tomás, Fazendeiro', kind: 'talk', x: 40, y: 122, color: '#c9b37a', accent: '#f0d8a0',
+    event: 'lore', lines: {
+      clero: 'A terra é gentil, mas os espantalhos andam. Sim, padre... ANDAM.',
+      populum: 'De noite os espantalhos se mexem. Se for da vila, cuide dos campos.',
+      mago: 'Trigo bom é trigo que canta. E o meu canta assustado.'
+    } },
+  { id: 'roceira', name: 'Dona Zilda', kind: 'talk', x: 35, y: 132, color: '#c8a8a0', accent: '#e0c0b0',
+    event: 'confess', lines: {
+      clero: 'Padre, menti sobre a colheita para o imposto. É um peso que não sai de mim.',
+      populum: 'As fogueiras de junho deviam alegrar. Hoje só a fazem tremer.',
+      mago: 'Forasteiros passam com poções. Nada como suor de verdade.'
+    } },
+  // Bosque Sagrado
+  { id: 'peregrino', name: 'Peregrino Inácio', kind: 'talk', x: 158, y: 76, color: '#b8b0a0', accent: '#e8e0c8',
+    event: 'lore', lines: {
+      clero: 'Peregrino que sou, vi um altar profano além dos rochedos. O Demônio ronca no leste.',
+      populum: 'O caminho para leste é mau. As criaturas ficam maiores e mais cruéis.',
+      mago: 'Por estas árvores, ouvi encantamentos antigos. O saber dorme onde a fé acorda.'
+    } },
+  { id: 'capela_sagrada', name: 'Capela do Bosque', kind: 'church', x: 186, y: 78, color: '#f0e0c0', accent: '#fff3b0' },
+  // Pântano
+  { id: 'pescador', name: 'Pescador Duro', kind: 'talk', x: 218, y: 84, color: '#8a8a9a', accent: '#b0c0d0',
+    event: 'lore', lines: {
+      clero: 'No pântano as luzinhas dançam. São almas perdidas pedindo reza.',
+      populum: 'Não pise nas poças. O que mora dentro tem dentes.',
+      mago: 'As luzes falsas são velhas mentiras arcanas. Nada novo no brejo.'
+    } },
+  // Cemitério
+  { id: 'coveiro', name: 'Coveiro Nico', kind: 'talk', x: 42, y: 186, color: '#6a7a6a', accent: '#a8b8a8',
+    event: 'confess', lines: {
+      clero: 'Padre... enterrei vivo o velho Zé para ficar com a herdade. Perdoai-me.',
+      populum: 'Cavei alvejar de guerra. Os lençóis cobrem muita coisa, meu amigo.',
+      mago: 'Os mortos aqui... se mexem. E não é por causa da terra.'
+    } },
+  { id: 'velha_zefa', name: 'Velha Zefa', kind: 'talk', x: 52, y: 198, color: '#9a8a80', accent: '#c0b0a0',
+    event: 'lore', lines: {
+      clero: 'Ah, filho da luz... os zumbis foram gente que não ouviu o chamado. Conduze-os.',
+      populum: 'Paguei para ver a lua cheia. Ver o que se arrasta aqui não foi favor.',
+      mago: 'O Necromante queimou minhas ervas. Guarde as suas, moço.'
+    } },
+  // Ruínas
+  { id: 'arqueologo', name: 'Dante, Arqueólogo', kind: 'talk', x: 172, y: 148, color: '#b0a080', accent: '#e0d0a0',
+    event: 'saber', lines: {
+      clero: 'Estas paredes tinham um altar. O que o profanou... ainda habita o chão.',
+      populum: 'Há aço antigo sob os escombros. Permita-me mostrar-lhe o caminho?',
+      mago: 'Glifos! Glifos preservados! O saber destas ruínas vale ouro e vida.'
+    } },
+  { id: 'ferreiro_ruinas', name: 'Ferreiro das Ruínas', kind: 'forge', x: 184, y: 158, color: '#8a6a4b', accent: '#ff9d5c' },
+  // Colinas
+  { id: 'mineiro', name: 'Mineiro Pedro', kind: 'talk', x: 252, y: 172, color: '#9a9a7a', accent: '#c8c890',
+    event: 'lore', lines: {
+      clero: 'Na serra mora um gigante que dorme. A fé não o acorda; o ouro, sim.',
+      populum: 'O fedor de minério é o cheiro do trabalho. Aqui ninguém se ajoelha.',
+      mago: 'A rocha aqui tem veios que a magia escuta. Ouço quando estou só.'
+    } },
+  // Templo
+  { id: 'sabio', name: 'Sábio Laude', kind: 'talk', x: 284, y: 76, color: '#b8b8d8', accent: '#d8d8f0',
+    event: 'saber', lines: {
+      clero: 'O templo fora consagrado à luz. As gárgulas esqueceram o que guardavam.',
+      populum: 'Lendas falam de um tesouro. Lendas também falam de dunas de criaturas.',
+      mago: 'Aqui o véu é fino. Sinta a vibração arcana nas colunas quebradas.'
+    } },
+  // Forte
+  { id: 'taberneira_fronteira', name: 'Taverneira da Fronteira', kind: 'tavern', x: 330, y: 190, color: '#c8a880', accent: '#e0b878' },
+  { id: 'soldado_desertor', name: 'Desertor Valdomiro', kind: 'talk', x: 328, y: 198, color: '#7a8a7a', accent: '#a8c0a8',
+    event: 'war', lines: {
+      clero: 'O General vendeu a alma por ferro e pólvora. Reze por nós, padre.',
+      populum: 'Treinei na fronteira. Se quer o meu respeito, lute até a última gota.',
+      mago: 'Aquelas armas engolem sombras. Melhor nem entender.'
+    } },
+  // Cova
+  { id: 'devoto_trevas', name: 'Devoto das Trevas', kind: 'talk', x: 326, y: 70, color: '#5a4a6a', accent: '#a0a0ff',
+    event: 'lore', lines: {
+      clero: 'Mastema prometeu a eternidade a quem abandonasse a luz. Eu escutei.',
+      populum: 'Enquanto houver uma vila em pé, há esperança de sair daqui.',
+      mago: 'O altar consome arcano. Não se aproxime sem arma, sem nome e sem fé.'
+    } }
+];
+
+// --- Lore por casta ---
+const LORE = {
+  clero: [
+    { id: 'chamado', title: 'O Chamado', text: 'Uma voz ao amanhecer disse: "Anda, as almas desta terra temem. Vai e acolhe-as." O Senhor vos envia a Eclésia para consolar e conduzir.' },
+    { id: 'confissao', title: 'O Peso das Confissões', text: 'Cada confissão ouvida é uma alma que se deixa guiar. Vossa fé vos fortalece — e a elas traz paz.' },
+    { id: 'travessia', title: 'A Travessia', text: 'Três pilares guardam o caminho: o Chefe Tribal, o Rei da Noite e o Guardião do Execra. Derrotai-os e o altar do Demônio se abrirá.' },
+    { id: 'promessa', title: 'A Promessa', text: 'No leste, um selo profano esconde o altar de Mastema. Fechai-o para sempre e guiai as almas do Senhor a Ele.' }
+  ],
+  populum: [
+    { id: 'fronteira', title: 'A Fronteira', text: 'O povo de Eclésia vive sob o jugo de bestas e bandos. A vila pede: espadas, flechas e engenho bastam?' },
+    { id: 'guarnicao', title: 'Guarnições', text: 'Mercenários dizem que as ruínas guardam aço antigo. Um povo que se arma é um povo que resiste.' },
+    { id: 'forte', title: 'O Forte', text: 'Ao sul-leste, um General rebelde ergue um forte para escravizar as aldeias. Enquanto ele viver, a fronteira sangra.' },
+    { id: 'chama', title: 'A Chama do Povo', text: 'O General caiu. A chama da resistência ascende — e a fronteira, enfim, respira.' }
+  ],
+  mago: [
+    { id: 'veo', title: 'O Véu Rasgado', text: 'Existe arcano antes do tempo. Os sabidos dizem que algo, no norte, desfiou o véu que separa o mundo e a eternidade.' },
+    { id: 'cantos', title: 'Os Cantos Esquecidos', text: 'Nas ruínas há glifos que preservam o saber. Ler é lembrar — e lembrar é poder.' },
+    { id: 'torre', title: 'A Torre Perdida', text: 'Uma torre erguia-se onde o arcano era mais denso. Hoje ela é um grito: algo dentro devora a força das palavras.' },
+    { id: 'arcaico', title: 'O Arcano Devorador', text: 'Mastema tolheu até o arcano e criou o Devorador. Enquanto ele viver, todo saber será corrompido.' }
+  ]
+};
+
+// Habilitação de lore por casta ao entrar em zonas especiais
+const LORE_ZONE = {
+  clero: [['sagrado', 'chamado'], ['cova', 'promessa']],
+  populum: [['forte', 'forte']],
+  mago: [['torre', 'torre']]
 };
 
 const SHOP = {
@@ -307,4 +605,14 @@ function circleRect(c, r, rc) {
   const cx = Math.max(rc.x, Math.min(c.x, rc.x + rc.w));
   const cy = Math.max(rc.y, Math.min(c.y, rc.y + rc.h));
   return Math.hypot(c.x - cx, c.y - cy) < r;
+}
+
+// Estatística de recompensa usada pelo kill: ouro/min share escalam com o tier do monstro + perigo da região
+function dangerLoot(danger) {
+  return {
+    goldMult: 1 + (danger - 1) * 0.35,
+    heartChance: clamp(0.1 + (danger - 1) * 0.06, 0.1, 0.4),
+    powerChance: danger >= 3 ? (danger - 2) * 0.06 : 0,
+    potChance: danger >= 3 ? 0.08 + (danger - 3) * 0.02 : 0
+  };
 }

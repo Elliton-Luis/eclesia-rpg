@@ -554,3 +554,28 @@ html, body {
 .resrow b { font-weight: 600; opacity: 0.9; }
 .resbtns { margin-top: 14px; }
 #btnRecords { margin-top: 12px; }
+
+/* ---------- Building / Dialog / Boss Intro ---------- */
+.bldIcon { font-size: 22px; margin-right: 8px; vertical-align: middle; }
+.bldSub { opacity: 0.7; font-size: 13px; margin-bottom: 8px; }
+.dlgbody { line-height: 1.6; margin: 12px 0; text-align: left; }
+.dlgbtns { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+.dlgbtns .btn { margin-top: 0; }
+.confessTag { 
+  margin-top: 10px; 
+  padding: 8px 12px; 
+  background: rgba(255,210,63,0.15); 
+  border: 1px solid rgba(255,210,63,0.4); 
+  border-radius: 6px; 
+  font-size: 12px; 
+  color: #ffe66d; 
+  text-align: left;
+}
+.introText p { margin: 8px 0; font-size: 15px; line-height: 1.5; text-align: left; }
+.endingMsg { text-align: center; line-height: 1.5; }
+
+/* ---------- Habilidade de confissão visual ---------- */
+@keyframes blessingPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}

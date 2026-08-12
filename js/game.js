@@ -1,5 +1,15 @@
 const byId = id => document.getElementById(id);
 
+function dangerAt(g, x, y) {
+  let best = null;
+  for (const r of REGIONS) {
+    if (x >= r.x * TILE && x < (r.x + r.w) * TILE && y >= r.y * TILE && y < (r.y + r.h) * TILE) {
+      if (!best || r.priority > best.priority) best = r;
+    }
+  }
+  return best ? best.danger : 1; // default to danger 1 for wilderness
+}
+
 const GAME = {
   canvas: null,
   ctx: null,
@@ -34,7 +44,7 @@ const GAME = {
   bossAggroed: false,
   skillEls: [],
   shopN: {},
-  startPos: { x: 37 * TILE, y: 26 * TILE },
+  startPos: { x: 116.5 * TILE, y: 123.5 * TILE },
   cheats: { gold: false, hp: false },
   auraT: 0,
   attackHeld: false,
@@ -42,6 +52,9 @@ const GAME = {
   finished: false,
   bossesActive: [],
   crystals: {},
+  sealsBroken: {},
+  ending: null,
+  loreDiscovered: { clero: [], populum: [], mago: [] },
   comboStreak: 0,
   comboT: 0,
   visited: {},
@@ -55,14 +68,19 @@ const GAME = {
     window.addEventListener('resize', () => this.resize());
 
     this.world = new World();
-    this.world.build();
 
     this.npcs = NPC_DEFS.map(n => Object.assign({}, n, {
       px: n.x * TILE,
       py: n.y * TILE,
-      bobT: rand(0, 6)
-    }));
-    this.zones = ZONES.map(z => ({ name: z.name, x: z.x * TILE, y: z.y * TILE, w: z.w * TILE, h: z.h * TILE }));
+      bobT: rand(0, 6),
+      eventDone: false,
+      confessed: false
+    })).concat(SEALS.map(s => Object.assign({}, s, {
+      kind: 'seal', px: s.x * TILE, py: s.y * TILE, bobT: rand(0, 6)
+    })));
+    this.zones = REGIONS.map(z => ({ name: z.name, x: z.x * TILE, y: z.y * TILE, w: z.w * TILE, h: z.h * TILE }));
+    this.indoorNames = {};
+    REGIONS.forEach(r => { if (r.indoor) this.indoorNames[r.name] = true; });
 
     window.addEventListener('keydown', e => this.keydown(e));
     window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyJ' || e.code === 'KeyX') this.attackHeld = false; if (e.code === 'KeyP' || e.code === 'KeyM') {} });
@@ -147,6 +165,9 @@ const GAME = {
     this.finished = false;
     this.bossesActive = [];
     this.crystals = {};
+    this.sealsBroken = {};
+    this.ending = null;
+    this.loreDiscovered = { clero: [], populum: [], mago: [] };
     this.comboStreak = 0;
     this.comboT = 0;
     this.visited = {};
@@ -154,28 +175,24 @@ const GAME = {
     this.auraT = 0;
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
     this.zoneId = '';
-
-    this.world.gates.forEach(g => { g.open = false; });
+    this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; });
 
     this.player = new Player(sub, this.startPos.x, this.startPos.y, this);
     this.cam.x = this.startPos.x - this.cw / 2;
     this.cam.y = this.startPos.y - this.ch / 2;
 
-    this.spawnZones = SPAWNS.map(s => new Zone(s));
-    this.spawnZones.forEach(z => z.update(0.01, this));
+    this.world.resetSpawns();
+    this.world.update(0.01, this);
 
-    this.pickups.push(new Pickup(52 * TILE, 24 * TILE, 'heart'));
-    this.pickups.push(new Pickup(54 * TILE, 28 * TILE, 'coin', 15));
-    this.pickups.push(new Pickup(60 * TILE, 24 * TILE, 'heart'));
-    this.pickups.push(new Pickup(58 * TILE, 26 * TILE, 'coin', 20));
-    this.pickups.push(new Pickup(79 * TILE, 30 * TILE, 'coin', 30));
-    this.pickups.push(new Pickup(88 * TILE, 30 * TILE, 'heart'));
+    this.pickups.push(new Pickup(112 * TILE, 119 * TILE, 'coin', 20));
+    this.pickups.push(new Pickup(120 * TILE, 130 * TILE, 'heart'));
 
     byId('menu').classList.add('hidden');
     byId('hud').classList.remove('hidden');
     byId('death').classList.add('hidden');
     byId('pause').classList.add('hidden');
     byId('bossbar').classList.add('hidden');
+    byId('results').classList.add('hidden');
 
     this.buildSkillbar();
     this.hud();
@@ -263,7 +280,7 @@ const GAME = {
       if (d.t <= 0) { d.fn(); this.delayed.splice(i, 1); }
     }
 
-    for (const z of this.spawnZones) z.update(dt, this);
+    this.world.update(dt, this);
 
     this.pickups = this.pickups.filter(pk => !pk.update(dt, this));
 
@@ -310,11 +327,35 @@ const GAME = {
       el.textContent = name;
       el.classList.remove('show');
       requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+      this.unlockZoneLore(name);
     }
     if (this.zoneT > 0) {
       this.zoneT -= 1 / 60;
       if (this.zoneT <= 0) byId('zonetitle').classList.remove('show');
     }
+  },
+
+  unlockZoneLore(zoneName) {
+    const casta = this.player ? this.player.sub.casta : null;
+    if (!casta) return;
+    const zones = LORE_ZONE[casta];
+    if (!zones) return;
+    for (const [zid, loreId] of zones) {
+      const r = REGIONS.find(reg => reg.id === zid);
+      if (r && r.name === zoneName) this.discoverLore(casta, loreId);
+    }
+  },
+
+  discoverLore(casta, id) {
+    const found = (LORE[casta] || []).find(l => l.id === id);
+    if (!found) return;
+    const list = this.loreDiscovered[casta];
+    if (!list || list.includes(id)) return;
+    list.push(id);
+    this.sfx.upgrade();
+    this.banner('LORE: ' + found.title, '#ffe9b0', 2.5);
+    this.showDialog('📖 ' + found.title, found.text, '<button class="btn" id="dlgOk">Entendido</button>');
+    if (casta === 'clero') this.blessingFx(this.player, '#ffe66d', 12);
   },
 
   hud() {
@@ -354,7 +395,7 @@ const GAME = {
       bb.classList.remove('hidden');
       byId('bossname').textContent = b.def.name.toUpperCase();
       byId('bosshp').style.width = (clamp(b.hp / b.maxHp, 0, 1) * 100) + '%';
-      byId('bosshp').style.background = b.def.final ? 'linear-gradient(90deg,#ff5c5c,#ffd23f)' : 'linear-gradient(90deg,#ffd23f,#ff6b6b)';
+      byId('bosshp').style.background = b.def.finalBoss ? 'linear-gradient(90deg,#ff3c3c,#ffd23f)' : 'linear-gradient(90deg,#ffd23f,#ff6b6b)';
     } else {
       bb.classList.add('hidden');
     }
@@ -430,6 +471,226 @@ const GAME = {
       byId('guidePanel').innerHTML = `<h2>${npc.name}</h2><p>${npc.text}</p><button class="btn" id="closeGuide">Entendido</button>`;
       byId('guide').classList.remove('hidden');
       byId('closeGuide').onclick = () => this.closeOverlay();
+    } else if (npc.kind === 'church' || npc.kind === 'tavern' || npc.kind === 'tower') {
+      this.state = 'building';
+      this.openBuilding(npc);
+      byId('bld').classList.remove('hidden');
+    } else if (npc.kind === 'talk') {
+      this.doTalk(npc);
+    } else if (npc.kind === 'seal') {
+      this.trySeal(npc);
+    }
+  },
+
+  trySeal(npc) {
+    if (this.sealsBroken[npc.id]) return;
+    const need = npc.need;
+    if (this.crystals[need]) {
+      this.sealsBroken[npc.id] = true;
+      this.banner(npc.name + ' se desfez!', npc.color, 2.5);
+      this.burst(npc.px, npc.py, npc.color, 20, 300);
+      this.ring(npc.px, npc.py, 60, 0.8, npc.color, 5);
+      this.shake += 6;
+      this.sfx.upgrade();
+    } else {
+      this.banner(npc.msg, '#ffd23f', 2.8);
+    }
+  },
+
+  // Diálogo genérico com NPC
+  showDialog(title, body, buttonsHtml) {
+    byId('dialogPanel').innerHTML = `<h2>${title}</h2><div class="dlgbody">${body}</div><div class="dlgbtns">${buttonsHtml || ''}</div>`;
+    byId('dialog').classList.remove('hidden');
+  },
+
+  closeDialog() {
+    byId('dialog').classList.add('hidden');
+    if (this.state !== 'win' && this.state !== 'death' && this.state !== 'menu') this.state = 'play';
+  },
+
+  doTalk(npc) {
+    const casta = this.player.sub.casta;
+    const line = (npc.lines && npc.lines[casta]) || (npc.text || '...');
+    this.state = 'talk';
+    if (npc.event && npc.event === 'confess' && casta === 'clero' && !npc.eventDone) {
+      // Confissão: interação exclusiva do Clero
+      this.blessingFx(this.player, '#ffe66d', 14);
+      this.showDialog('⛪ Confissão', `"${line}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
+      byId('dlgConfess').onclick = () => this.doConfession(npc);
+      return;
+    }
+    const extra = npc.eventDone ? '' : this.classEventButton(npc, casta);
+    this.showDialog(npc.name, `"${line}"`, extra + '<button class="btn ghost" id="dlgOk">Continuar</button>');
+    byId('dlgOk').onclick = () => this.closeDialog();
+    if (extra) {
+      const btn = byId('dlgEvent');
+      if (btn) btn.onclick = () => this.doClassEvent(npc);
+    }
+  },
+
+  classEventButton(npc, casta) {
+    if (!npc.event) return '';
+    if (npc.event === 'war' && casta === 'populum') return '<button class="btn" id="dlgEvent">Treinar (Grátis)</button>';
+    if (npc.event === 'saber' && casta === 'mago') return '<button class="btn" id="dlgEvent">Estudar (+Int)</button>';
+    if (npc.event === 'lore') return '';
+    return '';
+  },
+
+  // Confissão do Clero: cura + bênção temporária de dano + ganho permanente de vida
+  doConfession(npc) {
+    const p = this.player;
+    p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * 0.5));
+    p.maxHp += 10;
+    p.hp = Math.min(p.maxHp, p.hp + 10);
+    p.int += 2;
+    p.status.dmg = Math.max(p.status.dmg || 0, 0.35);
+    p.status.spd = Math.max(p.status.spd || 0, 0.12);
+    p.status.dur = Math.max(p.status.dur, 90);
+    npc.eventDone = true;
+    npc.confessed = true;
+    this.healEffect(p);
+    this.blessingFx(p, '#fff3b0', 20);
+    this.text(p.x, p.y - 30, 'BÊNÇÃO +10 VIDA', '#ffe66d', 16);
+    this.text(p.x, p.y - 46, 'DANO +35% TEMP.', '#fff3b0', 14);
+    this.sfx.heal();
+    this.sfx.upgrade();
+    this.discoverLore('clero', 'confissao');
+    this.showDialog('⛪ Confissão Aceita', '"Que a luz do Senhor vos cubra, filho."<div class="confessTag">+10 de vida · +2 inteligência · dano +35% (temporário)</div>', '<button class="btn" id="dlgOk2">Amém</button>');
+    byId('dlgOk2').onclick = () => this.closeDialog();
+    this.hud();
+  },
+
+  doClassEvent(npc) {
+    const casta = this.player.sub.casta;
+    const p = this.player;
+    if (npc.event === 'war' && casta === 'populum') {
+      p.str += 2;
+      npc.eventDone = true;
+      this.burst(p.x, p.y - 20, '#c0392b', 12, 200);
+      this.text(p.x, p.y - 30, 'FORÇA +2', '#ff9d5c', 16);
+      this.sfx.upgrade();
+      // bônus de dano físico temporário
+      p.status.dmg = Math.max(p.status.dmg || 0, 0.25);
+      p.status.dur = Math.max(p.status.dur, 60);
+      this.showDialog(npc.name, 'Treino concluído! Respeito conquistado.<div class="confessTag">+2 força · dano +25% (temporário)</div>', '<button class="btn" id="dlgOk2">Combatente!</button>');
+    } else if (npc.event === 'saber' && casta === 'mago') {
+      p.int += 3;
+      npc.eventDone = true;
+      this.burst(p.x, p.y - 20, '#7a6bd8', 12, 200);
+      this.text(p.x, p.y - 30, 'INT +3', '#b07cff', 16);
+      this.sfx.upgrade();
+      this.showDialog(npc.name, 'A sabedoria flui dos glifos.<div class="confessTag">+3 inteligência</div>', '<button class="btn" id="dlgOk2">Erudito!</button>');
+    }
+    byId('dlgOk2').onclick = () => this.closeDialog();
+    this.hud();
+  },
+
+  // Estabelecimentos por casta
+  openBuilding(npc) {
+    const p = this.player;
+    const casta = p.sub.casta;
+    const gold = p.gold;
+    let html = '';
+    if (npc.kind === 'church') {
+      html = `<h2><span class="bldIcon">⛪</span> ${npc.name}</h2><div class="bldSub">Casa do Clero — lugar seguro</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html += `<div class="item"><div><b>Rezar</b><div class="desc">Recupera toda a vida. (Grátis)</div></div><button class="btn" data-bact="pray">Rezar</button></div>`;
+      html += `<div class="item"><div><b>Estudar Escrituras</b><div class="desc">+15 de vida máxima.<br>Custo crescente.</div></div><button class="btn" data-bact="bless">${100 + (this.shopN.igrejabless || 0) * 60}</button></div>`;
+      html += `<div class="item"><div><b>Liturgia</b><div class="desc">Um trecho da palavra. Descobre parte da lore do Clero.</div></div><button class="btn" data-bact="liturgia">Ouvir</button></div>`;
+      if (casta !== 'clero') html += `<div class="hint">O clero sente sua presença, mas nada cobra pela reza.</div>`;
+    } else if (npc.kind === 'tavern') {
+      html = `<h2><span class="bldIcon">🍺</span> ${npc.name}</h2><div class="bldSub">Ponto do Povo — músculos e histórias</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html += `<div class="item"><div><b>Cerveja & Caldo</b><div class="desc">Recupera toda a vida. (30 ●)</div></div><button class="btn" data-bact="drink">30</button></div>`;
+      html += `<div class="item"><div><b>Histórias de Guerra</b><div class="desc">Revela segredos da fronteira.</div></div><button class="btn" data-bact="hist">Ouvir</button></div>`;
+      if (casta === 'populum') html += `<div class="item"><div><b>Treino Forjado</b><div class="desc">+5 de força permanente. (150 ●)</div></div><button class="btn" data-bact="train">150</button></div>`;
+    } else { // tower
+      html = `<h2><span class="bldIcon">🔮</span> ${npc.name}</h2><div class="bldSub">Torre Arcana — saber e mistério</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html += `<div class="item"><div><b>Meditar</b><div class="desc">Recupera a vida e abre os canais. (Grátis)</div></div><button class="btn" data-bact="med"></button></div>`;
+      html += `<div class="item"><div><b>Grimório da Torre</b><div class="desc">Revela a história do véu arcano.</div></div><button class="btn" data-bact="grim">Ler</button></div>`;
+      if (casta === 'mago') html += `<div class="item"><div><b>Consulta Arcano</b><div class="desc">+6 de inteligência permanente. (150 ●)</div></div><button class="btn" data-bact="consult">150</button></div>`;
+    }
+    html += `</div><button class="btn ghost" id="closeBld">Sair (Esc)</button>`;
+    byId('bldPanel').innerHTML = html;
+    byId('bldPanel').querySelectorAll('[data-bact]').forEach(b => b.onclick = () => this.buildingAction(npc, b.dataset.bact));
+    byId('closeBld').onclick = () => this.closeOverlay();
+  },
+
+  buildingAction(npc, act) {
+    const p = this.player;
+    const casta = p.sub.casta;
+    const ok = (goldCost) => { if (this.cheats.gold) return true; if (p.gold >= goldCost) { p.gold -= goldCost; return true; } this.banner('Ouro insuficiente', '#ff5c5c', 1.5); return false; };
+
+    if (npc.kind === 'church') {
+      if (act === 'pray') {
+        p.hp = p.maxHp;
+        p.status.venom = 0; p.status.dmg = 0; p.status.spd = 0; p.status.dur = 0;
+        this.blessingFx(p, '#ffe66d', 16);
+        this.sfx.heal();
+        this.banner('Você reza e nada mais te alcança.', '#ffe9b0', 2);
+      } else if (act === 'bless') {
+        if (!ok(100 + (this.shopN.igrejabless || 0) * 60)) { this.openBuilding(npc); return; }
+        this.shopN.igrejabless = (this.shopN.igrejabless || 0) + 1;
+        p.maxHp += 15; p.hp += 15;
+        this.blessingFx(p, '#fff3b0', 14);
+        this.sfx.buy();
+        this.banner('Bênção permanente: +15 de vida máxima', '#ffe9b0', 2.2);
+      } else if (act === 'liturgia') {
+        if (casta === 'clero') this.discoverLore('clero', this.loreDiscovered.clero.includes('chamado') ? 'promessa' : 'chamado');
+        else this.discoverLore(casta === 'mago' ? 'mago' : 'populum', casta === 'mago' ? 'veo' : 'fronteira');
+      }
+    } else if (npc.kind === 'tavern') {
+      if (act === 'drink') {
+        if (!ok(30)) { this.openBuilding(npc); return; }
+        p.hp = p.maxHp;
+        this.sfx.heal();
+        this.banner('Cerveja e caldo quente! Vida cheia.', '#ffd27f', 2);
+      } else if (act === 'hist') {
+        if (casta === 'populum') this.discoverLore('populum', this.loreDiscovered.populum.includes('fronteira') ? 'guarnicao' : 'fronteira');
+        else this.discoverLore('populum', 'fronteira');
+      } else if (act === 'train') {
+        if (!ok(150)) { this.openBuilding(npc); return; }
+        p.str += 5;
+        this.burst(p.x, p.y - 20, '#c0392b', 12, 200);
+        this.sfx.upgrade();
+        this.banner('Músculo de aço: +5 de força', '#ff9d5c', 2);
+      }
+    } else { // tower
+      if (act === 'med') {
+        p.hp = p.maxHp;
+        const sk = p.allSkills();
+        sk.forEach(s => { p.cd[s.id] = 0; });
+        this.sparkleFx(p, '#c0b4ff', 16);
+        this.sfx.heal();
+        this.banner('Mente clara: vida e habilidades restauradas', '#c0b4ff', 2);
+      } else if (act === 'grim') {
+        this.discoverLore('mago', 'veo');
+      } else if (act === 'consult') {
+        if (!ok(150)) { this.openBuilding(npc); return; }
+        p.int += 6;
+        this.sparkleFx(p, '#7a6bd8', 16);
+        this.sfx.upgrade();
+        this.banner('Saber arcano: +6 de inteligência', '#b07cff', 2);
+      }
+    }
+    this.openBuilding(npc);
+    this.hud();
+  },
+
+  blessingFx(p, color, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 6.283;
+      this.particles.push(new Particle({
+        x: p.x + Math.cos(a) * rand(10, 40), y: p.y + rand(-10, 30),
+        vx: -Math.cos(a) * 40, vy: -90 - Math.random() * 60, life: 0.9, color, size: rand(3, 6), grav: -160
+      }));
+    }
+  },
+
+  sparkleFx(p, color, n) {
+    for (let i = 0; i < n; i++) {
+      this.particles.push(new Particle({
+        x: p.x + rand(-24, 24), y: p.y + rand(-20, 20),
+        vx: rand(-50, 50), vy: rand(-50, 50), life: 0.6, color, size: rand(2, 4), grav: 0
+      }));
     }
   },
 
@@ -440,6 +701,9 @@ const GAME = {
     byId('cheatpanel').classList.add('hidden');
     byId('records').classList.add('hidden');
     byId('skills').classList.add('hidden');
+    byId('bld').classList.add('hidden');
+    byId('dialog').classList.add('hidden');
+    byId('bossintro').classList.add('hidden');
     if (this.state !== 'death' && this.state !== 'win' && this.state !== 'menu') this.state = 'play';
   },
 
@@ -1301,9 +1565,23 @@ const GAME = {
     m.dieT = 0.3;
     this.burst(m.x, m.y, d.color, 16, 220);
     this.burst(m.x, m.y, d.dark, 8, 140);
-    const gold = randint(d.gold[0], d.gold[1]);
-    if (gold > 0) this.pickups.push(new Pickup(m.x, m.y - 10, 'coin', gold));
-    if (Math.random() < 0.12) this.pickups.push(new Pickup(m.x, m.y - 20, 'heart'));
+
+    const regionDanger = dangerAt(this, m.x, m.y);
+    const lootConfig = dangerLoot(regionDanger);
+
+    const goldAmount = randint(d.gold[0], d.gold[1]);
+    const finalGold = Math.round(goldAmount * lootConfig.goldMult);
+    if (finalGold > 0) this.pickups.push(new Pickup(m.x, m.y - 10, 'coin', finalGold));
+    
+    if (Math.random() < lootConfig.heartChance) this.pickups.push(new Pickup(m.x + rand(-10,10), m.y - 20, 'heart'));
+    if (Math.random() < lootConfig.powerChance) this.pickups.push(new Pickup(m.x + rand(-10,10), m.y - 30, 'powerup'));
+
+    if (d.rare) {
+      this.pickups.push(new Pickup(m.x, m.y - 25, 'heart'));
+      this.pickups.push(new Pickup(m.x + rand(-10,10), m.y - 35, 'powerup'));
+      this.banner(d.name + ' Derrotado! (RARO)', '#ffd23f', 2.2);
+    }
+
     this.sfx.kill();
     this.stats.kills++;
     this.addGoal(m);
@@ -1314,8 +1592,14 @@ const GAME = {
   },
 
   addGoal(m) {
-    const f = m.def.final;
-    if (f && !this.flags.final) this.flags.final = true;
+    if (m.def.finalBoss) {
+      if (m.def.casta === this.player.sub.casta) {
+        this.ending = { type: 'own', casta: m.def.casta, bossId: m.def.id, ...FINAL_ENDINGS[m.def.id] };
+      } else {
+        const bossCastaData = FINAL_ENDINGS[m.def.id];
+        this.ending = { type: 'other', casta: m.def.casta, bossId: m.def.id, altLinePersona: bossCastaData.poster };
+      }
+    }
   },
 
   openChest(x, y, big) {
@@ -1348,7 +1632,7 @@ const GAME = {
     this.bossesActive = this.bossesActive.filter(b => b !== m);
     this.boss = null;
     this.bossAggroed = false;
-    
+
     // Track defeated boss per zone
     const bossZoneMap = {
       'krol_chefe': 'Floresta dos Goblins',
@@ -1358,21 +1642,18 @@ const GAME = {
     if (bossZoneMap[d.id]) {
       this.defeatedBosses[bossZoneMap[d.id]] = true;
     }
-    
-    const cryId = d.crystal;
-    if (cryId) {
-      const cry = CRYSTALS[cryId];
-      this.crystals[cryId] = true;
-      // abre o portão correspondente
-      if (cryId === 'floresta') this.world.gates.forEach(g => { if (g.id === 'caverna') g.open = true; });
-      if (cryId === 'sombrio') this.world.gates.forEach(g => { if (g.id === 'gruta') g.open = true; });
+
+    // Handle crystals and seal progression
+    if (d.crystal) {
+      const cry = CRYSTALS[d.crystal];
+      this.crystals[d.crystal] = true;
       this.banner(cry.name + ' OBTIDO!', cry.color, 3);
       this.burst(m.x, m.y - 30, cry.color, 18, 240);
       this.sfx.upgrade();
     }
-    if (d.final) {
+
+    if (d.finalBoss) {
       this.flags.final = true;
-      this.pickups.push(new Pickup(this.player.x + 40, this.player.y - 80, 'chest', 0));
       this.endGame();
     } else {
       this.banner(d.name.toUpperCase() + ' DESTRUÍDO!', '#ffd23f', 3);
@@ -1393,9 +1674,19 @@ const GAME = {
     if (m.aggro <= 0) return;
     if (m.stunned > 0) return;
 
+    // Intro for final bosses
+    if (m.def.finalBoss && !m.introShown) {
+      m.introShown = true;
+      this.showBossIntro(m);
+    }
+
     const atk = m.def.id === 'krol_chefe' ? this.krolPattern(m, dt, dx, dy, d2)
              : m.def.id === 'gere_osso' ? this.gerePattern(m, dt, dx, dy, d2)
-             : this.titanPattern(m, dt, dx, dy, d2);
+             : m.def.id === 'titan' ? this.titanPattern(m, dt, dx, dy, d2)
+             : m.def.id === 'demonio' ? this.demonioPattern(m, dt, dx, dy, d2)
+             : m.def.id === 'general' ? this.generalPattern(m, dt, dx, dy, d2)
+             : m.def.id === 'arcano' ? this.arcanoPattern(m, dt, dx, dy, d2)
+             : null;
     if (atk) m.stunned = atk;
     // movimento básico em direção ao jogador quando não está atacando
     if (m.bossCd <= 0.6 && d2 > m.w * 0.9) {
@@ -1544,6 +1835,173 @@ const GAME = {
     }
   },
 
+  demonioPattern(m, dt, dx, dy, d2) {
+    m.bossCd -= dt;
+    const p = this.player;
+    if (m.bossCd > 0) return 0;
+    m.bossCd = 0;
+    const phase2 = m.hp < m.maxHp * 0.5;
+    const r = Math.random();
+    if (r < 0.3) {
+      // Infernal Breath: cone of fire
+      m.bossCd = 2.5;
+      this.banner('SOPRO INFERNAL!', '#ff6b6b', 1.2);
+      const a = Math.atan2(dy, dx);
+      for (let i = -2; i <= 2; i++) {
+        const ang = a + i * 0.25;
+        this.shootEnemy(m, Math.cos(ang) * 80, Math.sin(ang) * 80, { speed: 350, big: true, fromBoss: true });
+      }
+      return 0.5;
+    } else if (r < 0.6 && phase2) {
+      // Summon Demoninhos
+      m.bossCd = 3.5;
+      this.banner('FILHOS DO CAOS!', '#ff5c5c', 1.5);
+      for (let i = 0; i < 3; i++) this.summonMinion(m.x, m.y, 'demoninho');
+      this.ring(m.x, m.y, 120, 0.6, '#c0504a', 4);
+      this.sfx.boss();
+      return 0.6;
+    } else {
+      // Charge + Slam
+      m.bossCd = 2.2;
+      this.banner('INVESTIDA DO DEMÔNIO!', '#c0392b', 1);
+      const a = Math.atan2(dy, dx);
+      this.ring(m.x + Math.cos(a) * 60, m.y + Math.sin(a) * 60, 60, 0.5, '#ff5c5c', 3);
+      this.delayed.push({ t: 0.35, fn: () => {
+        m.vx = Math.cos(a) * 650; m.vy = Math.sin(a) * 650;
+        this.ring(m.x, m.y, 200, 0.7, '#ff5c5c', 5);
+      } });
+      this.delayed.push({ t: 0.6, fn: () => this.bossSlam(m) });
+      return 0.7;
+    }
+  },
+
+  generalPattern(m, dt, dx, dy, d2) {
+    m.bossCd -= dt;
+    const p = this.player;
+    if (m.bossCd > 0) return 0;
+    m.bossCd = 0;
+    const phase2 = m.hp < m.maxHp * 0.4;
+    const r = Math.random();
+    if (r < 0.35) {
+      // Volley of gunfire
+      m.bossCd = 2.2;
+      this.banner('SALVA DE ARQUEBUSES!', '#b5651d', 1);
+      const base = Math.atan2(dy, dx);
+      const nsh = phase2 ? 12 : 8;
+      for (let i = 0; i < nsh; i++) {
+        const off = (i - (nsh - 1) / 2) * 0.15 + (Math.random() - 0.5) * 0.1;
+        this.shootEnemy(m, Math.cos(base + off) * 100, Math.sin(base + off) * 100, { speed: 500, bone: true });
+      }
+      return 0.4;
+    } else if (r < 0.65) {
+      // Tactical Charge
+      m.bossCd = 1.8;
+      this.banner('CARGA TÁTICA!', '#c0392b', 1);
+      const a = Math.atan2(dy, dx);
+      this.ring(m.x, m.y, 80, 0.4, '#ffd23f', 3);
+      this.delayed.push({ t: 0.25, fn: () => {
+        m.vx = Math.cos(a) * 700; m.vy = Math.sin(a) * 700;
+        this.ring(m.x, m.y, 160, 0.6, '#ff5c5c', 4);
+      } });
+      return 0.4;
+    } else {
+      // Summon Soldiers + Shield
+      m.bossCd = 4;
+      this.banner('GUARNIÇÃO, AVANTE!', '#a0a8a0', 1.5);
+      for (let i = 0; i < (phase2 ? 4 : 3); i++) this.summonMinion(m.x, m.y, 'soldado_leal');
+      m.status = m.status || {};
+      m.status.shield = 150;
+      m.status.shieldT = 8;
+      this.ring(m.x, m.y, 140, 0.7, '#ffd27f', 5);
+      this.sfx.buff();
+      return 0.6;
+    }
+  },
+
+  arcanoPattern(m, dt, dx, dy, d2) {
+    m.bossCd -= dt;
+    const p = this.player;
+    if (m.bossCd > 0) return 0;
+    m.bossCd = 0;
+    const phase2 = m.hp < m.maxHp * 0.4;
+    const phase3 = m.hp < m.maxHp * 0.2;
+    const r = Math.random();
+    if (r < 0.3) {
+      // Chaos Burst: radial projectiles
+      m.bossCd = 2;
+      this.banner('CAOS ARCANO!', '#a08ad8', 1);
+      for (let i = 0; i < (phase2 ? 16 : 12); i++) {
+        const a = (i / (phase2 ? 16 : 12)) * 6.283;
+        this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 300, big: true, fromBoss: true });
+      }
+      this.ring(m.x, m.y, 120, 0.6, '#a08ad8', 4);
+      return 0.4;
+    } else if (r < 0.6) {
+      // Teleport + Devour (pull)
+      m.bossCd = 2.5;
+      this.banner('DEVORAR!', '#8e44ad', 1.2);
+      const tx = p.x + rand(-100, 100), ty = p.y + rand(-100, 100);
+      if (!this.world.solidBox({ x: tx - m.w/2, y: ty - m.h/2, w: m.w, h: m.h })) {
+        m.x = tx; m.y = ty;
+        this.burst(m.x, m.y, '#c0b4ff', 14, 200);
+      }
+      // Pull player
+      const pullDist = 250;
+      const pd = Math.hypot(p.x - m.x, p.y - m.y);
+      if (pd < pullDist) {
+        const ang = Math.atan2(m.y - p.y, m.x - p.x);
+        p.vx += Math.cos(ang) * 400;
+        p.vy += Math.sin(ang) * 400;
+      }
+      this.delayed.push({ t: 0.3, fn: () => {
+        this.ring(m.x, m.y, 140, 0.5, '#ff5c5c', 4);
+        if (Math.hypot(p.x - m.x, p.y - m.y) < 150) this.damagePlayer(Math.round(m.def.dmg * 0.7));
+      } });
+      return 0.5;
+    } else if (phase3) {
+      // Summon Homúnculos
+      m.bossCd = 5;
+      this.banner('HOMÚNCULOS, DESPERTAI!', '#d8a0b0', 1.5);
+      for (let i = 0; i < 3; i++) this.summonMinion(m.x, m.y, 'homunculo');
+      this.ring(m.x, m.y, 180, 0.7, '#ff5c5c', 5);
+      this.sfx.boss();
+      return 0.6;
+    } else {
+      // Arcane Beam
+      m.bossCd = 3;
+      this.banner('RAIO ARCANO!', '#7a6bd8', 1);
+      const a = Math.atan2(dy, dx);
+      this.ring(m.x, m.y, 80, 0.5, '#c0b4ff', 3);
+      this.delayed.push({ t: 0.5, fn: () => {
+        this.beamEffect(m.x, m.y, Math.cos(a), Math.sin(a), 360, '#a08ad8');
+        for (const mm of this.monsters) {
+          if (mm.dying || mm.dead) continue;
+          const mx = mm.x - m.x, my = mm.y - m.y;
+          const proj = mx * Math.cos(a) + my * Math.sin(a);
+          if (proj > 0 && proj < 360) {
+            const perp = Math.abs(mx * Math.sin(a) - my * Math.cos(a));
+            if (perp < 30) this.damageMonster(mm, m.def.dmg, T.MAGIC);
+          }
+        }
+      } });
+      return 0.6;
+    }
+  },
+
+  showBossIntro(m) {
+    this.state = 'bossintro';
+    const data = FINAL_ENDINGS[m.def.id] || { intro: ['Um inimigo poderoso aparece!'], title: m.def.name };
+    let html = `<h2>${data.title || m.def.name.toUpperCase()}</h2><div class="introText">`;
+    (data.intro || []).forEach(line => { html += `<p>${line}</p>`; });
+    html += `</div><button class="btn" id="btnBossIntro">Enfrentar</button>`;
+    byId('bossintroPanel').innerHTML = html;
+    byId('bossintro').classList.remove('hidden');
+    byId('btnBossIntro').onclick = () => {
+      byId('bossintro').classList.add('hidden');
+      this.state = 'play';
+    };
+  },
+
   summonMinion(x, y, kind) {
     kind = kind || 'goblin';
     const def = MONSTERS[kind];
@@ -1573,7 +2031,18 @@ const GAME = {
     this.flags.final = true;
     this.sfx.bossDie();
     this.saveRecord();
-    this.showResults();
+
+    if (this.ending && this.ending.type === 'own') {
+      this.banner(this.ending.msg, this.player.sub.accent, 4);
+      this.delayed.push({ t: 2.5, fn: () => this.showResults() });
+    } else if (this.ending && this.ending.type === 'other') {
+      const msg = `Você é bom nisso... já pensou em ser ${this.ending.altLinePersona}?`;
+      this.banner(msg, '#ffd23f', 4);
+      this.delayed.push({ t: 2.5, fn: () => this.showResults() });
+    } else {
+      // Fallback (should not happen with new system)
+      this.showResults();
+    }
   },
 
   score() {
@@ -1630,27 +2099,46 @@ const GAME = {
     const sc = this.score();
     const el = byId('resultsPanel');
     const cls = this.player.sub;
-    let html = `<h2>O EXECRA CAIU</h2>
-      <div class="reswrap">
-        <div class="resc"><span>Classe</span><b style="color:${cls.accent}">${cls.name}</b></div>
-        <div class="resc"><span>Tempo</span><b>${this.formatTime(s.time)}</b></div>
-        <div class="resc"><span>Inimigos</span><b>${s.kills}</b></div>
-        <div class="resc"><span>Chefes</span><b>${s.bosses}</b></div>
-        <div class="resc"><span>Mortes</span><b>${s.deaths}</b></div>
-        <div class="resc"><span>Dano causado</span><b>${s.dmgDealt}</b></div>
-        <div class="resc"><span>Dano recebido</span><b>${s.dmgTaken}</b></div>
-        <div class="resc"><span>Maior combo</span><b>x${s.maxCombo}</b></div>
-        <div class="resc"><span>Nível da arma</span><b>+${this.player.weapon.tier}</b></div>
-        <div class="resc"><span>Power-ups</span><b>${s.powerups}</b></div>
-        <div class="resc"><span>Exploração</span><b>${s.exploration} zonas</b></div>
-      </div>
-      <div class="finalScore">PONTUAÇÃO: <span style="color:${cls.accent}">${sc}</span></div>`;
+    let html = `<h2>${this.ending && this.ending.type === 'other' ? 'TRIUNFO IMPREVISTO' : (this.ending ? this.ending.title : 'O EXECRA CAIU')}</h2>`;
+    
+    if (this.ending && this.ending.type === 'own') {
+      html += `<div class="endingMsg" style="color:${cls.accent}; font-size:18px; margin:10px 0;">${this.ending.msg}</div>`;
+    } else if (this.ending && this.ending.type === 'other') {
+      html += `<div class="endingMsg" style="color:#ffd23f; font-size:18px; margin:10px 0;">Você é bom nisso... já pensou em ser ${this.ending.altLinePersona}?</div>`;
+    }
+
+    html += `<div class="reswrap">
+      <div class="resc"><span>Classe</span><b style="color:${cls.accent}">${cls.name}</b></div>
+      <div class="resc"><span>Tempo</span><b>${this.formatTime(s.time)}</b></div>
+      <div class="resc"><span>Inimigos</span><b>${s.kills}</b></div>
+      <div class="resc"><span>Chefes</span><b>${s.bosses}</b></div>
+      <div class="resc"><span>Mortes</span><b>${s.deaths}</b></div>
+      <div class="resc"><span>Dano causado</span><b>${s.dmgDealt}</b></div>
+      <div class="resc"><span>Dano recebido</span><b>${s.dmgTaken}</b></div>
+      <div class="resc"><span>Maior combo</span><b>x${s.maxCombo}</b></div>
+      <div class="resc"><span>Nível da arma</span><b>+${this.player.weapon.tier}</b></div>
+      <div class="resc"><span>Power-ups</span><b>${s.powerups}</b></div>
+      <div class="resc"><span>Exploração</span><b>${s.exploration} zonas</b></div>
+    </div>
+    <div class="finalScore">PONTUAÇÃO: <span style="color:${cls.accent}">${sc}</span></div>`;
+
     const rec = this.loadRecords();
     if (rec.bestScore) html += `<div class="records"><div>Recorde local — pontuação máxima: <b>${rec.bestScore}</b></div><div>Recorde — tempo: <b>${this.formatTime(rec.bestTime)}</b></div><div>Zeramentos: <b>${rec.wins}</b></div></div>`;
+
     html += `<div class="resbtns">`;
+    if (this.ending && this.ending.type === 'other') {
+      html += `<button class="btn" id="btnContinue">Continuar explorando</button> `;
+    }
     html += `<button class="btn" id="btnMenu">Menu principal</button></div>`;
+
     el.innerHTML = html;
     byId('btnMenu').onclick = () => this.toMenu();
+    if (this.ending && this.ending.type === 'other') {
+      byId('btnContinue').onclick = () => {
+        this.state = 'play';
+        byId('results').classList.add('hidden');
+      };
+    }
     byId('results').classList.remove('hidden');
   },
 
@@ -1795,8 +2283,8 @@ const GAME = {
     this.bossAggroed = false;
     this.bossesActive = [];
     this.crystals = {};
-    this.spawnZones.forEach(z => z.reset());
-    this.spawnZones.forEach(z => z.update(0.01, this));
+    this.world.resetSpawns();
+    this.world.update(0.01, this);
     this.state = 'play';
     byId('death').classList.add('hidden');
     this.hud();
@@ -1872,7 +2360,7 @@ const GAME = {
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.world.draw(ctx, this.cam, t);
 
-    const inCave = this.player && this.zoneTitle === 'Caverna Sombria' || this.player && this.zoneTitle === 'Gruta do Titã';
+    const inCave = this.indoorNames[this.zoneTitle];
     if (inCave) {
       ctx.fillStyle = 'rgba(8,10,18,0.30)';
       ctx.fillRect(this.cam.x, this.cam.y, this.cw, this.ch);
@@ -1951,6 +2439,64 @@ const GAME = {
       ctx.arc(0, -27, 7, Math.PI, 0);
       ctx.fill();
       ctx.fillRect(-7, -26, 14, 3);
+    } else if (n.kind === 'skills') {
+      ctx.fillStyle = n.accent;
+      ctx.beginPath();
+      ctx.moveTo(0, -32);
+      ctx.lineTo(9, -18);
+      ctx.lineTo(-9, -18);
+      ctx.closePath();
+      ctx.fill();
+    } else if (n.kind === 'guide') {
+      ctx.fillStyle = n.accent;
+      ctx.beginPath();
+      ctx.arc(0, -28, 6, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-1, -31, 2, 6);
+    } else if (n.kind === 'church') {
+      ctx.fillStyle = '#fff3b0';
+      ctx.beginPath();
+      ctx.moveTo(0, -30);
+      ctx.lineTo(-8, -16);
+      ctx.lineTo(8, -16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#c9a227';
+      ctx.fillRect(-2, -20, 4, 10);
+    } else if (n.kind === 'tavern') {
+      ctx.fillStyle = '#a8823f';
+      ctx.beginPath();
+      ctx.arc(0, -26, 8, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-8, -25, 16, 4);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(-3, -18, 6, 6);
+    } else if (n.kind === 'tower') {
+      ctx.fillStyle = '#7a6bd8';
+      ctx.fillRect(-4, -28, 8, 12);
+      ctx.fillStyle = '#c0b4ff';
+      ctx.beginPath();
+      ctx.arc(0, -32, 5, 0, 6.283);
+      ctx.fill();
+    } else if (n.kind === 'seal') {
+      const ph = t * 3 + n.px * 0.01;
+      ctx.globalAlpha = 0.5 + Math.sin(ph) * 0.3;
+      ctx.fillStyle = n.accent || '#b05cff';
+      ctx.beginPath();
+      ctx.arc(0, -20, 10 + Math.sin(ph * 2) * 3, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -20, 14, 0, 6.283);
+      ctx.stroke();
+    } else if (n.kind === 'talk') {
+      ctx.fillStyle = n.accent;
+      ctx.beginPath();
+      ctx.arc(0, -26, 6, 0, 6.283);
+      ctx.fill();
     } else {
       ctx.fillStyle = n.accent;
       ctx.beginPath();
@@ -1959,6 +2505,19 @@ const GAME = {
       ctx.lineTo(-9, -18);
       ctx.closePath();
       ctx.fill();
+    }
+
+    // Confession indicator for Clero NPCs
+    if (n.confessed && this.player && this.player.sub.casta === 'clero') {
+      ctx.fillStyle = '#fff3b0';
+      ctx.globalAlpha = 0.7 + Math.sin(t * 5) * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(0, -38);
+      ctx.lineTo(-6, -30);
+      ctx.lineTo(6, -30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
 
     ctx.fillStyle = '#222';

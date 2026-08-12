@@ -15,16 +15,32 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - **Habilidades extras**: até 3 habilidades adicionais compráveis (R/T/Y) no Mestre das Artes.
 - **Combate**: corpo a corpo, projéteis, auras e área; sistema de fraquezas/resistências por tipo de dano (Físico, Sagrado, Mágico).
 - **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras.
-- **Mundo**: mapa procedural 110×50 tiles com 6 zonas (Rio, Prado Sereno, Vila de Pedra, Floresta dos Goblins, Catacumbas, Gruta do Execra).
-- **Monstros**: 15 inimigos regulares + 3 chefes (Krol Chefe, Gere Osso, Titã do Execra) com padrões de ataque distintos.
-- **Controle de spawn**: ao derrotar o chefe de uma área, os monstros comuns param de spawnar (spawn drasticamente reduzido).
-- **Portões**: Catacumbas e Gruta abrem ao derrotar chefes e obter cristais.
-- **NPCs**: Ferreiro, Vendedor, Mestre das Artes, Cronista (guia).
+- **Mundo vasto e dinâmico**: mapa de 400×240 tiles (12.800 × 7.680 px) gerado proceduralmente em chunks de 16×16 tiles. Apenas a área próxima ao jogador é carregada/renderizada; chunks distantes são descarregados e recriados ao retornar, preservando dados importantes (chefes derrotados, árvores destruídas, progresso de selos).
+- **18 biomas/regiões**: Prado Sereno, Vila de Pedra, Campos de Trigo, Floresta dos Goblins, Bosque dos Lobos, Campo do Norte, Bosque Sagrado, Pântano Sombrio, Ruínas de Aurelia, Cemitério dos Esquecidos, Colinas Rochosas, Templo Ruinoso, Várzea Sul, Catacumbas, Gruta do Execra, Cova do Demônio, Forte do General, Torre Perdida.
+- **30+ tipos de monstros**: 15 originais + 16 novos por bioma + 4 raros/especiais (Lobisomem, Gigante de Pedra, Sacerdote da Noite, Dragãozinho) com recompensas escalonadas. Monstros mais fortes em regiões perigosas dão mais ouro, maior chance de itens e vida/poções.
+- **Sistema de spawn melhorado**: monstros nascem em pontos determinísticos por chunk, nunca em cima do jogador (distância mínima 210px), com cooldowns baseados no perigo da região.
+- **Estabelecimentos por casta**:
+  - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero).
+  - **Taverna** (Populum): bebida (cura por ouro), histórias de guerra (lore do Populum), treino forjado (+força permanente).
+  - **Torre Arcana** (Mago): meditar (cura + reset cooldowns grátis), grimório (lore do Mago), consulta arcana (+inteligência permanente).
+- **NPCs e pequenas histórias**: 22 NPCs espalhados com diálogos específicos por casta. Interações exclusivas:
+  - **Confissão** (Clero): NPCs revelam segredos; jogador ganha +10 vida máx, +2 int, dano +35% temporário, visual de bênção dourada.
+  - **Treino** (Populum): +2 força + dano +25% temporário.
+  - **Saber arcano** (Mago): +3 inteligência permanente.
+- **Lore progressiva por casta**: 4 capítulos do Clero, 4 do Populum, 4 do Mago, descobertos naturalmente em igrejas, tavernas, torres, zonas especiais e NPCs.
+- **Finais específicos por casta** (cada um com arena, intro, padrões únicos):
+  - **Clero**: Mastema, o Demônio (Cova do Demônio) → "Você guiou as almas do Senhor a Ele."
+  - **Populum**: General Tarraske (Forte do General) → "O General caiu. A fronteira do povo está segura."
+  - **Mago**: O Arcano Devorador (Torre Perdida) → "O véu tornou a se fechar. O saber prevalece."
+- **Final alternativo**: derrotar o chefe de outra casta exibe "Você é bom nisso... já pensou em ser [Padre/Guerreiro/Mago]?" e permite continuar explorando.
+- **Progressão por Selos**: 5 selos interativos (Catacumbas, Gruta, Cova do Demônio, Forte, Torre) exigem cristais específicos (Floresta, Sombrio, Final) para abrir.
+- **Controle de spawn**: ao derrotar o chefe de uma área, monstros comuns param de spawnar (spawn drasticamente reduzido).
+- **NPCs**: Ferreiro, Vendedor, Mestre das Artes, Cronista, Pároco, Taberneiro, Erudito, + NPCs de lore/confissão/treino espalhados pelo mundo.
 - **Estatísticas**: tempo, abates, chefes, mortes, dano causado/recebido, combo máximo, power-ups, zonas visitadas.
 - **Recordes locais**: salvos no `localStorage` por subclasse.
-- **Sistema de cheats** (F3): ouro/vida infinitos, spawn de itens com quantidade (ex: `get granada x100`), armas modernas (Thompson, Pistola, Minigun, **Sniper** — instakill perfurante mas lenta, **Destruidora** — rápida, forte e perfurante), edição de stats, painel visual.
+- **Sistema de cheats** (F3): ouro/vida infinitos, spawn de itens com quantidade (ex: `get granada x100`), armas modernas (Thompson, Pistola, Minigun, Sniper, Destruidora), edição de stats, painel visual.
 - **Granadas realistas**: arco balístico, caem no chão e explodem ao impacto.
-- **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante.
+- **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante, auras de raro/chefes finais.
 - **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, arremesso, etc.).
 
 ## Estrutura de dados
@@ -42,30 +58,35 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 - `hp`, `dmg`, `speed`, `behavior` (`hop`, `swoop`, `chase`, `range`, `slowChase`, `wraith`, `boss`)
 - `resist` / `weak`: arrays de tipos de dano
 - `gold`: range de recompensa
-- Propriedades especiais: `fly`, `venom`, `invokes`, `explodeOnDeath`, `boss`, `crystal`
+- Propriedades especiais: `fly`, `venom`, `invokes`, `explodeOnDeath`, `boss`, `crystal`, `finalBoss`, `casta`, `rare`, `tier`
 
-### Zonas e Spawns
-- `ZONES`: áreas nomeadas com limites retangulares (usadas para título de zona e exploração).
-- `SPAWNS`: lista de pontos de spawn por zona com tipo de monstro e coordenadas; bosses marcados com `bossRoom: true`.
+### Regiões e Spawns
+- `REGIONS`: 18 áreas nomeadas com limites retangulares, `decor` (grass, fields, forest, swamp, ruins, cemetery, rocky, cave, hell, fort, arcane, town), `danger` (1-5), `density`, `priority`, `indoor`, `monsters` (tabela ponderada), `rares`, `boss` fixo.
+- `SEALS`: 5 selos interativos substituindo portões estáticos; exigem cristais específicos.
+- Spawns dinâmicos por chunk: pontos de spawn determinísticos com validação de solo caminhável, distância mínima do jogador, cooldown por perigo da região.
 
 ## Estatísticas / Persistência
 
 - **Estatísticas da run** (`GAME.stats`): zeradas a cada nova partida; incluem tempo, kills, bosses, deaths, dmgDealt, dmgTaken, maxCombo, powerups, exploration.
-- **Recordes**: salvos no `localStorage` sob a chave `eclesia_records`. Estrutura por subclasse: `{ score, time, kills, bosses, date }`. Exibidos no menu via botão "Recordes Locais".
-- Não há backend ou sincronização na nuvem.
+- **Recordes**: salvos no `localStorage` sob a chave `eclesia_v1`. Estrutura por subclasse: `{ bestScore, bestTime, wins }`. Exibidos no menu via botão "Recordes Locais".
+- **Progressão importante persistida entre chunks/mortes**: chefes derrotados (`defeatedBosses`), cristais obtidos (`crystals`), selos quebrados (`sealsBroken`), lore descoberto (`loreDiscovered`), NPCs confessados/treinados (`eventDone`).
 
 ## Próximos passos
 
 ### Concluído
 - Sistema de classes, habilidades e combate base
-- Mapa procedural com zonas, portões e progressão por chefes
-- NPCs (forge, shop, skills, guide) funcionalidades
-- Monstros com comportamentos variados e 3 bosses com padrões
+- Mundo vasto procedural com chunks dinâmicos, 18 biomas, town craftada
+- NPCs e estabelecimentos por casta com interações exclusivas (confissão, treino, saber)
+- 30+ monstros com comportamentos variados, raros com recompensas pesadas, spawn melhorado
+- 3 chefs de progressão (Krol, Gere, Titã) + 3 chefes finais por casta (Demônio, General, Arcano) com padrões únicos
+- Lore progressiva por casta descoberta naturalmente
+- Finais específicos por casta + final alternativo
+- Progressão por Selos (cristais) substituindo portões estáticos
 - Persistência de recordes no localStorage
 - Sistema de cheats para testes (com quantidade dinâmica `xN`)
 - Armas modernas expandidas: Sniper (instakill) e Destruidora (rápida + perfurante)
 - Granadas com física realística (arco + explosão no chão)
-- Controle de spawn por zona (pára/reduz drasticamente após boss)
+- Controle de spawn por região (pára/reduz drasticamente após boss)
 - Efeitos visuais, áudio, HUD, menus
 
 ### Próximos passos
