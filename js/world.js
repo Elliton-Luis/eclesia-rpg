@@ -339,6 +339,7 @@ class World {
   gateBox() { return null; }
 
   move(e, dx, dy) {
+    if (e.ghost) { e.x += dx; e.y += dy; return; }
     const b = e.box();
     // Eixo X — testa a box deslocada horizontalmente.
     if (!this.solidBox({ x: b.x + dx, y: b.y, w: b.w, h: b.h })) e.x += dx;

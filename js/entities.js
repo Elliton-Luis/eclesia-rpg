@@ -16,6 +16,7 @@ class Player {
     this.vx = 0;
     this.vy = 0;
     this.facing = 1;
+    this.ghost = false;
     this.mv = { x: 0, y: 0 };
     this.aimAng = 0;
     this.aimDir = { x: 1, y: 0 };

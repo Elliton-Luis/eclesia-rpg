@@ -45,7 +45,7 @@ const GAME = {
   skillEls: [],
   shopN: {},
   startPos: { x: 116.5 * TILE, y: 123.5 * TILE },
-  cheats: { gold: false, hp: false },
+  cheats: { gold: false, hp: false, ghost: false },
   auraT: 0,
   attackHeld: false,
   flags: {},
