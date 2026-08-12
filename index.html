@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eclésia — Protótipo RPG 2D</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="topbar">
+    <div id="hpwrap">
+      <div id="hpbar"></div>
+      <span id="hptext">0/0</span>
+    </div>
+    <div id="gold"><span class="coin">●</span><span id="goldval">0</span></div>
+  </div>
+  <div id="attrs">
+    <div class="attr"><span class="al">❤</span><b id="st_vida">0</b></div>
+    <div class="attr"><span class="al">▶</span><b id="st_vel">0</b></div>
+    <div class="attr"><span class="al">⚔</span><b id="st_for">0</b></div>
+    <div class="attr"><span class="al">✦</span><b id="st_int">0</b></div>
+  </div>
+  <div id="info">
+    <div id="classname">—</div>
+    <div id="weapon">—</div>
+  </div>
+  <div id="skillbar"></div>
+  <div id="zonetitle"></div>
+  <div id="interact" class="hidden">Pressione <b>F</b> para interagir</div>
+  <div id="cheatbar" class="hidden">
+    <span class="ctag">CHEAT</span>
+    <input id="cheatInput" placeholder="código... (F3)" spellcheck="false" autocomplete="off">
+  </div>
+  <div id="helpbar">A/D/W/S mover · Shift correr · J atacar · Q/E habilidades · F interagir · P pausa · M som · F3 cheats</div>
+</div>
+
+<div id="menu" class="overlay">
+  <div class="panel">
+    <h1>ECLÉSIA</h1>
+    <p class="sub">Protótipo RPG 2D — escolha sua casta e subclasse</p>
+    <div id="menuGrid"></div>
+    <button class="btn ghost" id="btnRecords">Recordes Locais</button>
+    <div class="help">
+      <b>Controles:</b> A/D/W/S mover · Shift correr · J ou clique atacar ·
+      Q/E/R/T habilidades · F interagir · P pausa · M som
+    </div>
+  </div>
+</div>
+
+<div id="shop" class="overlay hidden"><div class="panel small" id="shopPanel"></div></div>
+<div id="forge" class="overlay hidden"><div class="panel small" id="forgePanel"></div></div>
+<div id="skills" class="overlay hidden"><div class="panel small" id="skillsPanel"></div></div>
+<div id="guide" class="overlay hidden"><div class="panel small" id="guidePanel"></div></div>
+<div id="records" class="overlay hidden"><div class="panel small" id="recordsPanel"></div></div>
+<div id="results" class="overlay hidden"><div class="panel small" id="resultsPanel"></div></div>
+
+<div id="cheatpanel" class="overlay hidden">
+  <div class="panel small" id="cheatPanel"></div>
+</div>
+
+<div id="death" class="overlay hidden">
+  <div class="panel small">
+    <h2>Você morreu...</h2>
+    <p>Mas a aventura continua!</p>
+    <button class="btn" id="btnRespawn">Renascer</button>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <div class="panel small">
+    <h2>Pausado</h2>
+    <p>Pressione <b>P</b> para continuar</p>
+  </div>
+</div>
+
+<div id="banner" class="hidden"></div>
+<div id="bossbar" class="hidden">
+  <div id="bossname">TITÃ DE PEDRA</div>
+  <div id="bosshpwrap"><div id="bosshp"></div></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/world.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
