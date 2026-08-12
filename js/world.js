@@ -333,6 +333,7 @@ class World {
 
 class Zone {
   constructor(data) {
+    this.zoneName = data.zone;
     this.defs = data.defs.map(d => ({ kind: d.kind, x: d.x, y: d.y, monster: null, cool: 0, bossRoom: !!d.bossRoom }));
   }
 
@@ -342,6 +343,10 @@ class Zone {
 
   update(dt, g) {
     const p = g.player;
+    const bossDefeated = g.defeatedBosses && g.defeatedBosses[this.zoneName];
+    const spawnMultiplier = bossDefeated ? 0.15 : 1; // Drastically reduce spawns after boss defeat
+    const spawnChance = bossDefeated ? 0.05 : 1; // Only 5% chance to spawn after boss defeat
+    
     for (const d of this.defs) {
       if (d.monster) {
         if (d.monster.dead) { d.cool = d.kind === 'krol_chefe' || d.kind === 'gere_osso' || d.kind === 'titan' ? 999 : 6; d.monster = null; }
@@ -349,6 +354,12 @@ class Zone {
       }
       if (d.cool > 0) { d.cool -= dt; continue; }
       if (Math.hypot(d.x - p.x, d.y - p.y) < 1400) {
+        // Skip spawning regular monsters if boss is defeated (low chance)
+        if (bossDefeated && !d.bossRoom && Math.random() > spawnChance) {
+          d.cool = 30 + Math.random() * 60; // Long cooldown
+          continue;
+        }
+        
         let m = null;
         if (d.bossRoom) {
           const crystal = MONSTERS[d.kind].crystal;
@@ -372,6 +383,11 @@ class Zone {
         }
         d.monster = m;
         g.monsters.push(m);
+        
+        // Increase cooldown significantly after boss defeat
+        if (bossDefeated && !d.bossRoom) {
+          d.cool = (6 + Math.random() * 10) * (1 / spawnMultiplier);
+        }
       }
     }
   }

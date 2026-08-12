@@ -45,6 +45,7 @@ const GAME = {
   comboStreak: 0,
   comboT: 0,
   visited: {},
+  defeatedBosses: {},
   stats: { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 },
 
   init() {
@@ -149,6 +150,7 @@ const GAME = {
     this.comboStreak = 0;
     this.comboT = 0;
     this.visited = {};
+    this.defeatedBosses = {};
     this.auraT = 0;
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
     this.zoneId = '';
@@ -520,8 +522,8 @@ const GAME = {
       'stats — abre o painel',
       'ouro 1000 · forca 50 · int 50 · vel 30 · vida 500',
       'dano 200 · tier 10',
-      'get thompson · get pistola · get minigun',
-      'get granada · get exorcismo',
+      'get thompson · get pistola · get minigun · get sniper · get destruidora',
+      'get granada x100 · get exorcismo x5',
       'curar · matar · ajuda'
     ];
     this.banner(list.join('  |  '), '#ffe9b0', 4);
@@ -529,8 +531,16 @@ const GAME = {
 
   giveItem(cmd) {
     const p = this.player;
-    const name = String(cmd).replace(/^get\s+/i, '').replace(/^obter\s+/i, '').trim().toLowerCase();
-    if (!name) { this.banner('Uso: get <arma ou item>', '#ffd23f', 2); return; }
+    let name = String(cmd).replace(/^get\s+/i, '').replace(/^obter\s+/i, '').trim().toLowerCase();
+    if (!name) { this.banner('Uso: get <arma ou item> [x<quantidade>]', '#ffd23f', 2); return; }
+    
+    let qty = 1;
+    const qtyMatch = name.match(/x(\d+)$/);
+    if (qtyMatch) {
+      qty = parseInt(qtyMatch[1], 10);
+      name = name.replace(/x\d+$/, '').trim();
+    }
+    
     const w = MODERN_WEAPONS[name];
     if (w) {
       p.mw = w;
@@ -542,7 +552,7 @@ const GAME = {
     }
     const it = MODERN_ITEMS[name];
     if (it) {
-      p.items[it.id] = (p.items[it.id] || 0) + 1;
+      p.items[it.id] = (p.items[it.id] || 0) + qty;
       this.banner(it.name + ' obtida (x' + p.items[it.id] + ') — tecla ' + it.key, it.color, 2);
       this.burst(p.x, p.y - 20, it.color, 12, 180);
       this.sfx.pick();
@@ -558,14 +568,15 @@ const GAME = {
     if (id === 'granada') {
       p.items[id]--;
       const ang = p.aimAng;
+      const speed = 350;
       this.projectiles.push(new Projectile({
-        x: p.x + Math.cos(ang) * 16, y: p.y + Math.sin(ang) * 16,
-        vx: Math.cos(ang) * 460, vy: Math.sin(ang) * 460,
-        dmg: this.calcStatDmg(T.PHYS, 3.2), type: T.PHYS, color: '#5caeff', size: 9,
-        life: 1.6, aoe: 90, explode: true, clearTree: true, owner: 'player',
-        trail: true, solid: false
+        x: p.x + Math.cos(ang) * 16, y: p.y + Math.sin(ang) * 16 - 20,
+        vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - 200,
+        dmg: this.calcStatDmg(T.PHYS, 3.5), type: T.PHYS, color: '#ff8800', size: 10,
+        life: 3, aoe: 120, explode: true, clearTree: true, owner: 'player',
+        trail: true, solid: false, gravity: 800, groundExplode: true
       }));
-      this.sfx.explosion();
+      this.sfx.throw();
       this.hud();
     } else if (id === 'exorcismo') {
       p.items[id]--;
@@ -1337,6 +1348,17 @@ const GAME = {
     this.bossesActive = this.bossesActive.filter(b => b !== m);
     this.boss = null;
     this.bossAggroed = false;
+    
+    // Track defeated boss per zone
+    const bossZoneMap = {
+      'krol_chefe': 'Floresta dos Goblins',
+      'gere_osso': 'Catacumbas',
+      'titan': 'Gruta do Execra'
+    };
+    if (bossZoneMap[d.id]) {
+      this.defeatedBosses[bossZoneMap[d.id]] = true;
+    }
+    
     const cryId = d.crystal;
     if (cryId) {
       const cry = CRYSTALS[cryId];
@@ -1988,6 +2010,7 @@ const GAME = {
     buff() { this.beep(400, 700, 0.2, 'sine', 0.1); },
     coin() { this.beep(900, 1500, 0.12, 'sine', 0.1); },
     pick() { this.beep(600, 1000, 0.15, 'sine', 0.12); },
+    throw() { this.beep(400, 200, 0.15, 'triangle', 0.1); },
     explosion() { this.beep(150, 40, 0.4, 'sawtooth', 0.18); },
     upgrade() { this.beep(300, 900, 0.3, 'square', 0.1); },
     buy() { this.beep(800, 1100, 0.12, 'sine', 0.12); },

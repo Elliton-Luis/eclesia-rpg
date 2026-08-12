@@ -153,6 +153,18 @@ const MODERN_WEAPONS = {
     cd: 0.032, dmg: 0.42, type: T.PHYS, color: '#ff9d5c',
     size: 6, speed: 920, pierce: false, n: 1, spread: 0.17, jitter: 16, combo: 1,
     desc: 'Cadência absurdamente alta, um cabo de chumbo.'
+  },
+  sniper: {
+    id: 'sniper', name: 'Sniper', kind: 'auto',
+    cd: 1.5, dmg: 99999, type: T.PHYS, color: '#ff3333',
+    size: 10, speed: 1200, pierce: true, n: 1, spread: 0, jitter: 0, combo: 1,
+    desc: 'Instakill, atravessa inimigos, mas cadência muito lenta.'
+  },
+  destruidora: {
+    id: 'destruidora', name: 'Destruidora', kind: 'auto',
+    cd: 0.04, dmg: 2.5, type: T.PHYS, color: '#ff6600',
+    size: 8, speed: 1000, pierce: true, n: 1, spread: 0.05, jitter: 5, combo: 1,
+    desc: 'Rápida como Thompson, forte e atravessa como Sniper.'
   }
 };
 

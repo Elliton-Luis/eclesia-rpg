@@ -1004,6 +1004,8 @@ class Projectile {
     this.explode = !!o.explode;
     this.solid = o.solid !== false;
     this.clearTree = !!o.clearTree;
+    this.gravity = o.gravity || 0;
+    this.groundExplode = !!o.groundExplode;
     this.dead = false;
     this.t = 0;
     this.hit = new Set();
@@ -1012,6 +1014,11 @@ class Projectile {
   update(dt, g) {
     this.t += dt;
     this.life -= dt;
+    
+    if (this.gravity) {
+      this.vy += this.gravity * dt;
+    }
+    
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
@@ -1032,6 +1039,12 @@ class Projectile {
     if (this.solid && g.world.solidPixel(this.x, this.y)) {
       this.dead = true;
       if (this.aoe || this.explode) g.explode(this.x, this.y, this);
+      return;
+    }
+
+    if (this.groundExplode && this.vy > 0 && g.world.solidPixel(this.x, this.y + this.size)) {
+      this.dead = true;
+      g.explode(this.x, this.y, this);
       return;
     }
 
