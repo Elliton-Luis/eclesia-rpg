@@ -17,13 +17,15 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras.
 - **Mundo**: mapa procedural 110×50 tiles com 6 zonas (Rio, Prado Sereno, Vila de Pedra, Floresta dos Goblins, Catacumbas, Gruta do Execra).
 - **Monstros**: 15 inimigos regulares + 3 chefes (Krol Chefe, Gere Osso, Titã do Execra) com padrões de ataque distintos.
+- **Controle de spawn**: ao derrotar o chefe de uma área, os monstros comuns param de spawnar (spawn drasticamente reduzido).
 - **Portões**: Catacumbas e Gruta abrem ao derrotar chefes e obter cristais.
 - **NPCs**: Ferreiro, Vendedor, Mestre das Artes, Cronista (guia).
 - **Estatísticas**: tempo, abates, chefes, mortes, dano causado/recebido, combo máximo, power-ups, zonas visitadas.
 - **Recordes locais**: salvos no `localStorage` por subclasse.
-- **Sistema de cheats** (F3): ouro/vida infinitos, spawn de itens, edição de stats, painel visual.
+- **Sistema de cheats** (F3): ouro/vida infinitos, spawn de itens com quantidade (ex: `get granada x100`), armas modernas (Thompson, Pistola, Minigun, **Sniper** — instakill perfurante mas lenta, **Destruidora** — rápida, forte e perfurante), edição de stats, painel visual.
+- **Granadas realistas**: arco balístico, caem no chão e explodem ao impacto.
 - **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante.
-- **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, etc.).
+- **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, arremesso, etc.).
 
 ## Estrutura de dados
 
@@ -60,7 +62,10 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 - NPCs (forge, shop, skills, guide) funcionalidades
 - Monstros com comportamentos variados e 3 bosses com padrões
 - Persistência de recordes no localStorage
-- Sistema de cheats para testes
+- Sistema de cheats para testes (com quantidade dinâmica `xN`)
+- Armas modernas expandidas: Sniper (instakill) e Destruidora (rápida + perfurante)
+- Granadas com física realística (arco + explosão no chão)
+- Controle de spawn por zona (pára/reduz drasticamente após boss)
 - Efeitos visuais, áudio, HUD, menus
 
 ### Próximos passos
