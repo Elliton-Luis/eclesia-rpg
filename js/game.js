@@ -351,11 +351,11 @@ churchAura() {
       // Monstros que ENTRARAM na área da barreira (30 tiles raio) morrem silenciosamente
       // A barreira é fixa ao redor da cidade - jogadores podem entrar e sair livremente
       // Monstros são afetados quando tocam na barreira ao entrar na área da cidade
-      this.monsters.forEach(m => {
+this.monsters.forEach(m => {
         const dx = m.x - cx;
         const dy = m.y - cy;
         const d = Math.hypot(dx, dy);
-// Se monstro estiver dentro do raio da barreira (20 tiles = 640px) e não estiver morto
+        // Se monstro estiver dentro do raio da barreira (20 tiles = 640px) e não estiver morto
         if (d <= 640 && !m.dead) {
           // Monstros dentro da área da barreira são purificados (matam sem drop)
           m.hp = 0;
@@ -366,6 +366,8 @@ churchAura() {
           this.stats.churchProtected += 1;
         }
       });
+// Verificar se há monstros vivos próximos da barreira para remover mortos
+      this.monsters = this.monsters.filter(m => !m.dead);
       this.monsters = this.monsters.filter(m => !m.dead);
     }
   },
