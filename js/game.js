@@ -49,6 +49,7 @@ const GAME = {
   auraT: 0,
   attackHeld: false,
   flags: {},
+  popeHere: false,
   finished: false,
   bossesActive: [],
   crystals: {},
@@ -180,7 +181,11 @@ const GAME = {
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
     this.newRecords = [];
     this.zoneId = '';
+    this.npcs = this.npcs.filter(n => n.id !== 'papa');
     this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; });
+    // Aparição rara do Papa: 10% de chance por partida.
+    this.popeHere = Math.random() < 0.1;
+    if (this.popeHere) this.spawnPope();
 
     this.player = new Player(sub, this.startPos.x, this.startPos.y, this);
     this.cam.x = this.startPos.x - this.cw / 2;
@@ -227,12 +232,9 @@ const GAME = {
     p.allSkills().forEach((s, i) => {
       this.skillEls.push(mk(s.key, s.name, s.color, () => this.castSkill(i)));
     });
-    const itG = mk('G', 'Granada', '#5caeff', () => this.useModernItem('granada'));
-    itG.dataset.item = 'granada';
-    this.skillEls.push(itG);
-    const itU = mk('U', 'Exorcismo', '#fff3b0', () => this.useModernItem('exorcismo'));
-    itU.dataset.item = 'exorcismo';
-    this.skillEls.push(itU);
+    const itH = mk('H', 'Bênção Suprema', '#fff3b0', () => this.useSupreme());
+    itH.dataset.supreme = '1';
+    this.skillEls.push(itH);
   },
 
   loop(ts) {
@@ -467,13 +469,13 @@ this.monsters.forEach(m => {
     byId('st_for').textContent = p.str;
     byId('st_int').textContent = p.int;
     byId('classname').textContent = CASTAS[p.sub.casta].name + ' — ' + p.sub.name;
-    byId('weapon').textContent = p.mw ? p.mw.name + ' (moderna, dano ' + p.weapon.dmg + ')' : p.weapon.name + ' +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')';
+    byId('weapon').textContent = p.mw ? p.mw.name + ' (dano ' + p.weapon.dmg + ')' : p.weapon.name + ' +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')';
     const lvEl = byId('lvlval');
     if (lvEl) lvEl.textContent = this.progressLevel;
 
     for (let i = 0; i < this.skillEls.length; i++) {
       const el = this.skillEls[i];
-      if (el.dataset && el.dataset.item) continue;
+      if (el.dataset && el.dataset.supreme) continue;
       let cd = 0, max = 1;
       if (i === 0) { cd = p.attackCd; max = ((p.mw || p.sub.attack).cd || 1) / (1 + (p.atkSpd || 0) * 0.1); }
       else { const s = p.allSkills()[i - 1]; if (!s) continue; cd = p.cd[s.id]; max = s.cd; }
@@ -483,10 +485,11 @@ this.monsters.forEach(m => {
     }
     if (this.skillEls[0]) this.skillEls[0].querySelector('.sname').textContent = p.mw ? p.mw.name : 'Ataque';
     for (const el of this.skillEls) {
-      if (!el.dataset || !el.dataset.item) continue;
-      const n = p.items[el.dataset.item] || 0;
-      el.querySelector('.sname').textContent = (el.dataset.item === 'granada' ? 'Granada' : 'Exorcismo') + (n > 0 ? ' x' + n : '');
-      el.style.opacity = n > 0 ? '1' : '0.35';
+      if (!el.dataset || !el.dataset.supreme) continue;
+      const ready = p.supremeBlessed && p.supremeUses > 0;
+      el.style.display = p.supremeBlessed ? '' : 'none';
+      el.style.opacity = ready ? '1' : '0.35';
+      el.querySelector('.sname').textContent = ready ? 'Bênção Suprema' : 'Consumida';
     }
 
     const bb = byId('bossbar');
@@ -519,7 +522,7 @@ this.monsters.forEach(m => {
       return; // ignore qualquer outra tecla de jogo durante overlays
     }
 
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyF', 'KeyP', 'KeyX', 'KeyG', 'KeyU'].includes(e.code)) e.preventDefault();
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyF', 'KeyP', 'KeyX', 'KeyG', 'KeyU', 'KeyB', 'KeyV', 'KeyN', 'KeyH'].includes(e.code)) e.preventDefault();
     this.keys[e.code] = true;
     this.sfx.unlock();
 
@@ -528,8 +531,7 @@ this.monsters.forEach(m => {
       if (e.code === 'KeyF') this.tryInteract();
       if (e.code === 'KeyP') this.pause(true);
       if (e.code === 'KeyM') this.toggleMute();
-      if (e.code === 'KeyG') this.useModernItem('granada');
-      if (e.code === 'KeyU') this.useModernItem('exorcismo');
+      if (e.code === 'KeyH') this.useSupreme();
       const sk = this.player.allSkills();
       sk.forEach((s, i) => { if (e.code === 'Key' + s.key) this.castSkill(i); });
     } else if (this.state === 'paused') {
@@ -588,6 +590,8 @@ this.monsters.forEach(m => {
       this.state = 'building';
       this.openBuilding(npc);
       byId('bld').classList.remove('hidden');
+    } else if (npc.kind === 'pope') {
+      this.doPope(npc);
     } else if (npc.kind === 'talk') {
       this.doTalk(npc);
     } else if (npc.kind === 'seal') {
@@ -801,12 +805,21 @@ doTalk(npc) {
         html += `<div class="item"><div><b>Crisma</b><div class="desc">Administrar Crisma/Confirmação. +40 de vida máxima e +2 inteligência permanentes. (200 ●)</div></div><button class="btn" data-bact="chrism">Crisma</button></div>`;
         html += `<div class="item"><div><b>Ordenar</b><div class="desc">Ordenar novo Diácono/Padre. Recompensa divina única. (300 ●)</div></div><button class="btn" data-bact="ordain">Ordenar</button></div>`;
       }
-      // Exorcismo: bloqueado até ser comprado; depois, pedir ao Bispo dá 1 carga consumível.
-      if (sub.exorcistLevel >= 1 && !this.flags.exorcism) {
-        html += `<div class="item"><div><b>Exorcismo</b><div class="desc">Aprender o rito sagrado. Desbloqueia pedir exorcismos ao Bispo. (400 ●)</div></div><button class="btn" data-bact="exorcism_buy">400</button></div>`;
-      }
-      if (this.flags.exorcism && npc.id === 'bispo_central') {
-        html += `<div class="item"><div><b>Pedir Exorcismo</b><div class="desc">Receber 1 exorcismo (tecla U) — 200 de dano sagrado em tudo na tela. Consumível. (150 ● de oferta)</div></div><button class="btn" data-bact="exorcism_get">150</button></div>`;
+      // Bênçãos sagradas: cada igreja/capela ensina bênçãos específicas.
+      // Padres ensinam bênçãos comuns e intermediárias; Bispos, as mais raras.
+      if (npc.teaches && npc.teaches.length) {
+        html += `<div class="item"><div><b>📿 BÊNÇÃOS SAGRADAS</b><div class="desc">${npc.name} partilha um dom divino com quem busca a luz.</div>`;
+        for (const bid of npc.teaches) {
+          const b = BLESSINGS[bid];
+          if (!b) continue;
+          const has = p.blessings.some(x => x.id === bid);
+          const full = p.blessings.length >= MAX_BLESSINGS;
+          html += `<div class="blessRow"><span style="color:${b.color}">✦</span><div><b>${b.name}</b><div class="desc">${b.desc}${b.tier >= 3 ? ' <span class="owned">[RARA]</span>' : ''}</div></div>${
+            has ? '<span class="owned">APRENDIDA</span>'
+              : full ? '<span class="owned">LIMITE</span>'
+              : `<button class="btn" data-bact="bless_${bid}">Aprender</button>`}</div>`;
+        }
+        html += `</div></div>`;
       }
       // Padre também pode fazer Missa se exorcistLevel == 1 (já coberto acima)
       // Todas as classes podem rezar (grátis)
@@ -908,22 +921,9 @@ doTalk(npc) {
         this.sfx.buy();
         this.stats.powerups++;
         this.openBuilding(npc);
-      } else if (act === 'exorcism_buy' && sub.exorcistLevel >= 1 && !this.flags.exorcism) {
-        // Comprar a habilidade de exorcismo (única vez)
-        if (!ok(400)) { this.openBuilding(npc); return; }
-        this.flags.exorcism = true;
-        this.blessingFx(p, '#fff3b0', 18);
-        this.sfx.upgrade();
-        this.banner('Rito de Exorcismo aprendido! Peça ao Bispo Cedric por um exorcismo.', '#fff3b0', 3);
-        this.openBuilding(npc);
-      } else if (act === 'exorcism_get' && this.flags.exorcism) {
-        // Pedir ao Bispo: concede 1 exorcismo consumível
-        if (!ok(150)) { this.openBuilding(npc); return; }
-        p.items.exorcismo = (p.items.exorcismo || 0) + 1;
-        this.blessingFx(p, '#fff3b0', 14);
-        this.sfx.buy();
-        this.banner('O Bispo concede 1 exorcismo (tecla U).', '#fff3b0', 2);
-        this.openBuilding(npc);
+      } else if (act.indexOf('bless_') === 0) {
+        this.learnBlessing(act.slice(6), npc);
+        return;
       }
     } else if (npc.kind === 'tavern') {
       if (act === 'drink') {
@@ -1068,7 +1068,7 @@ doTalk(npc) {
         case 'vel': case 'velocidade': p.spd = Math.max(0, num); this.hud(); this.banner('Velocidade: ' + p.spd, '#ff9d5c', 1.5); return;
         case 'vida': p.maxHp = Math.max(1, num); p.hp = p.maxHp; this.hud(); this.banner('Vida máx: ' + p.maxHp, '#7cff8a', 1.5); return;
         case 'dano': p.weapon.dmg = Math.max(0, num); this.hud(); this.banner('Dano: ' + p.weapon.dmg, '#ff9d5c', 1.5); return;
-        case 'tier': p.weapon.tier = Math.max(0, num); p.weapon.dmg = weaponDamage(p.weapon); this.hud(); this.banner('Bênção nível +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')', '#ff9d5c', 1.5); return;
+        case 'tier': p.weapon.tier = Math.max(0, num); p.weapon.dmg = weaponDamage(p.weapon); this.hud(); this.banner('Arma nível +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')', '#ff9d5c', 1.5); return;
       }
     } else {
       switch (key) {
@@ -1088,8 +1088,8 @@ doTalk(npc) {
       'stats — abre o painel',
       'ouro 1000 · forca 50 · int 50 · vel 30 · vida 500',
       'dano 200 · tier 10',
-      'get thompson · get pistola · get minigun · get sniper · get destruidora',
-      'Granada e Exorcismo não saem por comando: compre no Vendedor / Igreja.',
+      'Bênçãos por comando: get bencao_luz · bencao_cura · bencao_coragem · bencao_escudo · bencao_passo · bencao_cadencia · bencao_precisao · bencao_furia · bencao_julgamento · bencao_suprema',
+      'As bênçãos também são ensinadas por Padres e Bispos espalhados pelo mundo.',
       'curar · matar · ajuda'
     ];
     this.banner(list.join('  |  '), '#ffe9b0', 4);
@@ -1098,7 +1098,7 @@ doTalk(npc) {
   giveItem(cmd) {
     const p = this.player;
     let name = String(cmd).replace(/^get\s+/i, '').replace(/^obter\s+/i, '').trim().toLowerCase();
-    if (!name) { this.banner('Uso: get <bênção ou item> [x<quantidade>]', '#ffd23f', 2); return; }
+    if (!name) { this.banner('Uso: get <bênção> [x<quantidade>]', '#ffd23f', 2); return; }
     
     let qty = 1;
     const qtyMatch = name.match(/x(\d+)$/);
@@ -1106,72 +1106,137 @@ doTalk(npc) {
       qty = parseInt(qtyMatch[1], 10);
       name = name.replace(/x\d+$/, '').trim();
     }
-    
-    const w = MODERN_WEAPONS[name];
-    if (w) {
-      p.mw = w;
-      this.banner(name + ' equipado!', w.color, 2);
-      this.burst(p.x, p.y - 20, w.color, 12, 180);
+
+    const b = BLESSINGS[name];
+    if (b) {
+      if (b.bless === 'supreme') {
+        p.supremeBlessed = true;
+        p.supremeUses = 1;
+        this.banner('👑 ' + b.name + ' concedida! (tecla H)', b.color, 2.4);
+        this.blessingFx(p, '#fff3b0', 24);
+      } else {
+        if (p.blessings.length >= MAX_BLESSINGS) { this.banner('Limite de bênçãos atingido (' + MAX_BLESSINGS + ').', '#ff9d5c', 2); return; }
+        const key = BLESSING_KEYS[p.blessings.length];
+        const newB = Object.assign({}, b, { key });
+        p.blessings.push(newB);
+        p.cd[newB.id] = 0;
+        this.banner(newB.name + ' aprendida! (tecla ' + key + ')', newB.color, 2);
+        this.burst(p.x, p.y - 20, newB.color, 14, 200);
+      }
       this.sfx.upgrade();
+      this.buildSkillbar();
       this.hud();
       return;
     }
-    const it = MODERN_ITEMS[name];
-    if (it) {
-      this.banner(it.name + ' não pode ser obtida por comando — compre no Vendedor/Igreja.', '#ff5c5c', 2);
-      return;
-    }
-    this.banner('Item desconhecido: ' + name, '#ff5c5c', 2);
+    this.banner('Bênção desconhecida: ' + name, '#ff5c5c', 2);
   },
 
-  useModernItem(id) {
+  // Bênção Suprema: o milagre do Papa. Uso único por partida — aniquila qualquer
+  // ser na área ao redor do ponto de impacto, ignorando vida e resistências.
+  useSupreme() {
     const p = this.player;
-    if (!p || !p.items || p.items[id] <= 0) return;
-    if (id === 'granada') {
-      p.items[id]--;
-      const ang = p.aimAng;
-      const speed = 350;
-      this.projectiles.push(new Projectile({
-        x: p.x + Math.cos(ang) * 16, y: p.y + Math.sin(ang) * 16 - 20,
-        vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - 200,
-        dmg: this.calcStatDmg(T.PHYS, 3.5), type: T.PHYS, color: '#ff8800', size: 10,
-        life: 3, aoe: 120, explode: true, clearTree: true, owner: 'player',
-        trail: true, solid: false, gravity: 800, groundExplode: true
-      }));
-      this.sfx.throw();
-      this.hud();
-    } else if (id === 'exorcismo') {
-      if (!this.flags.exorcism) {
-        this.banner('Você ainda não aprendeu o rito de exorcismo. Compre na Igreja e peça ao Bispo.', '#ff5c5c', 2);
-        return;
+    if (!p || !p.supremeBlessed) { this.banner('Nenhuma Bênção Suprema foi concedida.', '#fff', 1.5); return; }
+    if (p.supremeUses <= 0) { this.banner('A Bênção Suprema já foi consumida.', '#ffd23f', 1.6); return; }
+    const b = BLESSINGS.bencao_suprema;
+    p.supremeUses = 0;
+    const x = p.x, y = p.y;
+    const r = b.radius;
+
+    // Apresentação visual única para o milagre mais poderoso do jogo.
+    this.pillarFx(x, y, r);
+    this.ring(x, y, r, 0.9, '#fff3b0', 8);
+    this.ring(x, y, r * 1.25, 0.9, '#ffd23f', 6);
+    this.ring(x, y, r * 0.55, 0.8, '#ffffff', 5);
+    this.burst(x, y, '#fff3b0', 42, 460);
+    this.burst(x, y, '#ffffff', 28, 320, 6, 700);
+    this.shake += 26;
+    this.sfx.explosion();
+    this.banner('☀️ A LUZ DO SENHOR DESCEU SOBRE A TERRA!', '#fff3b0', 3.4);
+
+    let n = 0;
+    for (const m of this.monsters.slice()) {
+      if (m.dying || m.dead) continue;
+      if (Math.hypot(m.x - x, m.y - y) <= r + m.w / 2) {
+        this.burst(m.x, m.y, '#ffffff', 14, 240);
+        this.ring(m.x, m.y, m.w, 0.4, '#fff3b0', 4);
+        this.hitkill(m);
+        n++;
       }
-      // Bloqueia Diácono de usar exorcismo moderno.
-      if (p.sub.exorcistLevel === 0) {
-        this.banner('Apenas Padres e Bispos podem realizar exorcismos.', '#ff5c5c', 2);
-        return;
-      }
-      p.items[id]--;
-      const x0 = this.cam.x, x1 = this.cam.x + this.cw;
-      const y0 = this.cam.y, y1 = this.cam.y + this.ch;
-      let n = 0;
-      for (const m of this.monsters) {
-        if (m.dying || m.dead) continue;
-        if (m.x >= x0 - 60 && m.x <= x1 + 60 && m.y >= y0 - 60 && m.y <= y1 + 60) {
-          this.damageMonster(m, 200, T.MAGIC);
-          n++;
-        }
-      }
-      // Aplica fadiga a Padre (level 1) ou Bispo (level 2).
-      if (p.sub.exorcistLevel >= 1) {
-        p.status.fatigue = Math.max(p.status.fatigue || 0, s.cd || 20); // 20s de fadiga
-        // Efeito visual: reduzir velocidade à metade por 20s já tratado no update do Player.
-        this.burst(p.x, p.y, '#fff3b0', 20, 300);
-        this.ring(p.x, p.y, 260, 0.8, '#fff3b0', 6);
-        this.shake += 10;
-        this.banner(p.sub.exorcistLevel === 2 ? 'Grande Exorcismo! ' + n + ' monstros purgados' : 'Exorcismo! ' + n + ' monstros purgados', '#fff3b0', 2);
-      }
-      this.hud();
     }
+    this.text(x, y - 30, n + ' ser(es) aniquilado(s)', '#ffffff', 18);
+    this.hud();
+  },
+
+  hitkill(m) {
+    if (m.dying || m.dead) return;
+    m.hp = 0;
+    this.killMonster(m);
+  },
+
+  pillarFx(x, y, r) {
+    for (let i = 0; i < 60; i++) {
+      const a = Math.random() * 6.283;
+      const d = Math.random() * r;
+      const col = i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#fff3b0' : '#ffd23f';
+      this.particles.push(new Particle({
+        x: x + Math.cos(a) * d, y: y - Math.random() * 30,
+        vx: Math.cos(a) * rand(30, 120), vy: rand(-260, -60), life: rand(0.6, 1.2),
+        color: col, size: rand(4, 9), grav: 0
+      }));
+    }
+    for (let k = 1; k <= 5; k++) {
+      this.delayed.push({ t: k * 0.12, fn: () => {
+        this.burst(x, y, '#fff3b0', 22, 220);
+        this.ring(x, y, r * (0.4 + k * 0.12), 0.5, k % 2 ? '#ffd23f' : '#ffffff', 5);
+      } });
+    }
+  },
+
+  // Papa: aparição rara (10% por partida). Ensina a Bênção Suprema.
+  doPope(npc) {
+    const p = this.player;
+    this.state = 'talk';
+    if (p.supremeBlessed) {
+      this.showDialog('👑 O Papa Leão XI',
+        '"A fé já vos marcou, filho. Guardai a Bênção Suprema para a noite mais densa — pois ela desce uma única vez sobre a terra."<div class="confessTag">Bênção Suprema à vossa disposição (tecla H).</div>',
+        '<button class="btn" id="dlgOk">Amém</button>');
+    } else {
+      p.supremeBlessed = true;
+      p.supremeUses = 1;
+      this.blessingFx(p, '#fff3b0', 28);
+      this.sparkleFx(p, '#ffd23f', 20);
+      this.sfx.upgrade();
+      this.buildSkillbar();
+      this.hud();
+      this.showDialog('👑 O Papa Leão XI',
+        '"Vós fostes digno de encontrar-me no ermo, fiel. Recebei o dom mais alto de Eclésia: a <b>Bênção Suprema</b>. Uma única vez ela descerá dos céus e aniquilará todo o mal ao redor de vós — mesmo o mais poderoso dos demônios não resiste à luz do Senhor. Usai-a com sabedoria, pois, consumida, não retornará nesta jornada."<div class="confessTag">✨ BÊNÇÃO SUPREMA CONCEDIDA — tecla H · Uso único · Aniquila qualquer ser na área do impacto</div>',
+        '<button class="btn" id="dlgOk">Amém</button>');
+    }
+    byId('dlgOk').onclick = () => this.closeDialog();
+  },
+
+  // Posiciona o Papa num tile caminhável de uma região de perigo >= 2, longe da
+  // vila — recompensando a exploração. Retorna false se não houver lugar bom.
+  spawnPope() {
+    const walk = WALK_SPAWN || new Set(['g', 'p', 'y', 'c', 'f', 'z', 'b', 'x', 's', 'd']);
+    const regs = REGIONS.filter(r => r.id !== 'vila' && r.danger >= 2);
+    if (!regs.length) return false;
+    for (let tries = 0; tries < 50; tries++) {
+      const r = regs[Math.floor(Math.random() * regs.length)];
+      const gx = r.x + Math.floor(Math.random() * r.w);
+      const gy = r.y + Math.floor(Math.random() * r.h);
+      if (!walk.has(this.world.charFor(gx, gy))) continue;
+      const papa = {
+        id: 'papa', name: 'O Papa Leão XI', kind: 'pope',
+        x: gx, y: gy, color: '#fff3b0', accent: '#ffd23f',
+        px: gx * TILE, py: gy * TILE, bobT: 0,
+        eventDone: false, confessed: false
+      };
+      this.npcs.push(papa);
+      this.banner('Dizem que O PAPA vagou pela terra...', '#fff3b0', 3);
+      return true;
+    }
+    return false;
   },
 
   openCheatPanel() {
@@ -1216,8 +1281,8 @@ doTalk(npc) {
         <div class="cheatfield"><label>Inteligência</label><input type="number" id="ch_int" value="${p.int}"></div>
         <div class="cheatfield"><label>Velocidade</label><input type="number" id="ch_vel" value="${p.spd}"></div>
         <div class="cheatfield"><label>Ouro</label><input type="number" id="ch_ouro" value="${p.gold}"></div>
-        <div class="cheatfield"><label>Dano da bênção</label><input type="number" id="ch_dano" value="${p.weapon.dmg}"></div>
-        <div class="cheatfield"><label>Nível da bênção</label><input type="number" id="ch_tier" value="${p.weapon.tier}"></div>
+        <div class="cheatfield"><label>Dano da arma</label><input type="number" id="ch_dano" value="${p.weapon.dmg}"></div>
+        <div class="cheatfield"><label>Nível da arma</label><input type="number" id="ch_tier" value="${p.weapon.tier}"></div>
         <label class="cheattoggle"><input type="checkbox" id="ch_goldinf" ${this.cheats.gold ? 'checked' : ''}> Ouro infinito</label>
         <label class="cheattoggle"><input type="checkbox" id="ch_hpinf" ${this.cheats.hp ? 'checked' : ''}> Vida infinita</label>
       </div>
@@ -1319,6 +1384,26 @@ doTalk(npc) {
     this.buildSkillShop();
     this.hud();
     this.banner(sk.name + ' aprendida!', sk.color, 2);
+  },
+
+  // Aprende uma bênção ensinada por um Padre/Bispo no mundo.
+  learnBlessing(id, npc) {
+    const p = this.player;
+    const b = BLESSINGS[id];
+    if (!b || !npc.teaches || !npc.teaches.includes(id)) return;
+    if (p.blessings.some(x => x.id === id)) { this.banner('Esta bênção já foi aprendida.', '#ff9d5c', 1.5); return; }
+    if (p.blessings.length >= MAX_BLESSINGS) { this.banner('Limite de bênçãos atingido (' + MAX_BLESSINGS + ' aprendidas).', '#ff9d5c', 2); return; }
+    const key = BLESSING_KEYS[p.blessings.length];
+    const newB = Object.assign({}, b, { key });
+    p.blessings.push(newB);
+    p.cd[newB.id] = 0;
+    this.sfx.upgrade();
+    this.burst(p.x, p.y - 20, b.color, 14, 200);
+    this.blessingFx(p, b.color, 16);
+    this.buildSkillbar();
+    this.hud();
+    this.banner('✨ ' + newB.name + ' aprendida! (tecla ' + key + ')', b.color, 2.6);
+    this.openBuilding(npc);
   },
 
   buildForge() {
@@ -1476,6 +1561,7 @@ doTalk(npc) {
     const s = skills[i];
     if (!s || p.cd[s.id] > 0) return;
     p.cd[s.id] = s.cd;
+    if (s.bless) { this.castBlessing(s); return; }
     switch (s.id) {
       case 'heal': {
         const amt = Math.round(p.maxHp * s.heal);
@@ -1560,6 +1646,58 @@ doTalk(npc) {
         break;
       case 'passo_luz': this.passoLuz(s); break;
     }
+  },
+
+  // Bênçãos: cada bênção aproveita os mesmos efeitos/ajudantes já usados pelas
+  // habilidades (área, disparo, raio, teleporte, cura, buff, escudo).
+  castBlessing(b) {
+    const p = this.player;
+    switch (b.bless) {
+      case 'nova': this.rezaMaior(b); break;
+      case 'heal': {
+        const amt = Math.round(p.maxHp * b.heal);
+        p.hp = Math.min(p.maxHp, p.hp + amt);
+        if (b.purge) { p.status.venom = 0; p.status.venomCd = 0; p.status.dmg = 0; p.status.spd = 0; p.status.dur = 0; }
+        this.text(p.x, p.y - 26, '+' + amt, '#7cff8a', 18);
+        this.healEffect(p);
+        this.blessingFx(p, '#7cff8a', 10);
+        this.sfx.heal();
+        break;
+      }
+      case 'buff':
+        p.status.dmg = b.dmg; p.status.spd = b.spd; p.status.dur = b.dur;
+        this.burst(p.x, p.y, b.color, 12, 180);
+        this.blessingFx(p, b.color, 12);
+        this.sfx.buff();
+        break;
+      case 'shield':
+        p.status.shield = b.shield; p.status.shieldT = b.dur;
+        this.burst(p.x, p.y, '#ffe9a0', 12, 180);
+        this.blessingFx(p, '#ffe9a0', 10);
+        this.sfx.buff();
+        break;
+      case 'blink': this.passoLuz(b); break;
+      case 'barrage': this.blessBarrage(b); break;
+      case 'bolt': this.shootPlayerSkill(b); break;
+      case 'beam': this.beam(b); break;
+      case 'supreme': this.useSupreme(); break;
+    }
+  },
+
+  blessBarrage(b) {
+    const p = this.player;
+    const dmg = this.calcStatDmg(b.type, b.dmg);
+    for (let k = 0; k < b.n; k++) {
+      const off = (k - (b.n - 1) / 2) * (b.spread || 0);
+      const ang = p.aimAng + off;
+      this.projectiles.push(new Projectile({
+        x: p.x + Math.cos(ang) * 16, y: p.y + Math.sin(ang) * 16,
+        vx: Math.cos(ang) * b.speed, vy: Math.sin(ang) * b.speed,
+        dmg, type: b.type, color: b.color, size: b.size || 7, life: 1.4,
+        pierce: !!b.pierce, owner: 'player', trail: true
+      }));
+    }
+    this.sfx.skill();
   },
 
   rezaMaior(s) {
@@ -1930,7 +2068,7 @@ doTalk(npc) {
       if (p.weapon.tier < 12) {
         p.weapon.tier++;
         p.weapon.dmg = weaponDamage(p.weapon);
-        this.text(x, y - 40, 'Bênção +' + p.weapon.tier + '!', '#7ec8e3', 15);
+        this.text(x, y - 40, 'Arma +' + p.weapon.tier + '!', '#7ec8e3', 15);
       }
     } else {
       // baú final: triunfo
@@ -2471,7 +2609,7 @@ doTalk(npc) {
       <div class="resc"><span>Dano causado</span><b>${s.dmgDealt}</b></div>
       <div class="resc"><span>Dano recebido</span><b>${s.dmgTaken}</b></div>
       <div class="resc"><span>Maior combo</span><b>x${s.maxCombo}</b></div>
-      <div class="resc"><span>Nível da bênção</span><b>+${this.player.weapon.tier}</b></div>
+      <div class="resc"><span>Nível da arma</span><b>+${this.player.weapon.tier}</b></div>
       <div class="resc"><span>Power-ups</span><b>${s.powerups}</b></div>
       <div class="resc"><span>Exploração</span><b>${s.exploration} zonas</b></div>
     </div>
@@ -2538,7 +2676,7 @@ doTalk(npc) {
         html += `<div class="resrow"><span>Mortes</span><b>${lr.deaths}</b></div>`;
         html += `<div class="resrow"><span>Dano causado / recebido</span><b>${lr.dmgDealt} / ${lr.dmgTaken}</b></div>`;
         html += `<div class="resrow"><span>Maior combo</span><b>x${lr.maxCombo}</b></div>`;
-        html += `<div class="resrow"><span>Bênção</span><b>+${lr.weaponTier}</b></div>`;
+        html += `<div class="resrow"><span>Arma</span><b>+${lr.weaponTier}</b></div>`;
         html += `<div class="resrow"><span>Power-ups</span><b>${lr.powerups}</b></div>`;
         html += `<div class="resrow"><span>Exploração</span><b>${lr.exploration} zonas</b></div>`;
         html += `</div>`;
@@ -2878,6 +3016,26 @@ doTalk(npc) {
       ctx.beginPath();
       ctx.arc(0, -26, 6, 0, 6.283);
       ctx.fill();
+    } else if (n.kind === 'pope') {
+      // O Papa: auréola dourada pulsante e tiara tripla branca.
+      const ph = t * 3;
+      ctx.globalAlpha = 0.55 + Math.sin(ph) * 0.3;
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -18, 17 + Math.sin(ph * 2) * 2, 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(0, -40);
+      ctx.lineTo(-9, -28);
+      ctx.lineTo(9, -28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#c9a227';
+      ctx.fillRect(-7, -27, 14, 3);
+      ctx.fillRect(-10, -24, 20, 3);
     } else {
       ctx.fillStyle = n.accent;
       ctx.beginPath();

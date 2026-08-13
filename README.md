@@ -11,18 +11,21 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 
 ## Funcionalidades
 
-- **3 castas / 9 subclasses**: Clero (Padre, Bispo, Diácono), Populum (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, bênção, ataque base e 2 habilidades únicas (Q/E).
+- **3 castas / 9 subclasses**: Clero (Padre, Bispo, Diácono), Populum (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E).
 - **Habilidades extras**: até 3 habilidades adicionais compráveis (R/T/Y) no Mestre das Artes.
 - **Combate**: corpo a corpo, projéteis, auras e área; sistema de fraquezas/resistências por tipo de dano (Físico, Sagrado, Mágico).
-- **Progressão**: ouro para melhorar bênção no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras e treinar reflexos (ataque/disparo mais rápidos).
+- **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras e treinar reflexos (ataque/disparo mais rápidos).
 - **Mundo vasto e dinâmico**: mapa de 400×240 tiles (12.800 × 7.680 px) gerado proceduralmente em chunks de 16×16 tiles. Apenas a área próxima ao jogador é carregada/renderizada; chunks distantes são descarregados e recriados ao retornar, preservando dados importantes (chefes derrotados, árvores destruídas, progresso de selos).
 - **18 biomas/regiões**: Prado Sereno, Vila de Pedra, Campos de Trigo, Floresta dos Goblins, Bosque dos Lobos, Campo do Norte, Bosque Sagrado, Pântano Sombrio, Ruínas de Aurelia, Cemitério dos Esquecidos, Colinas Rochosas, Templo Ruinoso, Várzea Sul, Catacumbas, Gruta do Execra, Cova do Demônio, Forte do General, Torre Perdida.
-- **30+ tipos de monstros**: 15 originais + 16 novos por bioma + 4 raros/especiais (Lobisomem, Gigante de Pedra, Sacerdote da Noite, Dragãozinho) com recompensas escalonadas. Monstros mais fortes em regiões perigosas dão mais ouro, maior chance de itens e vida/poções.
+- **40 tipos de monstros**: todos usados no mundo — 15 originais + 16 novos por bioma + 4 raros/especiais (Lobisomem, Gigante de Pedra, Sacerdote da Noite, Dragãozinho) + chefes. Cada um com sprite próprio (cores `color`/`dark` definidas nos dados) e recompensas escalonadas pela periculosidade da região.
 - **Sistema de spawn melhorado**: monstros nascem em pontos determinísticos por chunk, nunca em cima do jogador (distância mínima 210px), com cooldowns baseados no perigo da região.
 - **Estabelecimentos por casta**:
-  - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero), comprar o rito de **Exorcismo** e pedir exorcismos ao Bispo.
+  - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero), Missa/Crisma/Ordenação por grau do clero.
   - **Taverna** (Populum): bebida (cura por ouro), histórias de guerra (lore do Populum), treino forjado (+força permanente), treino de reflexos (+10% de velocidade de ataque/disparo por nível).
   - **Torre Arcana** (Mago): meditar (cura + reset cooldowns grátis), grimório (lore do Mago), consulta arcana (+inteligência permanente).
+- **Sistema de Bênçãos**: 10 bênçãos sagradas aprendidas ao explorar — ensinadas por Padres e Bispos espalhados pelo mundo (igrejas/capelas em biomas variados). Padres ensinam bênçãos comuns/intermediárias (Luz, Misericórdia, Coragem, Escudo da Fé, Passos do Peregrino); Bispos ensinam as raras (Cadência, Precisão, Fúria, Julgamento). Teclas B/G/U/V/N (reutilizando o pipeline de habilidades). Até 6 por partida.
+- **O Papa (10% de chance por partida)**: aparição rara num bioma perigoso distante da vila. Ao ser encontrado, ensina a **Bênção Suprema** (tecla H) — o milagre mais poderoso do jogo.
+- **Bênção Suprema**: uso único por partida (consumida permanentemente ao usar). Cria uma coluna de luz divina que **aniquila instantaneamente qualquer ser na área do impacto** (raio ~430px), ignorando vida e resistências — inclusive chefes — mas NÃO afeta o mapa inteiro.
 - **NPCs e pequenas histórias**: 22 NPCs espalhados com diálogos específicos por casta. Interações exclusivas:
   - **Confissão** (Clero): NPCs revelam segredos; jogador ganha +10 vida máx, +2 int, dano +35% temporário, visual de bênção dourada.
   - **Treino** (Populum): +2 força + dano +25% temporário.
@@ -38,9 +41,8 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - **NPCs**: Ferreiro, Vendedor, Mestre das Artes, Cronista, Pároco, Taberneiro, Erudito, + NPCs de lore/confissão/treino espalhados pelo mundo.
 - **Estatísticas**: tempo, abates, chefes, mortes, dano causado/recebido, combo máximo, power-ups, zonas visitadas.
 - **Recordes locais**: salvos no `localStorage` por subclasse; a tela de vitória exibe estatísticas completas (tempo jogado, abates, chefes, mortes, dano, combo, exploração) e marca novos recordes.
-- **Consumíveis compráveis**: granadas (Vendedor, repetível) e exorcismo (Igreja → pedir ao Bispo, repetível; aplica 200 de dano sagrado em tudo na tela).
-- **Sistema de cheats** (F3): ouro/vida infinitos, armas modernas (Thompson, Pistola, Minigun, Sniper, Destruidora), edição de stats, painel visual. Granadas e exorcismo não podem ser obtidos por comando — apenas por compra.
-- **Granadas realistas**: arco balístico, caem no chão e explodem ao impacto.
+- **Consumíveis/armas modernas**: removidos e substituídos pelo sistema de Bênçãos (ver acima).<br>
+- **Sistema de cheats** (F3): ouro/vida infinitos, edição de stats, painel visual e `get <bencao_id>` (ex.: `get bencao_suprema` para testar a Bênção Suprema).
 - **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante, auras de raro/chefes finais.
 - **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, arremesso, etc.).
 
@@ -49,7 +51,7 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 ### Subclasses
 Definidas em `js/data.js` (`SUBCLASSES`). Cada uma contém:
 - `casta` (clero/populum/mago), `hp`, `speed`, `str`, `int`, `jump`
-- `weapon` (a bênção da subclasse): nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
+- `weapon`: nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
 - `attack`: tipo, multiplicador, alcance/cadência, cor, propriedades extras (pierce, combo, etc.)
 - `aura` (opcional): raio, dano por tick, intervalo
 - `skills`: 2 habilidades com tecla, cooldown, descrição e efeitos
@@ -85,12 +87,10 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 - Progressão por Selos (cristais) substituindo portões estáticos
 - Persistência de recordes no localStorage
 - Sistema de cheats para testes (com quantidade dinâmica `xN`)
-- Armas modernas expandidas: Sniper (instakill) e Destruidora (rápida + perfurante)
-- Granadas com física realística (arco + explosão no chão)
+- Sistema de Bênçãos: 10 bênçãos de poder variado ensinadas por Padres/Bispos no mundo (substitui armas e itens modernos)
+- Papa com 10% de chance por partida — ensina a Bênção Suprema (uso único, hitkill em área ao redor do impacto, visual de coluna de luz)
 - Treino de reflexos na Taverna (bater/atirar mais rápido, até 2x)
-- Exorcismo consumível (Igreja + Bispo) com 200 de dano sagrado em tela
 - Tela de vitória completa e recordes locais detalhados (última jornada + recordes por estatística)
-- Bênçãos no lugar de armas: nomes das 9 subclasses renomeados
 - Controle de spawn por região (pára/reduz drasticamente após boss)
 - Efeitos visuais, áudio, HUD, menus
 
@@ -102,6 +102,10 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 - Opção de continuar pós-jogo (New Game+ ou exploração livre)
 - Acessibilidade: suporte a toque/mobile, legendas para áudio
 - Otimização de renderização para mapas maiores
+
+### Imagens
+
+![alt text](image.png)
 
 ## Como executar
 

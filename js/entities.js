@@ -38,12 +38,15 @@ class Player {
     this.extraSkills = [];
     this.mw = null;
     this.items = {};
+    this.blessings = [];
+    this.supremeBlessed = false;
+    this.supremeUses = 0;
     this.atkSpd = 0; // +0.1 por nível de treino de reflexos
     this.sub.skills.forEach(s => { this.cd[s.id] = 0; });
   }
 
   allSkills() {
-    return this.sub.skills.concat(this.extraSkills);
+    return this.sub.skills.concat(this.extraSkills, this.blessings);
   }
 
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }

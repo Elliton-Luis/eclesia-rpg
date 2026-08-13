@@ -7,7 +7,7 @@ const TYPE_MULT = { WEAK: 1.6, RESIST: 0.45 };
 
 const CASTAS = {
   clero:   { name: 'Clero',   color: '#f5e6b8', accent: '#c9a227', desc: 'Servos da luz. Curam aliados e golpeiam com poder sagrado.' },
-  populum: { name: 'Populum', color: '#d8c9a3', accent: '#b5651d', desc: 'Guerreiros comuns. Dependem de bênçãos, coragem e engenho.' },
+  populum: { name: 'Populum', color: '#d8c9a3', accent: '#b5651d', desc: 'Guerreiros comuns. Dependem de armas, coragem e engenho.' },
   mago:    { name: 'Mago',    color: '#b8b8f5', accent: '#7a6bd8', desc: 'Eruditos do arcano. Desencadeiam magia pura e devastadora.' }
 };
 
@@ -17,7 +17,7 @@ const SUBCLASSES = {
     desc: 'Sacerdote: confessa, cura e enfrenta o maligno com orações de libertação.',
     hp: 120, speed: 240, str: 8, int: 18, jump: 780,
     ordained: true, exorcistLevel: 1,
-    weapon: { name: "Bênção do Pastor", base: 12, color: '#8a5a2b', kind: 'aura' },
+    weapon: { name: 'Cajado do Pastor', base: 12, color: '#8a5a2b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.15, type: T.HOLY, radius: 150, cd: 0.7, color: '#fff3b0' },
     aura: { radius: 95, dmg: 0.4, tick: 0.6 },
     skills: [
@@ -34,7 +34,7 @@ const SUBCLASSES = {
     desc: 'Plenitude do sacerdócio: exorcismo solene, autoridade e milagres.',
     hp: 165, speed: 205, str: 12, int: 16, jump: 760,
     ordained: true, exorcistLevel: 2,
-    weapon: { name: "Bênção Episcopal", base: 17, color: '#7a3b3b', kind: 'aura' },
+    weapon: { name: 'Báculo Episcopal', base: 17, color: '#7a3b3b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.5, type: T.HOLY, radius: 205, cd: 0.9, color: '#ffe9b0' },
     aura: { radius: 145, dmg: 0.55, tick: 0.6 },
     skills: [
@@ -49,7 +49,7 @@ const SUBCLASSES = {
     desc: 'Servo: batiza, proclama, abençoa. Utilidade e caridade — não exorciza nem confessa.',
     hp: 105, speed: 275, str: 9, int: 18, jump: 800,
     ordained: false, exorcistLevel: 0,
-    weapon: { name: "Bênção da Devoção", base: 12, color: '#2f8a8a', kind: 'ranged' },
+    weapon: { name: 'Cajado da Devoção', base: 12, color: '#2f8a8a', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.HOLY, speed: 620, cd: 0.32, color: '#d8fff0', size: 8, pierce: true },
     skills: [
       { id: 'batismo', name: 'Batismo', key: 'Q', cd: 7, color: '#bfe8ff',
@@ -64,7 +64,7 @@ const SUBCLASSES = {
     id: 'guerreiro', casta: 'populum', name: 'Guerreiro', color: '#f0b8a8', accent: '#c0392b',
     desc: 'Combo de espada, giro e investida.',
     hp: 155, speed: 255, str: 18, int: 6, jump: 750,
-    weapon: { name: "Bênção do Povo", base: 16, color: '#c0392b', kind: 'melee' },
+    weapon: { name: 'Espada do Povo', base: 16, color: '#c0392b', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.2, type: T.PHYS, range: 82, cd: 0.32, combo: 3, color: '#ffd6a5' },
     skills: [
       { id: 'spin', name: 'Giro', key: 'Q', cd: 5, color: '#ff9d5c', desc: 'Golpe circular ao redor.', dmg: 1.5, type: T.PHYS, radius: 95 },
@@ -75,7 +75,7 @@ const SUBCLASSES = {
     id: 'arqueiro', casta: 'populum', name: 'Arqueiro', color: '#b8e0b0', accent: '#3f7a2e',
     desc: 'Flechas rápidas e chuva de projéteis.',
     hp: 100, speed: 265, str: 13, int: 9, jump: 820,
-    weapon: { name: "Bênção da Floresta", base: 13, color: '#7a5a2b', kind: 'ranged' },
+    weapon: { name: 'Arco de Madeira', base: 13, color: '#7a5a2b', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.PHYS, speed: 660, cd: 0.42, color: '#f0e6c8', size: 8 },
     skills: [
       { id: 'spread', name: 'Rajada', key: 'Q', cd: 3.5, color: '#7ec8e3', desc: '3 flechas em leque.', dmg: 0.85, type: T.PHYS, speed: 660, n: 3, spread: 0.32 },
@@ -86,7 +86,7 @@ const SUBCLASSES = {
     id: 'inventor', casta: 'populum', name: 'Inventor', color: '#f0d0a8', accent: '#d35400',
     desc: 'Granadas explosivas e sobrecarga.',
     hp: 125, speed: 245, str: 15, int: 10, jump: 770,
-    weapon: { name: "Bênção do Grifo", base: 14, color: '#d35400', kind: 'melee' },
+    weapon: { name: 'Chave de Grifo', base: 14, color: '#d35400', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.1, type: T.PHYS, range: 70, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
       { id: 'grenade', name: 'Granada', key: 'Q', cd: 5, color: '#ffb020', desc: 'Granada que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
@@ -97,7 +97,7 @@ const SUBCLASSES = {
     id: 'elemental', casta: 'mago', name: 'Elemental', color: '#f0b0a8', accent: '#e67e22',
     desc: 'Bolas de fogo e meteoros.',
     hp: 95, speed: 250, str: 7, int: 20, jump: 790,
-    weapon: { name: "Bênção Flamejante", base: 14, color: '#e67e22', kind: 'ranged' },
+    weapon: { name: 'Orbe Flamejante', base: 14, color: '#e67e22', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 520, cd: 0.4, color: '#ffb35c', size: 9 },
     skills: [
       { id: 'fireball', name: 'Bola de Fogo', key: 'Q', cd: 6, color: '#ff7b3c', desc: 'Explosão de fogo em área.', dmg: 2.4, type: T.MAGIC, speed: 360, size: 14, radius: 85, shake: 1 },
@@ -108,7 +108,7 @@ const SUBCLASSES = {
     id: 'psiquico', casta: 'mago', name: 'Psíquico', color: '#d8c0f0', accent: '#8e44ad',
     desc: 'Empurrões psíquicos e voo.',
     hp: 110, speed: 255, str: 8, int: 19, jump: 790,
-    weapon: { name: "Bênção Psíquica", base: 13, color: '#8e44ad', kind: 'ranged' },
+    weapon: { name: 'Orbe Psíquico', base: 13, color: '#8e44ad', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 560, cd: 0.38, color: '#d8b4ff', size: 9 },
     skills: [
       { id: 'push', name: 'Empurrão Psíquico', key: 'Q', cd: 6, color: '#b07cff', desc: 'Onda que empurra e danifica ao redor.', dmg: 1.5, type: T.MAGIC, radius: 135, knock: 650 },
@@ -119,7 +119,7 @@ const SUBCLASSES = {
     id: 'abencoador', casta: 'mago', name: 'Abençoador', color: '#b8d8f0', accent: '#2980b9',
     desc: 'Raios de luz e aura restauradora.',
     hp: 105, speed: 240, str: 8, int: 20, jump: 760,
-    weapon: { name: "Bênção da Luz", base: 14, color: '#2980b9', kind: 'ranged' },
+    weapon: { name: 'Livro de Luz', base: 14, color: '#2980b9', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 640, cd: 0.34, color: '#bfe8ff', size: 8, pierce: true },
     skills: [
       { id: 'beam', name: 'Raio Divino', key: 'Q', cd: 7, color: '#fff9c4', desc: 'Coluna de luz na direção do cursor.', dmg: 2.7, type: T.MAGIC, range: 360 },
@@ -147,46 +147,43 @@ const EXTRA_SKILLS = [
     desc: 'Teleporta na direção do cursor.', dist: 220 },
 ];
 
-// Armas modernas — obtidas apenas pelo comando /get (F3)
-const MODERN_WEAPONS = {
-  thompson: {
-    id: 'thompson', name: 'Thompson', kind: 'auto',
-    cd: 0.075, dmg: 0.55, type: T.PHYS, color: '#ffd23f',
-    size: 7, speed: 850, pierce: false, n: 1, spread: 0.07, jitter: 10, combo: 1,
-    desc: 'Submetralhadora moderna de altíssima cadência.'
-  },
-  pistola: {
-    id: 'pistola', name: 'Pistola', kind: 'auto',
-    cd: 0.3, dmg: 1.8, type: T.PHYS, color: '#b0c4ff',
-    size: 8, speed: 950, pierce: true, n: 1, spread: 0, jitter: 0, combo: 1,
-    desc: 'Pistola precisa, com balas perfurantes.'
-  },
-  minigun: {
-    id: 'minigun', name: 'Minigun', kind: 'auto',
-    cd: 0.032, dmg: 0.42, type: T.PHYS, color: '#ff9d5c',
-    size: 6, speed: 920, pierce: false, n: 1, spread: 0.17, jitter: 16, combo: 1,
-    desc: 'Cadência absurdamente alta, um cabo de chumbo.'
-  },
-  sniper: {
-    id: 'sniper', name: 'Sniper', kind: 'auto',
-    cd: 1.5, dmg: 99999, type: T.PHYS, color: '#ff3333',
-    size: 10, speed: 1200, pierce: true, n: 1, spread: 0, jitter: 0, combo: 1,
-    desc: 'Instakill, atravessa inimigos, mas cadência muito lenta.'
-  },
-  destruidora: {
-    id: 'destruidora', name: 'Destruidora', kind: 'auto',
-    cd: 0.04, dmg: 2.5, type: T.PHYS, color: '#ff6600',
-    size: 8, speed: 1000, pierce: true, n: 1, spread: 0.05, jitter: 5, combo: 1,
-    desc: 'Rápida como Thompson, forte e atravessa como Sniper.'
-  }
-};
-
-// Itens modernos consumíveis — obtidos apenas pelo comando /get
-const MODERN_ITEMS = {
-  granada: { id: 'granada', name: 'Granada', key: 'G', color: '#5caeff',
-    desc: 'Fab G: explode, destruindo árvores e feras na área.' },
-  exorcismo: { id: 'exorcismo', name: 'Exorcismo', key: 'U', color: '#fff3b0',
-    desc: 'Purga divina: 200 de dano sagrado em todos os monstros visíveis.' }
+// --- Bênçãos: dons sagrados aprendidos com o clero durante a exploração ---
+// tier 1-2 = ensinadas por Padres (comuns/intermediárias).
+// tier 3   = ensinadas por Bispos (poderosas e raras).
+// tier 4   = Bênção Suprema — ensinada apenas pelo Papa (10% de chance por partida).
+const MAX_BLESSINGS = 6;
+const BLESSING_KEYS = ['B', 'G', 'U', 'V', 'N'];
+const BLESSINGS = {
+  bencao_luz: { id: 'bencao_luz', name: 'Bênção da Luz', key: 'B', tier: 1, cd: 8, color: '#fff3b0',
+    bless: 'nova', dmg: 1.7, type: T.HOLY, radius: 150,
+    desc: 'Onda de luz sagrada explode ao redor do fiel.' },
+  bencao_cura: { id: 'bencao_cura', name: 'Bênção da Misericórdia', key: 'B', tier: 1, cd: 13, color: '#7cff8a',
+    bless: 'heal', heal: 0.5, purge: true,
+    desc: 'Cura metade da vida e purga veneno e malefícios.' },
+  bencao_coragem: { id: 'bencao_coragem', name: 'Bênção da Coragem', key: 'B', tier: 1, cd: 10, color: '#ff9d5c',
+    bless: 'buff', dmg: 0.40, spd: 0.25, dur: 9,
+    desc: '+40% de dano e +25% de velocidade por 9 segundos.' },
+  bencao_escudo: { id: 'bencao_escudo', name: 'Escudo da Fé', key: 'B', tier: 2, cd: 11, color: '#ffe9a0',
+    bless: 'shield', shield: 170, dur: 8,
+    desc: 'Absorve 170 de dano por 8 segundos.' },
+  bencao_passo: { id: 'bencao_passo', name: 'Passos do Peregrino', key: 'B', tier: 2, cd: 6, color: '#c0b4ff',
+    bless: 'blink', dist: 260,
+    desc: 'Teleporta na direção do cursor.' },
+  bencao_cadencia: { id: 'bencao_cadencia', name: 'Bênção da Cadência', key: 'B', tier: 3, cd: 2.5, color: '#ffd23f',
+    bless: 'barrage', dmg: 0.9, type: T.HOLY, speed: 820, n: 4, spread: 0.22, pierce: true,
+    desc: 'Rajada veloz de dardos de luz perfurantes.' },
+  bencao_precisao: { id: 'bencao_precisao', name: 'Bênção da Precisão', key: 'B', tier: 3, cd: 3.5, color: '#b0c4ff',
+    bless: 'bolt', dmg: 2.6, type: T.HOLY, speed: 1100, pierce: true, size: 9,
+    desc: 'Dardo de luz preciso que atravessa os inimigos.' },
+  bencao_furia: { id: 'bencao_furia', name: 'Bênção da Fúria', key: 'B', tier: 3, cd: 5, color: '#ff9d5c',
+    bless: 'nova', dmg: 3.2, type: T.HOLY, radius: 235,
+    desc: 'Explosão de luz em área que fere tudo ao redor.' },
+  bencao_julgamento: { id: 'bencao_julgamento', name: 'Bênção do Julgamento', key: 'B', tier: 3, cd: 9, color: '#ff6b6b',
+    bless: 'beam', dmg: 4.5, type: T.HOLY, range: 420,
+    desc: 'Coluna de julgamento que atravessa a multidão.' },
+  bencao_suprema: { id: 'bencao_suprema', name: 'Bênção Suprema', key: 'H', tier: 4, cd: 0, color: '#fff',
+    bless: 'supreme', radius: 430, singleUse: true,
+    desc: 'Milagre de uso único: a luz divina aniquila qualquer ser na área do impacto.' }
 };
 
 const MONSTERS = {
@@ -470,8 +467,10 @@ const NPC_DEFS = [
   { id: 'mestre', name: 'Mestre das Artes', kind: 'skills', x: 128, y: 121, color: '#8e44ad', accent: '#d8a1ff' },
   { id: 'guia', name: 'Cronista', kind: 'guide', x: 116, y: 124, color: '#27ae60', accent: '#a8e6a1',
     text: 'Olá, viajante! Eclésia é vasta e perigosa. Sua jornada é guiada pelo Nível de Batalha. Comece derrotando o Chefe Tribal na Floresta dos Goblins — isso o levará ao Nível 1. Com o Nível 1, o caminho para as Catacumbas se abre; derrote o Rei da Noite (Alvorada dos Mortos) para alcançar o Nível 3. Com o Nível 3, as barreiras finais caem: Mastema, o Demônio (leste), o General Tarraske (sul-leste) e o Arcano Devorador (oeste). As barreiras se desfazem por partes conforme seu nível de batalha avança. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' },
-  { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0' },
-  { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 119, y: 119, color: '#e8b0b0', accent: '#a23b3b' },
+  { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0',
+    teaches: ['bencao_luz', 'bencao_cura'] },
+  { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 119, y: 119, color: '#e8b0b0', accent: '#a23b3b',
+    teaches: ['bencao_cadencia', 'bencao_precisao'] },
   { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },
   { id: 'erudito', name: 'Erudito Tior', kind: 'tower', x: 120, y: 136, color: '#7a6bd8', accent: '#c0b4ff' },
   // Vila — interações por casta
@@ -513,7 +512,8 @@ const NPC_DEFS = [
       populum: 'O caminho para leste é mau. As criaturas ficam maiores e mais cruéis.',
       mago: 'Por estas árvores, ouvi encantamentos antigos. O saber dorme onde a fé acorda.'
     } },
-  { id: 'capela_sagrada', name: 'Capela do Bosque', kind: 'church', x: 186, y: 78, color: '#f0e0c0', accent: '#fff3b0' },
+  { id: 'capela_sagrada', name: 'Capela do Bosque', kind: 'church', x: 186, y: 78, color: '#f0e0c0', accent: '#fff3b0',
+    teaches: ['bencao_coragem', 'bencao_escudo'] },
   // Pântano
   { id: 'pescador', name: 'Pescador Duro', kind: 'talk', x: 218, y: 84, color: '#8a8a9a', accent: '#b0c0d0',
     event: 'lore', lines: {
@@ -534,6 +534,8 @@ const NPC_DEFS = [
       populum: 'Paguei para ver a lua cheia. Ver o que se arrasta aqui não foi favor.',
       mago: 'O Necromante queimou minhas ervas. Guarde as suas, moço.'
     } },
+  { id: 'ermida_cemiterio', name: 'Padre Casimiro', kind: 'church', x: 56, y: 193, color: '#c9b8a8', accent: '#fff3b0',
+    teaches: ['bencao_cura', 'bencao_coragem'] },
   // Ruínas
   { id: 'arqueologo', name: 'Dante, Arqueólogo', kind: 'talk', x: 172, y: 148, color: '#b0a080', accent: '#e0d0a0',
     event: 'saber', lines: {
@@ -542,6 +544,8 @@ const NPC_DEFS = [
       mago: 'Glifos! Glifos preservados! O saber destas ruínas vale ouro e vida.'
     } },
   { id: 'ferreiro_ruinas', name: 'Ferreiro das Ruínas', kind: 'forge', x: 184, y: 158, color: '#8a6a4b', accent: '#ff9d5c' },
+  { id: 'abadia_ruinas', name: 'Abade Rufus', kind: 'church', x: 192, y: 146, color: '#c0b8c8', accent: '#fff3b0',
+    teaches: ['bencao_escudo', 'bencao_passo'] },
   // Colinas
   { id: 'mineiro', name: 'Mineiro Pedro', kind: 'talk', x: 252, y: 172, color: '#9a9a7a', accent: '#c8c890',
     event: 'lore', lines: {
@@ -549,6 +553,8 @@ const NPC_DEFS = [
       populum: 'O fedor de minério é o cheiro do trabalho. Aqui ninguém se ajoelha.',
       mago: 'A rocha aqui tem veios que a magia escuta. Ouço quando estou só.'
     } },
+  { id: 'igreja_colinas', name: 'Padre Belisário', kind: 'church', x: 264, y: 184, color: '#b8ac98', accent: '#fff3b0',
+    teaches: ['bencao_passo', 'bencao_luz'] },
   // Templo
   { id: 'sabio', name: 'Sábio Laude', kind: 'talk', x: 284, y: 76, color: '#b8b8d8', accent: '#d8d8f0',
     event: 'saber', lines: {
@@ -556,6 +562,8 @@ const NPC_DEFS = [
       populum: 'Lendas falam de um tesouro. Lendas também falam de dunas de criaturas.',
       mago: 'Aqui o véu é fino. Sinta a vibração arcana nas colunas quebradas.'
     } },
+  { id: 'catedral_templo', name: 'Bispo Eleutério', kind: 'church', x: 296, y: 86, color: '#e8b0b0', accent: '#8a3b3b',
+    teaches: ['bencao_furia', 'bencao_julgamento'] },
   // Forte
   { id: 'taberneira_fronteira', name: 'Taverneira da Fronteira', kind: 'tavern', x: 330, y: 190, color: '#c8a880', accent: '#e0b878' },
   { id: 'soldado_desertor', name: 'Desertor Valdomiro', kind: 'talk', x: 328, y: 198, color: '#7a8a7a', accent: '#a8c0a8',
@@ -564,6 +572,8 @@ const NPC_DEFS = [
       populum: 'Treinei na fronteira. Se quer o meu respeito, lute até a última gota.',
       mago: 'Aquelas armas engolem sombras. Melhor nem entender.'
     } },
+  { id: 'capela_forte', name: 'Bispo Anselmo', kind: 'church', x: 344, y: 192, color: '#e8b0b0', accent: '#6a2b2b',
+    teaches: ['bencao_cadencia', 'bencao_furia'] },
   // Cova
   { id: 'devoto_trevas', name: 'Devoto das Trevas', kind: 'talk', x: 326, y: 70, color: '#5a4a6a', accent: '#a0a0ff',
     event: 'lore', lines: {
@@ -628,11 +638,6 @@ const SHOP = {
     name: 'Tomé: Inteligência', desc: '+4 de inteligência (dano mágico).',
     cost: n => 60 + Math.round(45 * Math.pow(n, 1.5)),
     effect: (g, p) => { p.int += 4; }
-  },
-  granadas: {
-    name: 'Caixa de Granadas', desc: '3 granadas (tecla G) para arremessar. Consumível.',
-    cost: n => 60 + n * 30,
-    effect: (g, p) => { p.items.granada = (p.items.granada || 0) + 3; }
   }
 };
 
