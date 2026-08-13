@@ -800,6 +800,13 @@ doTalk(npc) {
         html += `<div class="item"><div><b>Crisma</b><div class="desc">Administrar Crisma/Confirmação. +40 de vida máxima e +2 inteligência permanentes. (200 ●)</div></div><button class="btn" data-bact="chrism">Crisma</button></div>`;
         html += `<div class="item"><div><b>Ordenar</b><div class="desc">Ordenar novo Diácono/Padre. Recompensa divina única. (300 ●)</div></div><button class="btn" data-bact="ordain">Ordenar</button></div>`;
       }
+      // Exorcismo: bloqueado até ser comprado; depois, pedir ao Bispo dá 1 carga consumível.
+      if (sub.exorcistLevel >= 1 && !this.flags.exorcism) {
+        html += `<div class="item"><div><b>Exorcismo</b><div class="desc">Aprender o rito sagrado. Desbloqueia pedir exorcismos ao Bispo. (250 ●)</div></div><button class="btn" data-bact="exorcism_buy">250</button></div>`;
+      }
+      if (this.flags.exorcism && npc.id === 'bispo_central') {
+        html += `<div class="item"><div><b>Pedir Exorcismo</b><div class="desc">Receber 1 exorcismo (tecla U) — purga tudo na tela. Consumível. (50 ● de oferta)</div></div><button class="btn" data-bact="exorcism_get">50</button></div>`;
+      }
       // Padre também pode fazer Missa se exorcistLevel == 1 (já coberto acima)
       // Todas as classes podem rezar (grátis)
       html += `<div class="item"><div><b>Rezar</b><div class="desc">Recupera toda a vida. (Grátis)</div></div><button class="btn" data-bact="pray">Rezar</button></div>`;
@@ -891,6 +898,22 @@ doTalk(npc) {
         this.banner('Um novo ministro ungido surge em Eclésia.', '#c0392b', 3);
         this.sfx.buy();
         this.stats.powerups++;
+        this.openBuilding(npc);
+      } else if (act === 'exorcism_buy' && sub.exorcistLevel >= 1 && !this.flags.exorcism) {
+        // Comprar a habilidade de exorcismo (única vez)
+        if (!ok(250)) { this.openBuilding(npc); return; }
+        this.flags.exorcism = true;
+        this.blessingFx(p, '#fff3b0', 18);
+        this.sfx.upgrade();
+        this.banner('Rito de Exorcismo aprendido! Peça ao Bispo Cedric por um exorcismo.', '#fff3b0', 3);
+        this.openBuilding(npc);
+      } else if (act === 'exorcism_get' && this.flags.exorcism) {
+        // Pedir ao Bispo: concede 1 exorcismo consumível
+        if (!ok(50)) { this.openBuilding(npc); return; }
+        p.items.exorcismo = (p.items.exorcismo || 0) + 1;
+        this.blessingFx(p, '#fff3b0', 14);
+        this.sfx.buy();
+        this.banner('O Bispo concede 1 exorcismo (tecla U).', '#fff3b0', 2);
         this.openBuilding(npc);
       }
     } else if (npc.kind === 'tavern') {
@@ -1045,7 +1068,7 @@ doTalk(npc) {
       'ouro 1000 · forca 50 · int 50 · vel 30 · vida 500',
       'dano 200 · tier 10',
       'get thompson · get pistola · get minigun · get sniper · get destruidora',
-      'get granada x100 · get exorcismo x5',
+      'Granada e Exorcismo não saem por comando: compre no Vendedor / Igreja.',
       'curar · matar · ajuda'
     ];
     this.banner(list.join('  |  '), '#ffe9b0', 4);
@@ -1074,11 +1097,7 @@ doTalk(npc) {
     }
     const it = MODERN_ITEMS[name];
     if (it) {
-      p.items[it.id] = (p.items[it.id] || 0) + qty;
-      this.banner(it.name + ' obtida (x' + p.items[it.id] + ') — tecla ' + it.key, it.color, 2);
-      this.burst(p.x, p.y - 20, it.color, 12, 180);
-      this.sfx.pick();
-      this.hud();
+      this.banner(it.name + ' não pode ser obtida por comando — compre no Vendedor/Igreja.', '#ff5c5c', 2);
       return;
     }
     this.banner('Item desconhecido: ' + name, '#ff5c5c', 2);
@@ -1101,6 +1120,10 @@ doTalk(npc) {
       this.sfx.throw();
       this.hud();
     } else if (id === 'exorcismo') {
+      if (!this.flags.exorcism) {
+        this.banner('Você ainda não aprendeu o rito de exorcismo. Compre na Igreja e peça ao Bispo.', '#ff5c5c', 2);
+        return;
+      }
       // Bloqueia Diácono de usar exorcismo moderno.
       if (p.sub.exorcistLevel === 0) {
         this.banner('Apenas Padres e Bispos podem realizar exorcismos.', '#ff5c5c', 2);

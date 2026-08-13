@@ -627,6 +627,11 @@ const SHOP = {
     name: 'Tomé: Inteligência', desc: '+4 de inteligência (dano mágico).',
     cost: n => 60 + Math.round(45 * Math.pow(n, 1.5)),
     effect: (g, p) => { p.int += 4; }
+  },
+  granadas: {
+    name: 'Caixa de Granadas', desc: '3 granadas (tecla G) para arremessar. Consumível.',
+    cost: n => 60 + n * 30,
+    effect: (g, p) => { p.items.granada = (p.items.granada || 0) + 3; }
   }
 };
 
