@@ -368,6 +368,19 @@ const CRYSTALS = {
   final: { name: 'Coroa do Execra', color: '#ffd23f', hint: 'Titã do Execra', gate: 'arcano' }
 };
 
+// Nível de batalha exigido para enfrentar cada chefe.
+// 0 = acessível desde o início; 1 = alcançado ao derrotar Krol; 3 = alcançado ao
+// derrotar o Rei da Noite (Alvorada dos Mortos). O jogador precisa de
+// KROL → Nível 1 → Alvorada dos Mortos → Nível 3 → desafios finais.
+const BOSS_LEVEL_REQ = {
+  krol_chefe: 0,
+  gere_osso: 1,
+  titan: 3,
+  demonio: 3,
+  general: 3,
+  arcano: 3
+};
+
 // --- Mundo: dados da geração procedural ---
 const WORLD_W = 400;   // largura em tiles
 const WORLD_H = 240;   // altura em tiles
@@ -422,24 +435,30 @@ const REGIONS = [
     boss: { kind: 'arcano', x: 27, y: 58, access: { x: 40, y: 58 } } }
 ];
 
-// Selos: barreira de progressão (interagem com F). need = cristal requisitado.
-// entrance = tiles de parede que são abertos quando o selo é quebrado.
+// Selos: barreira de progressão (interagem com F). need = nível de batalha
+// exigido para atravessar. entrance = tiles de parede abertos quando o nível é
+// alcançado. segLevels = nível que abre cada tile da entrada (progressivo).
 const SEALS = [
-  { id: 'selo_catacumbas', name: 'Selo das Catacumbas', need: 'floresta', x: 62, y: 33, color: '#b05cff', accent: '#e0c0ff',
+  { id: 'selo_catacumbas', name: 'Selo das Catacumbas', need: 1, x: 62, y: 33, color: '#b05cff', accent: '#e0c0ff',
     entrance: [[64, 32], [64, 33], [64, 34]],
-    msg: 'Um selo antigo bloqueia o caminho. Derrote o Chefe Tribal na floresta.' },
-  { id: 'selo_gruta', name: 'Selo do Execra', need: 'sombrio', x: 84, y: 33, color: '#9a6bff', accent: '#d0b0ff',
+    segLevels: [1, 1, 3],
+    msg: 'Um selo antigo bloqueia o caminho. Derrote o Chefe Tribal na floresta para alcançar o Nível de Batalha 1.' },
+  { id: 'selo_gruta', name: 'Selo do Execra', need: 3, x: 84, y: 33, color: '#9a6bff', accent: '#d0b0ff',
     entrance: [[86, 32], [86, 33], [86, 34]],
-    msg: 'Um selo de sombras bloqueia a gruta. O Rei da Noite guarda a chave.' },
-  { id: 'selo_profano', name: 'Selo Profano', need: 'sombrio', x: 319, y: 58, color: '#ff6b6b', accent: '#ffb0b0',
+    segLevels: [1, 3, 3],
+    msg: 'Um selo de sombras bloqueia a gruta. Alcançai o Nível de Batalha 3 para desfazê-lo.' },
+  { id: 'selo_profano', name: 'Selo Profano', need: 3, x: 319, y: 58, color: '#ff6b6b', accent: '#ffb0b0',
     entrance: [[322, 57], [322, 58], [322, 59]],
-    msg: 'As chamas do Demônio guardam este portal. O Cristal Sombrio é a chave.' },
-  { id: 'selo_forte', name: 'Portão do Forte', need: 'floresta', x: 319, y: 202, color: '#b5651d', accent: '#ffd27f',
+    segLevels: [1, 3, 3],
+    msg: 'As chamas do Demônio guardam este portal. Alcançai o Nível de Batalha 3.' },
+  { id: 'selo_forte', name: 'Portão do Forte', need: 3, x: 319, y: 202, color: '#b5651d', accent: '#ffd27f',
     entrance: [[322, 201], [322, 202], [322, 203]],
-    msg: 'O Portão do Forte está trancado. O Cristal da Floresta é a chave.' },
-  { id: 'selo_arcano', name: 'Véu Arcano', need: 'final', x: 44, y: 58, color: '#7a6bd8', accent: '#c0b4ff',
+    segLevels: [1, 3, 3],
+    msg: 'O Portão do Forte está trancado. Alcançai o Nível de Batalha 3.' },
+  { id: 'selo_arcano', name: 'Véu Arcano', need: 3, x: 44, y: 58, color: '#7a6bd8', accent: '#c0b4ff',
     entrance: [[41, 57], [41, 58], [41, 59]],
-    msg: 'O véu resiste ao toque. Somente a Coroa do Execra o desfaz.' }
+    segLevels: [1, 3, 3],
+    msg: 'O véu resiste ao toque. Alcançai o Nível de Batalha 3.' }
 ];
 
 // NPCs espalhados pelo mundo. kind controla o tipo de interação.
@@ -449,7 +468,7 @@ const NPC_DEFS = [
   { id: 'vendedor', name: 'Vendedor', kind: 'shop', x: 120, y: 121, color: '#2980b9', accent: '#7ec8e3' },
   { id: 'mestre', name: 'Mestre das Artes', kind: 'skills', x: 128, y: 121, color: '#8e44ad', accent: '#d8a1ff' },
   { id: 'guia', name: 'Cronista', kind: 'guide', x: 116, y: 124, color: '#27ae60', accent: '#a8e6a1',
-    text: 'Olá, viajante! Eclésia é vasta e perigosa. Derrote o Chefe Tribal na floresta (Cristal da Floresta), o Rei da Noite nas Catacumbas (Cristal Sombrio) e o Titã na Gruta do Execra (Coroa). Cada casta tem um desafio final próprio, no canto mais distante do mapa. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' },
+    text: 'Olá, viajante! Eclésia é vasta e perigosa. Sua jornada é guiada pelo Nível de Batalha. Comece derrotando o Chefe Tribal na Floresta dos Goblins — isso o levará ao Nível 1. Com o Nível 1, o caminho para as Catacumbas se abre; derrote o Rei da Noite (Alvorada dos Mortos) para alcançar o Nível 3. Com o Nível 3, as barreiras finais caem: Mastema, o Demônio (leste), o General Tarraske (sul-leste) e o Arcano Devorador (oeste). As barreiras se desfazem por partes conforme seu nível de batalha avança. Monstros têm fraquezas: amarelo = fraqueza, cinza = resistência. Boa sorte!' },
   { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0' },
   { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 119, y: 119, color: '#e8b0b0', accent: '#a23b3b' },
   { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },

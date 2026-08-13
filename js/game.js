@@ -53,6 +53,8 @@ const GAME = {
   bossesActive: [],
   crystals: {},
   sealsBroken: {},
+  progressionGranted: {},
+  progressLevel: 0,
   ending: null,
   loreDiscovered: { clero: [], populum: [], mago: [] },
   comboStreak: 0,
@@ -166,12 +168,14 @@ const GAME = {
     this.bossesActive = [];
     this.crystals = {};
     this.sealsBroken = {};
+    this.progressionGranted = {};
     this.ending = null;
     this.loreDiscovered = { clero: [], populum: [], mago: [] };
     this.comboStreak = 0;
     this.comboT = 0;
     this.visited = {};
     this.defeatedBosses = {};
+    this.progressLevel = 0;
     this.auraT = 0;
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
     this.zoneId = '';
@@ -181,8 +185,13 @@ const GAME = {
     this.cam.x = this.startPos.x - this.cw / 2;
     this.cam.y = this.startPos.y - this.ch / 2;
 
+    // Nova partida: o mundo é redefinido — barreiras de selos e árvores
+    // destruídas não persistem entre runs.
+    this.world.openTiles.clear();
+    this.world.destroyedKeys.clear();
     this.world.resetSpawns();
     this.world.update(0.01, this);
+    this.applyBarriers();
 
     this.pickups.push(new Pickup(112 * TILE, 119 * TILE, 'coin', 20));
     this.pickups.push(new Pickup(120 * TILE, 130 * TILE, 'heart'));
@@ -253,11 +262,14 @@ const GAME = {
       if (this.comboT <= 0) this.comboStreak = 0;
     }
 
-    // poção única de veneno aplicada ao jogador
+    // veneno: dano contínuo que só dispara em intervalos fixos (1 tick por segundo),
+    // para nunca aplicar múltiplos golpes em sequência no mesmo frame.
     if (p.status.venom > 0) {
       p.status.venom -= dt;
-      const vd = Math.round(p.maxHp * 0.01) + 1;
-      if (Math.random() < 0.6) {
+      p.status.venomCd = (p.status.venomCd || 0) - dt;
+      if (p.status.venomCd <= 0) {
+        p.status.venomCd = 1;
+        const vd = Math.round(p.maxHp * 0.01) + 1;
         p.hp -= vd;
         this.text(p.x, p.y - 20, '-' + vd, '#9a4b8a', 13);
         if (p.hp <= 0) { p.hp = 0; this.death(); }
@@ -455,6 +467,8 @@ this.monsters.forEach(m => {
     byId('st_int').textContent = p.int;
     byId('classname').textContent = CASTAS[p.sub.casta].name + ' — ' + p.sub.name;
     byId('weapon').textContent = p.mw ? p.mw.name + ' (moderna, dano ' + p.weapon.dmg + ')' : p.weapon.name + ' +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')';
+    const lvEl = byId('lvlval');
+    if (lvEl) lvEl.textContent = this.progressLevel;
 
     for (let i = 0; i < this.skillEls.length; i++) {
       const el = this.skillEls[i];
@@ -581,21 +595,62 @@ this.monsters.forEach(m => {
   },
 
   trySeal(npc) {
-    if (this.sealsBroken[npc.id]) return;
-    const need = npc.need;
-    if (this.crystals[need]) {
-      this.sealsBroken[npc.id] = true;
-      if (npc.entrance && this.world) {
-        for (const [gx, gy] of npc.entrance) this.world.openEntrance(gx, gy);
-      }
-      this.banner(npc.name + ' se desfez!', npc.color, 2.5);
-      this.burst(npc.px, npc.py, npc.color, 20, 300);
-      this.ring(npc.px, npc.py, 60, 0.8, npc.color, 5);
-      this.shake += 6;
-      this.sfx.upgrade();
-    } else {
-      this.banner(npc.msg, '#ffd23f', 2.8);
+    if (this.sealsBroken[npc.id]) {
+      this.banner(npc.name + ' já se desfez.', '#7cff8a', 1.8);
+      return;
     }
+    const need = npc.need !== undefined ? npc.need : 3;
+    if (this.progressLevel < need) {
+      this.banner(npc.msg, '#ffd23f', 2.8);
+      return;
+    }
+    // Requisito atingido: abre os segmentos liberados pelo nível atual.
+    this.applyBarriers();
+    this.sealsBroken[npc.id] = true;
+    this.banner(npc.name + ' se desfez!', npc.color, 2.5);
+    this.burst(npc.px, npc.py, npc.color, 20, 300);
+    this.ring(npc.px, npc.py, 60, 0.8, npc.color, 5);
+    this.shake += 6;
+    this.sfx.upgrade();
+  },
+
+  // Abre os segmentos das barreiras (selos) liberados pelo nível de batalha atual.
+  // Cada tile de entrada tem um nível associado (segLevels) e só é aberto quando
+  // o jogador alcança aquele nível — removendo a barreira progressivamente.
+  applyBarriers() {
+    if (!this.world) return;
+    for (const n of this.npcs) {
+      if (n.kind !== 'seal') continue;
+      const lv = n.segLevels || [];
+      const defNeed = n.need !== undefined ? n.need : 3;
+      let openedNow = false;
+      (n.entrance || []).forEach((tile, i) => {
+        const req = lv[i] !== undefined ? lv[i] : defNeed;
+        if (req > this.progressLevel) return;
+        const key = tile[0] + ',' + tile[1];
+        if (this.world.openTiles.has(key)) return;
+        this.world.openEntrance(tile[0], tile[1]);
+        openedNow = true;
+      });
+      if (openedNow) {
+        this.burst(n.px, n.py, n.color, 10, 180);
+        this.ring(n.px, n.py, 44, 0.6, n.color, 4);
+        this.shake += 2;
+        this.sfx.upgrade();
+      }
+    }
+  },
+
+  // Concede pontos de progressão (nível de batalha) e aplica as barreiras.
+  addProgression(points) {
+    this.progressLevel += points;
+    this.applyBarriers();
+    this.banner('NÍVEL DE BATALHA ' + this.progressLevel + '!', '#ffe9b0', 3);
+    this.burst(this.player.x, this.player.y, '#ffe9b0', 16, 240);
+    this.ring(this.player.x, this.player.y, 90, 0.6, '#ffe9b0', 5);
+    this.shake += 5;
+    this.sfx.upgrade();
+    this.hud();
   },
 
   // Diálogo genérico com NPC
@@ -777,7 +832,7 @@ doTalk(npc) {
     if (npc.kind === 'church') {
       if (act === 'pray') {
         p.hp = p.maxHp;
-        p.status.venom = 0; p.status.dmg = 0; p.status.spd = 0; p.status.dur = 0;
+        p.status.venom = 0; p.status.venomCd = 0; p.status.dmg = 0; p.status.spd = 0; p.status.dur = 0;
         this.blessingFx(p, '#ffe66d', 16);
         this.sfx.heal();
         this.banner('Você reza e nada mais te alcança.', '#ffe9b0', 2);
@@ -1872,6 +1927,15 @@ doTalk(npc) {
       this.banner(d.name.toUpperCase() + ' DESTRUÍDO!', '#ffd23f', 3);
       this.pickups.push(new Pickup(m.x, m.y - 20, 'chest', 1));
     }
+
+    // Progressão de nível de batalha: Krol (+1, leva ao nível 1) e o Rei da
+    // Noite/Alvorada dos Mortos (+2, leva ao nível 3). Cada chefe concede o
+    // bônus apenas uma vez, mesmo que renasça após uma morte.
+    const gain = { krol_chefe: 1, gere_osso: 2 }[d.id];
+    if (gain && !this.progressionGranted[d.id]) {
+      this.progressionGranted[d.id] = true;
+      this.addProgression(gain);
+    }
   },
 
   bossAggro(m) {
@@ -2488,6 +2552,7 @@ doTalk(npc) {
     p.dashT = 0;
     p.status.dmg = 0; p.status.spd = 0; p.status.regen = 0;
     p.status.dur = 0; p.status.shield = 0; p.status.shieldT = 0;
+    p.status.venom = 0; p.status.venomCd = 0;
     this.monsters = [];
     this.projectiles = [];
     this.delayed = [];

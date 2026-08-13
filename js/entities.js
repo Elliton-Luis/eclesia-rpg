@@ -33,7 +33,7 @@ class Player {
     this.dashDmg = 0;
     this.dashType = T.PHYS;
     this.dashHit = new Set();
-    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0, fatigue: 0 };
+    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0, venomCd: 0, fatigue: 0 };
     this.cd = {};
     this.extraSkills = [];
     this.mw = null;
@@ -584,7 +584,7 @@ class Monster {
     if (d2 < this.w / 2 + p.w / 2 + 6 && this.touchCd <= 0 && p.hp > 0 && !this.isBoss) {
       g.damagePlayer(d.dmg);
       this.touchCd = 0.8;
-      if (d.venom) p.status.venom = 3;
+      if (d.venom) { p.status.venom = 3; p.status.venomCd = 1; }
     }
     if (this.isBoss && d2 < this.w / 2 + p.w / 2 + 4 && this.touchCd <= 0 && p.hp > 0) {
       g.damagePlayer(Math.round(d.dmg * 0.7));

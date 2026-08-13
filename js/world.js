@@ -476,6 +476,9 @@ class World {
     // chefe definitivo: só revive de novo se o final ainda não ocorreu
     if (d.bossRoom && def.finalBoss && g.ending) { d.cool = 999; return; }
     if (d.bossRoom) {
+      // Nível de batalha insuficiente: o chefe não aparece até o requisito ser cumprido.
+      const reqLevel = BOSS_LEVEL_REQ[def.id];
+      if (reqLevel !== undefined && g.progressLevel < reqLevel) { d.cool = 0.5; return; }
       const crystal = def.crystal;
       if (crystal && g.crystals[crystal]) { d.cool = 999; return; }
       m = new Monster(def, d.x, d.y, g, true);

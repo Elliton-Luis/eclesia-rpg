@@ -119,6 +119,15 @@ html, body {
 
 #classname { font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
 #weapon { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+#battlelv {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #ffe9b0;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+#battlelv .lvl { color: #ffd23f; }
+#battlelv b { color: #fff; }
 
 #skillbar {
   position: absolute;
