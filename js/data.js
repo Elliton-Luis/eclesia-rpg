@@ -385,7 +385,7 @@ const REGIONS = [
     monsters: [['rato', 3], ['espantalho', 3], ['slime', 1]], rares: [] },
   { id: 'floresta', name: 'Floresta dos Goblins', x: 60, y: 44, w: 44, h: 40, decor: 'forest', danger: 2, density: 3, priority: 2,
     monsters: [['goblin', 3], ['archer', 1], ['bat', 2], ['wolf', 2], ['bomber', 1]], rares: ['lobisomem'],
-    boss: { kind: 'krol_chefe', x: 78, y: 62 } },
+    boss: { kind: 'krol_chefe', x: 78, y: 62, access: { x: 60, y: 62 } } },
   { id: 'lobos', name: 'Bosque dos Lobos', x: 120, y: 30, w: 36, h: 27, decor: 'forest', danger: 2, density: 2, priority: 2,
     monsters: [['wolf', 3], ['javali', 2], ['bat', 1]], rares: [] },
   { id: 'norte', name: 'Campo do Norte', x: 156, y: 24, w: 70, h: 26, decor: 'grass', danger: 1, density: 1, priority: 1,
@@ -407,32 +407,38 @@ const REGIONS = [
     monsters: [['rato', 3], ['slime', 2], ['wolf', 1]], rares: [] },
   { id: 'catacumbas', name: 'Catacumbas', x: 64, y: 22, w: 18, h: 22, decor: 'cave', danger: 3, density: 3, priority: 2, indoor: true,
     monsters: [['skeleton', 3], ['spider', 2], ['wraith', 1], ['slime', 1]], rares: [],
-    boss: { kind: 'gere_osso', x: 72, y: 34 } },
+    boss: { kind: 'gere_osso', x: 72, y: 34, access: { x: 65, y: 34 } } },
   { id: 'gruta', name: 'Gruta do Execra', x: 86, y: 22, w: 14, h: 22, decor: 'cave', danger: 4, density: 3, priority: 2, indoor: true,
     monsters: [['golem', 2], ['shaman', 2], ['wraith', 1], ['bomber', 1]], rares: [],
-    boss: { kind: 'titan', x: 93, y: 32 } },
+    boss: { kind: 'titan', x: 93, y: 32, access: { x: 87, y: 32 } } },
   { id: 'cova', name: 'Cova do Demônio', x: 322, y: 40, w: 38, h: 44, decor: 'hell', danger: 5, density: 3, priority: 3, indoor: true,
     monsters: [['demoninho', 3], ['wraith', 2], ['gargula', 1]], rares: [],
-    boss: { kind: 'demonio', x: 340, y: 58 } },
+    boss: { kind: 'demonio', x: 340, y: 58, access: { x: 323, y: 58 } } },
   { id: 'forte', name: 'Forte do General', x: 322, y: 176, w: 38, h: 52, decor: 'fort', danger: 5, density: 3, priority: 3,
     monsters: [['soldado_leal', 3], ['guarda_arquebus', 2], ['demoninho', 1]], rares: [],
-    boss: { kind: 'general', x: 340, y: 202 } },
-  { id: 'torre', name: 'Torre Perdida', x: 12, y: 40, w: 30, h: 38, decor: 'arcane', danger: 5, density: 3, priority: 3, indoor: true,
+    boss: { kind: 'general', x: 340, y: 202, access: { x: 323, y: 202 } } },
+  { id: 'torre', name: 'Torre Perdida', x: 12, y: 40, w: 30, h: 38, decor: 'arcano', danger: 5, density: 3, priority: 3, indoor: true,
     monsters: [['espectro_arcano', 3], ['homunculo', 2], ['mumia', 1]], rares: [],
-    boss: { kind: 'arcano', x: 27, y: 58 } }
+    boss: { kind: 'arcano', x: 27, y: 58, access: { x: 40, y: 58 } } }
 ];
 
 // Selos: barreira de progressão (interagem com F). need = cristal requisitado.
+// entrance = tiles de parede que são abertos quando o selo é quebrado.
 const SEALS = [
-  { id: 'selo_catacumbas', name: 'Selo das Catacumbas', need: 'floresta', x: 61, y: 33, color: '#b05cff', accent: '#e0c0ff',
+  { id: 'selo_catacumbas', name: 'Selo das Catacumbas', need: 'floresta', x: 62, y: 33, color: '#b05cff', accent: '#e0c0ff',
+    entrance: [[64, 32], [64, 33], [64, 34]],
     msg: 'Um selo antigo bloqueia o caminho. Derrote o Chefe Tribal na floresta.' },
-  { id: 'selo_gruta', name: 'Selo do Execra', need: 'sombrio', x: 85, y: 33, color: '#9a6bff', accent: '#d0b0ff',
+  { id: 'selo_gruta', name: 'Selo do Execra', need: 'sombrio', x: 84, y: 33, color: '#9a6bff', accent: '#d0b0ff',
+    entrance: [[86, 32], [86, 33], [86, 34]],
     msg: 'Um selo de sombras bloqueia a gruta. O Rei da Noite guarda a chave.' },
   { id: 'selo_profano', name: 'Selo Profano', need: 'sombrio', x: 319, y: 58, color: '#ff6b6b', accent: '#ffb0b0',
+    entrance: [[322, 57], [322, 58], [322, 59]],
     msg: 'As chamas do Demônio guardam este portal. O Cristal Sombrio é a chave.' },
   { id: 'selo_forte', name: 'Portão do Forte', need: 'floresta', x: 319, y: 202, color: '#b5651d', accent: '#ffd27f',
+    entrance: [[322, 201], [322, 202], [322, 203]],
     msg: 'O Portão do Forte está trancado. O Cristal da Floresta é a chave.' },
   { id: 'selo_arcano', name: 'Véu Arcano', need: 'final', x: 44, y: 58, color: '#7a6bd8', accent: '#c0b4ff',
+    entrance: [[41, 57], [41, 58], [41, 59]],
     msg: 'O véu resiste ao toque. Somente a Coroa do Execra o desfaz.' }
 ];
 

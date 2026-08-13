@@ -45,6 +45,45 @@ class World {
     this.chunks = new Map();
     this.destroyedKeys = new Set();
     this.gates = []; // mantido por compatibilidade; selos (NPCs) substituem os portões
+    // Tiles de parede abertos por selos quebrados (entradas de chefes). Persistem
+    // mesmo quando o chunk é descarregado/regenerado.
+    this.openTiles = new Set();
+    // Tiles garantidamente caminháveis ao redor de cada chefe (clareira + corredor),
+    // para que todo chefe seja sempre alcançável.
+    this.access = new Map();
+    this.buildAccess();
+  }
+
+  // Garante área de luta e acesso a todos os chefes: uma clareira ao redor do chefe
+  // e um corredor de 3 tiles do chefe até o ponto de acesso (entrada ou borda da região).
+  buildAccess() {
+    for (const r of REGIONS) {
+      if (!r.boss) continue;
+      const bx = r.boss.x, by = r.boss.y;
+      const floor = r.decor === 'fort' ? 'z' : (r.decor === 'forest' ? 'g' : 'c');
+      const add = (gx, gy) => {
+        if (gx < r.x || gx >= r.x + r.w || gy < r.y || gy >= r.y + r.h) return;
+        if (!this.access.has(gx + ',' + gy)) this.access.set(gx + ',' + gy, floor);
+      };
+      // clareira ao redor do chefe
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) add(bx + dx, by + dy);
+      // corredor até o ponto de acesso
+      if (r.boss.access) {
+        const ax = r.boss.access.x, ay = r.boss.access.y;
+        const dx = Math.sign(ax - bx), dy = Math.sign(ay - by);
+        if (dx !== 0 && dy === 0) {
+          const x0 = Math.min(bx, ax), x1 = Math.max(bx, ax);
+          for (let gx = x0; gx <= x1; gx++) { add(gx, by - 1); add(gx, by); add(gx, by + 1); }
+        } else if (dx === 0 && dy !== 0) {
+          const y0 = Math.min(by, ay), y1 = Math.max(by, ay);
+          for (let gy = y0; gy <= y1; gy++) { add(bx - 1, gy); add(bx, gy); add(bx + 1, gy); }
+        } else {
+          const x0 = Math.min(bx, ax), x1 = Math.max(bx, ax);
+          const y0 = Math.min(by, ay), y1 = Math.max(by, ay);
+          for (let gx = x0; gx <= x1; gx++) for (let gy = y0; gy <= y1; gy++) add(gx, gy);
+        }
+      }
+    }
   }
 
   chunkKey(cx, cy) { return cx + '_' + cy; }
@@ -69,6 +108,11 @@ class World {
   charFor(gx, gy) {
     // borda do mundo -> rochas
     if (gx <= 0 || gx >= WORLD_W - 1 || gy <= 3 || gy >= WORLD_H - 3) return 'r';
+    // entrada aberta por selo quebrado -> passagem
+    if (this.openTiles.has(gx + ',' + gy)) return 'c';
+    // área garantida de acesso a chefe -> piso caminhável
+    const acc = this.access.get(gx + ',' + gy);
+    if (acc) return acc;
     const r = this.regionAt(gx, gy);
     if (!r) return this.wildChar(gx, gy);
     const p = (hash2(gx, gy) >>> 0) % 1000 / 1000;
@@ -303,6 +347,13 @@ class World {
     if (tx < 0 || ty < 0 || tx >= this.cols || ty >= this.rows) return;
     const ch = this.getChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
     ch.tiles[ty % CHUNK][tx % CHUNK] = c;
+  }
+
+  // Abre permanentemente um tile de parede (entrada de chefe). O tile vira piso
+  // tanto no chunk já carregado quanto em regenerações futuras.
+  openEntrance(tx, ty) {
+    this.openTiles.add(tx + ',' + ty);
+    this.setTile(tx, ty, 'c');
   }
 
   // Sólidos: blocos que impedem passagem

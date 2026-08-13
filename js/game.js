@@ -585,6 +585,9 @@ this.monsters.forEach(m => {
     const need = npc.need;
     if (this.crystals[need]) {
       this.sealsBroken[npc.id] = true;
+      if (npc.entrance && this.world) {
+        for (const [gx, gy] of npc.entrance) this.world.openEntrance(gx, gy);
+      }
       this.banner(npc.name + ' se desfez!', npc.color, 2.5);
       this.burst(npc.px, npc.py, npc.color, 20, 300);
       this.ring(npc.px, npc.py, 60, 0.8, npc.color, 5);
