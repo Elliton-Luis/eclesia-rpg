@@ -38,6 +38,7 @@ class Player {
     this.extraSkills = [];
     this.mw = null;
     this.items = {};
+    this.atkSpd = 0; // +0.1 por nível de treino de reflexos
     this.sub.skills.forEach(s => { this.cd[s.id] = 0; });
   }
 

@@ -178,6 +178,7 @@ const GAME = {
     this.progressLevel = 0;
     this.auraT = 0;
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
+    this.newRecords = [];
     this.zoneId = '';
     this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; });
 
@@ -474,7 +475,7 @@ this.monsters.forEach(m => {
       const el = this.skillEls[i];
       if (el.dataset && el.dataset.item) continue;
       let cd = 0, max = 1;
-      if (i === 0) { cd = p.attackCd; max = (p.mw || p.sub.attack).cd || 1; }
+      if (i === 0) { cd = p.attackCd; max = ((p.mw || p.sub.attack).cd || 1) / (1 + (p.atkSpd || 0) * 0.1); }
       else { const s = p.allSkills()[i - 1]; if (!s) continue; cd = p.cd[s.id]; max = s.cd; }
       const f = clamp(cd / max, 0, 1);
       el.querySelector('.cdfill').style.height = (f * 100) + '%';
@@ -802,10 +803,10 @@ doTalk(npc) {
       }
       // Exorcismo: bloqueado até ser comprado; depois, pedir ao Bispo dá 1 carga consumível.
       if (sub.exorcistLevel >= 1 && !this.flags.exorcism) {
-        html += `<div class="item"><div><b>Exorcismo</b><div class="desc">Aprender o rito sagrado. Desbloqueia pedir exorcismos ao Bispo. (250 ●)</div></div><button class="btn" data-bact="exorcism_buy">250</button></div>`;
+        html += `<div class="item"><div><b>Exorcismo</b><div class="desc">Aprender o rito sagrado. Desbloqueia pedir exorcismos ao Bispo. (400 ●)</div></div><button class="btn" data-bact="exorcism_buy">400</button></div>`;
       }
       if (this.flags.exorcism && npc.id === 'bispo_central') {
-        html += `<div class="item"><div><b>Pedir Exorcismo</b><div class="desc">Receber 1 exorcismo (tecla U) — purga tudo na tela. Consumível. (50 ● de oferta)</div></div><button class="btn" data-bact="exorcism_get">50</button></div>`;
+        html += `<div class="item"><div><b>Pedir Exorcismo</b><div class="desc">Receber 1 exorcismo (tecla U) — 200 de dano sagrado em tudo na tela. Consumível. (150 ● de oferta)</div></div><button class="btn" data-bact="exorcism_get">150</button></div>`;
       }
       // Padre também pode fazer Missa se exorcistLevel == 1 (já coberto acima)
       // Todas as classes podem rezar (grátis)
@@ -818,6 +819,14 @@ doTalk(npc) {
       html += `<div class="item"><div><b>Cerveja & Caldo</b><div class="desc">Recupera toda a vida. (30 ●)</div></div><button class="btn" data-bact="drink">30</button></div>`;
       html += `<div class="item"><div><b>Histórias de Guerra</b><div class="desc">Revela segredos da fronteira.</div></div><button class="btn" data-bact="hist">Ouvir</button></div>`;
       if (casta === 'populum') html += `<div class="item"><div><b>Treino Forjado</b><div class="desc">+5 de força permanente. (150 ●)</div></div><button class="btn" data-bact="train">150</button></div>`;
+      // Treino de Reflexos: aumenta velocidade de ataque/disparo (todas as castas).
+      {
+        const n = this.shopN.trainreflex || 0;
+        const maxed = n >= MAX_TRAIN_REFLEX;
+        const cost = 100 + n * 80;
+        html += `<div class="item"><div><b>Treino de Reflexos</b><div class="desc">+10% de velocidade de ataque/disparo por treino. Atual: <b>+${Math.round(p.atkSpd * 10)}%</b>.${maxed ? ' (no máximo!)' : ''}</div></div>${
+          maxed ? '<span class="owned">MÁXIMO</span>' : `<button class="btn" data-bact="trainreflex">${cost}</button>`}</div>`;
+      }
     } else { // tower
       html = `<h2><span class="bldIcon">🔮</span> ${npc.name}</h2><div class="bldSub">Torre Arcana — saber e mistério</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
       html += `<div class="item"><div><b>Meditar</b><div class="desc">Recupera a vida e abre os canais. (Grátis)</div></div><button class="btn" data-bact="med"></button></div>`;
@@ -901,7 +910,7 @@ doTalk(npc) {
         this.openBuilding(npc);
       } else if (act === 'exorcism_buy' && sub.exorcistLevel >= 1 && !this.flags.exorcism) {
         // Comprar a habilidade de exorcismo (única vez)
-        if (!ok(250)) { this.openBuilding(npc); return; }
+        if (!ok(400)) { this.openBuilding(npc); return; }
         this.flags.exorcism = true;
         this.blessingFx(p, '#fff3b0', 18);
         this.sfx.upgrade();
@@ -909,7 +918,7 @@ doTalk(npc) {
         this.openBuilding(npc);
       } else if (act === 'exorcism_get' && this.flags.exorcism) {
         // Pedir ao Bispo: concede 1 exorcismo consumível
-        if (!ok(50)) { this.openBuilding(npc); return; }
+        if (!ok(150)) { this.openBuilding(npc); return; }
         p.items.exorcismo = (p.items.exorcismo || 0) + 1;
         this.blessingFx(p, '#fff3b0', 14);
         this.sfx.buy();
@@ -931,6 +940,18 @@ doTalk(npc) {
         this.burst(p.x, p.y - 20, '#c0392b', 12, 200);
         this.sfx.upgrade();
         this.banner('Músculo de aço: +5 de força', '#ff9d5c', 2);
+      } else if (act === 'trainreflex') {
+        const n = this.shopN.trainreflex || 0;
+        if (n >= MAX_TRAIN_REFLEX) { this.banner('Reflexos no máximo!', '#7cff8a', 1.5); }
+        else {
+          const cost = 100 + n * 80;
+          if (!ok(cost)) { this.openBuilding(npc); return; }
+          this.shopN.trainreflex = n + 1;
+          p.atkSpd = (p.atkSpd || 0) + 1;
+          this.burst(p.x, p.y - 20, '#ffb020', 12, 200);
+          this.sfx.upgrade();
+          this.banner('Reflexos treinados! Ataque/disparo +10% (total: +' + Math.round(p.atkSpd * 10) + '%)', '#ffb020', 2.2);
+        }
       }
     } else { // tower
       if (act === 'med') {
@@ -1047,7 +1068,7 @@ doTalk(npc) {
         case 'vel': case 'velocidade': p.spd = Math.max(0, num); this.hud(); this.banner('Velocidade: ' + p.spd, '#ff9d5c', 1.5); return;
         case 'vida': p.maxHp = Math.max(1, num); p.hp = p.maxHp; this.hud(); this.banner('Vida máx: ' + p.maxHp, '#7cff8a', 1.5); return;
         case 'dano': p.weapon.dmg = Math.max(0, num); this.hud(); this.banner('Dano: ' + p.weapon.dmg, '#ff9d5c', 1.5); return;
-        case 'tier': p.weapon.tier = Math.max(0, num); p.weapon.dmg = weaponDamage(p.weapon); this.hud(); this.banner('Arma nível +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')', '#ff9d5c', 1.5); return;
+        case 'tier': p.weapon.tier = Math.max(0, num); p.weapon.dmg = weaponDamage(p.weapon); this.hud(); this.banner('Bênção nível +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')', '#ff9d5c', 1.5); return;
       }
     } else {
       switch (key) {
@@ -1077,7 +1098,7 @@ doTalk(npc) {
   giveItem(cmd) {
     const p = this.player;
     let name = String(cmd).replace(/^get\s+/i, '').replace(/^obter\s+/i, '').trim().toLowerCase();
-    if (!name) { this.banner('Uso: get <arma ou item> [x<quantidade>]', '#ffd23f', 2); return; }
+    if (!name) { this.banner('Uso: get <bênção ou item> [x<quantidade>]', '#ffd23f', 2); return; }
     
     let qty = 1;
     const qtyMatch = name.match(/x(\d+)$/);
@@ -1136,7 +1157,7 @@ doTalk(npc) {
       for (const m of this.monsters) {
         if (m.dying || m.dead) continue;
         if (m.x >= x0 - 60 && m.x <= x1 + 60 && m.y >= y0 - 60 && m.y <= y1 + 60) {
-          this.damageMonster(m, 99999, T.MAGIC);
+          this.damageMonster(m, 200, T.MAGIC);
           n++;
         }
       }
@@ -1195,8 +1216,8 @@ doTalk(npc) {
         <div class="cheatfield"><label>Inteligência</label><input type="number" id="ch_int" value="${p.int}"></div>
         <div class="cheatfield"><label>Velocidade</label><input type="number" id="ch_vel" value="${p.spd}"></div>
         <div class="cheatfield"><label>Ouro</label><input type="number" id="ch_ouro" value="${p.gold}"></div>
-        <div class="cheatfield"><label>Dano da arma</label><input type="number" id="ch_dano" value="${p.weapon.dmg}"></div>
-        <div class="cheatfield"><label>Nível da arma</label><input type="number" id="ch_tier" value="${p.weapon.tier}"></div>
+        <div class="cheatfield"><label>Dano da bênção</label><input type="number" id="ch_dano" value="${p.weapon.dmg}"></div>
+        <div class="cheatfield"><label>Nível da bênção</label><input type="number" id="ch_tier" value="${p.weapon.tier}"></div>
         <label class="cheattoggle"><input type="checkbox" id="ch_goldinf" ${this.cheats.gold ? 'checked' : ''}> Ouro infinito</label>
         <label class="cheattoggle"><input type="checkbox" id="ch_hpinf" ${this.cheats.hp ? 'checked' : ''}> Vida infinita</label>
       </div>
@@ -1338,9 +1359,11 @@ doTalk(npc) {
     const p = this.player;
     if (p.attackCd > 0) return;
     const atk = p.mw || p.sub.attack;
-    p.attackCd = atk.cd;
-    p.attackAnim = atk.cd;
-    p.attackDur = atk.cd;
+    // Treino de reflexos: reduz o cooldown de ataque/disparo (até 2x mais rápido).
+    const cd = atk.cd / (1 + (p.atkSpd || 0) * 0.1);
+    p.attackCd = cd;
+    p.attackAnim = cd;
+    p.attackDur = cd;
     p.combo = (p.combo + 1) % (atk.combo || 1);
     p.comboT = 0.8;
     if (atk.kind === 'melee') {
@@ -1907,7 +1930,7 @@ doTalk(npc) {
       if (p.weapon.tier < 12) {
         p.weapon.tier++;
         p.weapon.dmg = weaponDamage(p.weapon);
-        this.text(x, y - 40, 'Arma +' + p.weapon.tier + '!', '#7ec8e3', 15);
+        this.text(x, y - 40, 'Bênção +' + p.weapon.tier + '!', '#7ec8e3', 15);
       }
     } else {
       // baú final: triunfo
@@ -2043,11 +2066,11 @@ doTalk(npc) {
     const d = m.def;
     if (m.bossCd > 0) return 0;
     m.bossCd = 0;
-    const phase2 = m.hp < m.maxHp * 0.4;
+    const phase2 = m.hp < m.maxHp * 0.5;
     const r = Math.random();
     if (r < 0.4) {
       // rajada de ossos
-      m.bossCd = 2.6;
+      m.bossCd = 2.2;
       this.banner('RAJADA DE OSSOS!', '#d9d0c0', 1.2);
       const a = Math.atan2(dy, dx);
       this.ring(m.x, m.y, 90, 0.6, '#d9d0c0', 3);
@@ -2056,28 +2079,28 @@ doTalk(npc) {
       for (let i = 0; i < nsh; i++) {
         const off = (i - (nsh - 1) / 2) * 0.18;
         const ang = base + off + (Math.random() - 0.5) * 0.12;
-        this.delayed.push({ t: 0.3 + i * 0.04, fn: () => this.shootEnemy(m, Math.cos(ang) * 100, Math.sin(ang) * 100, { speed: 300, bone: true }) });
+        this.delayed.push({ t: 0.3 + i * 0.04, fn: () => this.shootEnemy(m, Math.cos(ang) * 100, Math.sin(ang) * 100, { speed: 330, bone: true }) });
       }
       return 0.5;
     } else if (r < 0.7) {
       // convoca esqueletos
-      m.bossCd = 4;
+      m.bossCd = 3.5;
       this.banner('ALVORADA DOS MORTOS!', '#c9c9c9', 1.2);
-      const n = phase2 ? 3 : 2;
+      const n = phase2 ? 4 : 3;
       for (let i = 0; i < n; i++) this.summonMinion(m.x, m.y, 'skeleton');
       this.ring(m.x, m.y, 140, 0.6, '#a9a9a9', 4);
       this.sfx.boss();
       return 0.6;
     } else {
       // lâmina giratória (telegraph + dano em área)
-      m.bossCd = 3;
+      m.bossCd = 2.6;
       this.banner('CÍRCULO DOS OSSOS!', '#d9d0c0', 1.2);
       this.ring(m.x, m.y, 100, 0.7, '#ff5c5c', 4);
       this.delayed.push({ t: 0.7, fn: () => {
         this.burst(m.x, m.y, '#d9d0c0', 16, 240);
         this.ring(m.x, m.y, 100, 0.5, '#ff5c5c', 5);
         const p = this.player;
-        if (Math.hypot(p.x - m.x, p.y - m.y) < 110) this.damagePlayer(Math.round(d.dmg * 0.8));
+        if (Math.hypot(p.x - m.x, p.y - m.y) < 110) this.damagePlayer(Math.round(d.dmg * 0.85));
       } });
       return 0.8;
     }
@@ -2367,19 +2390,47 @@ doTalk(npc) {
       try { rec = JSON.parse(localStorage.getItem(key)) || {}; } catch (e) { rec = {}; }
       if (!rec.wins) rec.wins = 0;
       rec.wins++;
-      if (!rec.bestScore || this.score() > rec.bestScore) rec.bestScore = this.score();
-      if (!rec.bestTime || this.stats.time < rec.bestTime) rec.bestTime = this.stats.time;
-      if (!rec.maxCombo || this.stats.maxCombo > rec.maxCombo) rec.maxCombo = this.stats.maxCombo;
+      const sc = this.score();
+      const s = this.stats;
+      // Marca quais recordes foram batidos nesta vitória (badges na tela de vitória).
+      const newBest = [];
+      const beat = (cond, label) => { if (cond) newBest.push(label); };
+      if (!rec.bestScore || sc > rec.bestScore) { rec.bestScore = sc; newBest.push('Pontuação'); }
+      if (!rec.bestTime || s.time < rec.bestTime) { rec.bestTime = s.time; newBest.push('Tempo'); }
+      if (!rec.maxCombo || s.maxCombo > rec.maxCombo) { rec.maxCombo = s.maxCombo; newBest.push('Combo'); }
+      if (!rec.bestKills || s.kills > rec.bestKills) { rec.bestKills = s.kills; newBest.push('Inimigos'); }
+      if (!rec.bestBosses || s.bosses > rec.bestBosses) { rec.bestBosses = s.bosses; newBest.push('Chefes'); }
+      if (rec.bestDeaths === undefined || s.deaths < rec.bestDeaths) { rec.bestDeaths = s.deaths; newBest.push('Poucas mortes'); }
+      if (!rec.bestDmgDealt || s.dmgDealt > rec.bestDmgDealt) { rec.bestDmgDealt = s.dmgDealt; newBest.push('Dano causado'); }
+      if (!rec.bestExploration || s.exploration > rec.bestExploration) { rec.bestExploration = s.exploration; newBest.push('Exploração'); }
+      this.newRecords = newBest;
+      // Snapshot completo da jornada vitoriosa, exibida nos recordes locais.
+      rec.lastRun = {
+        class: this.player.sub.id,
+        classname: this.player.sub.name,
+        score: sc,
+        time: s.time,
+        kills: s.kills,
+        bosses: s.bosses,
+        deaths: s.deaths,
+        dmgDealt: s.dmgDealt,
+        dmgTaken: s.dmgTaken,
+        maxCombo: s.maxCombo,
+        powerups: s.powerups,
+        exploration: s.exploration,
+        weaponTier: this.player.weapon.tier,
+        date: new Date().toLocaleString('pt-BR')
+      };
       if (!rec.byClass) rec.byClass = {};
       const cls = this.player.sub.id;
       const old = rec.byClass[cls];
-      if (!old || this.score() > old.bestScore) {
-        rec.byClass[cls] = { bestScore: this.score(), bestTime: this.stats.time, wins: (old ? old.wins : 0) + 1 };
+      if (!old || sc > old.bestScore) {
+        rec.byClass[cls] = { bestScore: sc, bestTime: s.time, wins: (old ? old.wins : 0) + 1 };
       } else if (old) {
         old.wins++;
       }
       localStorage.setItem(key, JSON.stringify(rec));
-    } catch (e) { }
+    } catch (e) { this.newRecords = []; }
   },
 
   loadRecords() {
@@ -2389,8 +2440,11 @@ doTalk(npc) {
   },
 
   formatTime(t) {
-    const m = Math.floor(t / 60);
-    const s = Math.floor(t % 60);
+    t = Math.max(0, Math.floor(t));
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = t % 60;
+    if (h > 0) return h + 'h' + (m < 10 ? '0' : '') + m + 'm' + (s < 10 ? '0' : '') + s + 's';
     return m + 'm' + (s < 10 ? '0' : '') + s + 's';
   },
 
@@ -2399,8 +2453,9 @@ doTalk(npc) {
     const sc = this.score();
     const el = byId('resultsPanel');
     const cls = this.player.sub;
-    let html = `<h2>${this.ending && this.ending.type === 'other' ? 'TRIUNFO IMPREVISTO' : (this.ending ? this.ending.title : 'O EXECRA CAIU')}</h2>`;
-    
+    let html = `<div class="victoryTitle">🏆 VOCÊ GANHOU O JOGO</div>`;
+    html += `<div class="victorySub">${this.ending && this.ending.type === 'other' ? 'TRIUNFO IMPREVISTO' : (this.ending ? this.ending.title : 'O EXECRA CAIU')}</div>`;
+
     if (this.ending && this.ending.type === 'own') {
       html += `<div class="endingMsg" style="color:${cls.accent}; font-size:18px; margin:10px 0;">${this.ending.msg}</div>`;
     } else if (this.ending && this.ending.type === 'other') {
@@ -2409,21 +2464,26 @@ doTalk(npc) {
 
     html += `<div class="reswrap">
       <div class="resc"><span>Classe</span><b style="color:${cls.accent}">${cls.name}</b></div>
-      <div class="resc"><span>Tempo</span><b>${this.formatTime(s.time)}</b></div>
+      <div class="resc"><span>Tempo jogado</span><b>${this.formatTime(s.time)}</b></div>
       <div class="resc"><span>Inimigos</span><b>${s.kills}</b></div>
       <div class="resc"><span>Chefes</span><b>${s.bosses}</b></div>
       <div class="resc"><span>Mortes</span><b>${s.deaths}</b></div>
       <div class="resc"><span>Dano causado</span><b>${s.dmgDealt}</b></div>
       <div class="resc"><span>Dano recebido</span><b>${s.dmgTaken}</b></div>
       <div class="resc"><span>Maior combo</span><b>x${s.maxCombo}</b></div>
-      <div class="resc"><span>Nível da arma</span><b>+${this.player.weapon.tier}</b></div>
+      <div class="resc"><span>Nível da bênção</span><b>+${this.player.weapon.tier}</b></div>
       <div class="resc"><span>Power-ups</span><b>${s.powerups}</b></div>
       <div class="resc"><span>Exploração</span><b>${s.exploration} zonas</b></div>
     </div>
+    <div class="timePlayed">TEMPO JOGADO: <b>${this.formatTime(s.time)}</b></div>
     <div class="finalScore">PONTUAÇÃO: <span style="color:${cls.accent}">${sc}</span></div>`;
 
     const rec = this.loadRecords();
     if (rec.bestScore) html += `<div class="records"><div>Recorde local — pontuação máxima: <b>${rec.bestScore}</b></div><div>Recorde — tempo: <b>${this.formatTime(rec.bestTime)}</b></div><div>Zeramentos: <b>${rec.wins}</b></div></div>`;
+    if (this.newRecords && this.newRecords.length) {
+      html += `<div class="newrecs">🎉 NOVOS RECORDES: ${this.newRecords.join(' · ')}</div>`;
+    }
+    html += `<div class="records">Jornada salva nos recordes locais.</div>`;
 
     html += `<div class="resbtns">`;
     if (this.ending && this.ending.type === 'other') {
@@ -2453,6 +2513,11 @@ doTalk(npc) {
       if (rec.bestScore) html += `<div class="resc"><span>Maior pontuação</span><b>${rec.bestScore}</b></div>`;
       if (rec.bestTime) html += `<div class="resc"><span>Melhor tempo</span><b>${this.formatTime(rec.bestTime)}</b></div>`;
       if (rec.maxCombo) html += `<div class="resc"><span>Maior combo</span><b>x${rec.maxCombo}</b></div>`;
+      if (rec.bestKills) html += `<div class="resc"><span>Mais inimigos</span><b>${rec.bestKills}</b></div>`;
+      if (rec.bestBosses) html += `<div class="resc"><span>Mais chefes</span><b>${rec.bestBosses}</b></div>`;
+      if (rec.bestDeaths !== undefined) html += `<div class="resc"><span>Menos mortes</span><b>${rec.bestDeaths}</b></div>`;
+      if (rec.bestDmgDealt) html += `<div class="resc"><span>Mais dano causado</span><b>${rec.bestDmgDealt}</b></div>`;
+      if (rec.bestExploration) html += `<div class="resc"><span>Mais exploração</span><b>${rec.bestExploration} zonas</b></div>`;
       if (rec.wins) html += `<div class="resc"><span>Zeramentos</span><b>${rec.wins}</b></div>`;
       html += `</div>`;
       html += `<div class="recclass"><h3>Melhor por classe</h3>`;
@@ -2463,6 +2528,21 @@ doTalk(npc) {
         html += `<div class="resrow"><span style="color:${sub.accent}">${sub.name}</span><b>${c.bestScore} pts · ${this.formatTime(c.bestTime)} · ${c.wins} vit</b></div>`;
       }
       html += `</div>`;
+      if (rec.lastRun) {
+        const lr = rec.lastRun;
+        html += `<div class="recclass"><h3>Última jornada (${lr.classname})</h3>`;
+        html += `<div class="resrow"><span>Quando</span><b>${lr.date}</b></div>`;
+        html += `<div class="resrow"><span>Pontuação</span><b>${lr.score} pts</b></div>`;
+        html += `<div class="resrow"><span>Tempo jogado</span><b>${this.formatTime(lr.time)}</b></div>`;
+        html += `<div class="resrow"><span>Inimigos / Chefes</span><b>${lr.kills} / ${lr.bosses}</b></div>`;
+        html += `<div class="resrow"><span>Mortes</span><b>${lr.deaths}</b></div>`;
+        html += `<div class="resrow"><span>Dano causado / recebido</span><b>${lr.dmgDealt} / ${lr.dmgTaken}</b></div>`;
+        html += `<div class="resrow"><span>Maior combo</span><b>x${lr.maxCombo}</b></div>`;
+        html += `<div class="resrow"><span>Bênção</span><b>+${lr.weaponTier}</b></div>`;
+        html += `<div class="resrow"><span>Power-ups</span><b>${lr.powerups}</b></div>`;
+        html += `<div class="resrow"><span>Exploração</span><b>${lr.exploration} zonas</b></div>`;
+        html += `</div>`;
+      }
     }
     html += `<button class="btn" id="btnCloseRecords">Fechar</button>`;
     el.innerHTML = html;

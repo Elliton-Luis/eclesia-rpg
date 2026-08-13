@@ -11,17 +11,17 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 
 ## Funcionalidades
 
-- **3 castas / 9 subclasses**: Clero (Padre, Bispo, Diácono), Populum (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E).
+- **3 castas / 9 subclasses**: Clero (Padre, Bispo, Diácono), Populum (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, bênção, ataque base e 2 habilidades únicas (Q/E).
 - **Habilidades extras**: até 3 habilidades adicionais compráveis (R/T/Y) no Mestre das Artes.
 - **Combate**: corpo a corpo, projéteis, auras e área; sistema de fraquezas/resistências por tipo de dano (Físico, Sagrado, Mágico).
-- **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras.
+- **Progressão**: ouro para melhorar bênção no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras e treinar reflexos (ataque/disparo mais rápidos).
 - **Mundo vasto e dinâmico**: mapa de 400×240 tiles (12.800 × 7.680 px) gerado proceduralmente em chunks de 16×16 tiles. Apenas a área próxima ao jogador é carregada/renderizada; chunks distantes são descarregados e recriados ao retornar, preservando dados importantes (chefes derrotados, árvores destruídas, progresso de selos).
 - **18 biomas/regiões**: Prado Sereno, Vila de Pedra, Campos de Trigo, Floresta dos Goblins, Bosque dos Lobos, Campo do Norte, Bosque Sagrado, Pântano Sombrio, Ruínas de Aurelia, Cemitério dos Esquecidos, Colinas Rochosas, Templo Ruinoso, Várzea Sul, Catacumbas, Gruta do Execra, Cova do Demônio, Forte do General, Torre Perdida.
 - **30+ tipos de monstros**: 15 originais + 16 novos por bioma + 4 raros/especiais (Lobisomem, Gigante de Pedra, Sacerdote da Noite, Dragãozinho) com recompensas escalonadas. Monstros mais fortes em regiões perigosas dão mais ouro, maior chance de itens e vida/poções.
 - **Sistema de spawn melhorado**: monstros nascem em pontos determinísticos por chunk, nunca em cima do jogador (distância mínima 210px), com cooldowns baseados no perigo da região.
 - **Estabelecimentos por casta**:
-  - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero).
-  - **Taverna** (Populum): bebida (cura por ouro), histórias de guerra (lore do Populum), treino forjado (+força permanente).
+  - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero), comprar o rito de **Exorcismo** e pedir exorcismos ao Bispo.
+  - **Taverna** (Populum): bebida (cura por ouro), histórias de guerra (lore do Populum), treino forjado (+força permanente), treino de reflexos (+10% de velocidade de ataque/disparo por nível).
   - **Torre Arcana** (Mago): meditar (cura + reset cooldowns grátis), grimório (lore do Mago), consulta arcana (+inteligência permanente).
 - **NPCs e pequenas histórias**: 22 NPCs espalhados com diálogos específicos por casta. Interações exclusivas:
   - **Confissão** (Clero): NPCs revelam segredos; jogador ganha +10 vida máx, +2 int, dano +35% temporário, visual de bênção dourada.
@@ -37,8 +37,9 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - **Controle de spawn**: ao derrotar o chefe de uma área, monstros comuns param de spawnar (spawn drasticamente reduzido).
 - **NPCs**: Ferreiro, Vendedor, Mestre das Artes, Cronista, Pároco, Taberneiro, Erudito, + NPCs de lore/confissão/treino espalhados pelo mundo.
 - **Estatísticas**: tempo, abates, chefes, mortes, dano causado/recebido, combo máximo, power-ups, zonas visitadas.
-- **Recordes locais**: salvos no `localStorage` por subclasse.
-- **Sistema de cheats** (F3): ouro/vida infinitos, spawn de itens com quantidade (ex: `get granada x100`), armas modernas (Thompson, Pistola, Minigun, Sniper, Destruidora), edição de stats, painel visual.
+- **Recordes locais**: salvos no `localStorage` por subclasse; a tela de vitória exibe estatísticas completas (tempo jogado, abates, chefes, mortes, dano, combo, exploração) e marca novos recordes.
+- **Consumíveis compráveis**: granadas (Vendedor, repetível) e exorcismo (Igreja → pedir ao Bispo, repetível; aplica 200 de dano sagrado em tudo na tela).
+- **Sistema de cheats** (F3): ouro/vida infinitos, armas modernas (Thompson, Pistola, Minigun, Sniper, Destruidora), edição de stats, painel visual. Granadas e exorcismo não podem ser obtidos por comando — apenas por compra.
 - **Granadas realistas**: arco balístico, caem no chão e explodem ao impacto.
 - **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante, auras de raro/chefes finais.
 - **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, arremesso, etc.).
@@ -48,7 +49,7 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 ### Subclasses
 Definidas em `js/data.js` (`SUBCLASSES`). Cada uma contém:
 - `casta` (clero/populum/mago), `hp`, `speed`, `str`, `int`, `jump`
-- `weapon`: nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
+- `weapon` (a bênção da subclasse): nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
 - `attack`: tipo, multiplicador, alcance/cadência, cor, propriedades extras (pierce, combo, etc.)
 - `aura` (opcional): raio, dano por tick, intervalo
 - `skills`: 2 habilidades com tecla, cooldown, descrição e efeitos
@@ -68,7 +69,7 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 ## Estatísticas / Persistência
 
 - **Estatísticas da run** (`GAME.stats`): zeradas a cada nova partida; incluem tempo, kills, bosses, deaths, dmgDealt, dmgTaken, maxCombo, powerups, exploration.
-- **Recordes**: salvos no `localStorage` sob a chave `eclesia_v1`. Estrutura por subclasse: `{ bestScore, bestTime, wins }`. Exibidos no menu via botão "Recordes Locais".
+- **Recordes**: salvos no `localStorage` sob a chave `eclesia_v1`. Estrutura: `{ bestScore, bestTime, maxCombo, bestKills, bestBosses, bestDeaths, bestDmgDealt, bestExploration, wins, lastRun, byClass }`. `lastRun` guarda o snapshot completo da última vitória (classe, data, tempo, abates, chefes, mortes, dano, combo, arma/bênção, power-ups, exploração). Exibidos no menu via botão "Recordes Locais" e na tela de vitória.
 - **Progressão importante persistida entre chunks/mortes**: chefes derrotados (`defeatedBosses`), cristais obtidos (`crystals`), selos quebrados (`sealsBroken`), lore descoberto (`loreDiscovered`), NPCs confessados/treinados (`eventDone`).
 
 ## Próximos passos
@@ -86,6 +87,10 @@ Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
 - Sistema de cheats para testes (com quantidade dinâmica `xN`)
 - Armas modernas expandidas: Sniper (instakill) e Destruidora (rápida + perfurante)
 - Granadas com física realística (arco + explosão no chão)
+- Treino de reflexos na Taverna (bater/atirar mais rápido, até 2x)
+- Exorcismo consumível (Igreja + Bispo) com 200 de dano sagrado em tela
+- Tela de vitória completa e recordes locais detalhados (última jornada + recordes por estatística)
+- Bênçãos no lugar de armas: nomes das 9 subclasses renomeados
 - Controle de spawn por região (pára/reduz drasticamente após boss)
 - Efeitos visuais, áudio, HUD, menus
 

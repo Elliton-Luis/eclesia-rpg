@@ -7,7 +7,7 @@ const TYPE_MULT = { WEAK: 1.6, RESIST: 0.45 };
 
 const CASTAS = {
   clero:   { name: 'Clero',   color: '#f5e6b8', accent: '#c9a227', desc: 'Servos da luz. Curam aliados e golpeiam com poder sagrado.' },
-  populum: { name: 'Populum', color: '#d8c9a3', accent: '#b5651d', desc: 'Guerreiros comuns. Dependem de armas, coragem e engenho.' },
+  populum: { name: 'Populum', color: '#d8c9a3', accent: '#b5651d', desc: 'Guerreiros comuns. Dependem de bênçãos, coragem e engenho.' },
   mago:    { name: 'Mago',    color: '#b8b8f5', accent: '#7a6bd8', desc: 'Eruditos do arcano. Desencadeiam magia pura e devastadora.' }
 };
 
@@ -17,7 +17,7 @@ const SUBCLASSES = {
     desc: 'Sacerdote: confessa, cura e enfrenta o maligno com orações de libertação.',
     hp: 120, speed: 240, str: 8, int: 18, jump: 780,
     ordained: true, exorcistLevel: 1,
-    weapon: { name: 'Cajado do Pastor', base: 12, color: '#8a5a2b', kind: 'aura' },
+    weapon: { name: "Bênção do Pastor", base: 12, color: '#8a5a2b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.15, type: T.HOLY, radius: 150, cd: 0.7, color: '#fff3b0' },
     aura: { radius: 95, dmg: 0.4, tick: 0.6 },
     skills: [
@@ -34,7 +34,7 @@ const SUBCLASSES = {
     desc: 'Plenitude do sacerdócio: exorcismo solene, autoridade e milagres.',
     hp: 165, speed: 205, str: 12, int: 16, jump: 760,
     ordained: true, exorcistLevel: 2,
-    weapon: { name: 'Báculo Episcopal', base: 17, color: '#7a3b3b', kind: 'aura' },
+    weapon: { name: "Bênção Episcopal", base: 17, color: '#7a3b3b', kind: 'aura' },
     attack: { kind: 'aura', dmg: 1.5, type: T.HOLY, radius: 205, cd: 0.9, color: '#ffe9b0' },
     aura: { radius: 145, dmg: 0.55, tick: 0.6 },
     skills: [
@@ -49,7 +49,7 @@ const SUBCLASSES = {
     desc: 'Servo: batiza, proclama, abençoa. Utilidade e caridade — não exorciza nem confessa.',
     hp: 105, speed: 275, str: 9, int: 18, jump: 800,
     ordained: false, exorcistLevel: 0,
-    weapon: { name: 'Cajado da Devoção', base: 12, color: '#2f8a8a', kind: 'ranged' },
+    weapon: { name: "Bênção da Devoção", base: 12, color: '#2f8a8a', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.HOLY, speed: 620, cd: 0.32, color: '#d8fff0', size: 8, pierce: true },
     skills: [
       { id: 'batismo', name: 'Batismo', key: 'Q', cd: 7, color: '#bfe8ff',
@@ -64,7 +64,7 @@ const SUBCLASSES = {
     id: 'guerreiro', casta: 'populum', name: 'Guerreiro', color: '#f0b8a8', accent: '#c0392b',
     desc: 'Combo de espada, giro e investida.',
     hp: 155, speed: 255, str: 18, int: 6, jump: 750,
-    weapon: { name: 'Espada do Povo', base: 16, color: '#c0392b', kind: 'melee' },
+    weapon: { name: "Bênção do Povo", base: 16, color: '#c0392b', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.2, type: T.PHYS, range: 82, cd: 0.32, combo: 3, color: '#ffd6a5' },
     skills: [
       { id: 'spin', name: 'Giro', key: 'Q', cd: 5, color: '#ff9d5c', desc: 'Golpe circular ao redor.', dmg: 1.5, type: T.PHYS, radius: 95 },
@@ -75,7 +75,7 @@ const SUBCLASSES = {
     id: 'arqueiro', casta: 'populum', name: 'Arqueiro', color: '#b8e0b0', accent: '#3f7a2e',
     desc: 'Flechas rápidas e chuva de projéteis.',
     hp: 100, speed: 265, str: 13, int: 9, jump: 820,
-    weapon: { name: 'Arco de Madeira', base: 13, color: '#7a5a2b', kind: 'ranged' },
+    weapon: { name: "Bênção da Floresta", base: 13, color: '#7a5a2b', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.PHYS, speed: 660, cd: 0.42, color: '#f0e6c8', size: 8 },
     skills: [
       { id: 'spread', name: 'Rajada', key: 'Q', cd: 3.5, color: '#7ec8e3', desc: '3 flechas em leque.', dmg: 0.85, type: T.PHYS, speed: 660, n: 3, spread: 0.32 },
@@ -86,7 +86,7 @@ const SUBCLASSES = {
     id: 'inventor', casta: 'populum', name: 'Inventor', color: '#f0d0a8', accent: '#d35400',
     desc: 'Granadas explosivas e sobrecarga.',
     hp: 125, speed: 245, str: 15, int: 10, jump: 770,
-    weapon: { name: 'Chave de Grifo', base: 14, color: '#d35400', kind: 'melee' },
+    weapon: { name: "Bênção do Grifo", base: 14, color: '#d35400', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.1, type: T.PHYS, range: 70, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
       { id: 'grenade', name: 'Granada', key: 'Q', cd: 5, color: '#ffb020', desc: 'Granada que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
@@ -97,7 +97,7 @@ const SUBCLASSES = {
     id: 'elemental', casta: 'mago', name: 'Elemental', color: '#f0b0a8', accent: '#e67e22',
     desc: 'Bolas de fogo e meteoros.',
     hp: 95, speed: 250, str: 7, int: 20, jump: 790,
-    weapon: { name: 'Orbe Flamejante', base: 14, color: '#e67e22', kind: 'ranged' },
+    weapon: { name: "Bênção Flamejante", base: 14, color: '#e67e22', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 520, cd: 0.4, color: '#ffb35c', size: 9 },
     skills: [
       { id: 'fireball', name: 'Bola de Fogo', key: 'Q', cd: 6, color: '#ff7b3c', desc: 'Explosão de fogo em área.', dmg: 2.4, type: T.MAGIC, speed: 360, size: 14, radius: 85, shake: 1 },
@@ -108,7 +108,7 @@ const SUBCLASSES = {
     id: 'psiquico', casta: 'mago', name: 'Psíquico', color: '#d8c0f0', accent: '#8e44ad',
     desc: 'Empurrões psíquicos e voo.',
     hp: 110, speed: 255, str: 8, int: 19, jump: 790,
-    weapon: { name: 'Orbe Psíquico', base: 13, color: '#8e44ad', kind: 'ranged' },
+    weapon: { name: "Bênção Psíquica", base: 13, color: '#8e44ad', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 560, cd: 0.38, color: '#d8b4ff', size: 9 },
     skills: [
       { id: 'push', name: 'Empurrão Psíquico', key: 'Q', cd: 6, color: '#b07cff', desc: 'Onda que empurra e danifica ao redor.', dmg: 1.5, type: T.MAGIC, radius: 135, knock: 650 },
@@ -119,7 +119,7 @@ const SUBCLASSES = {
     id: 'abencoador', casta: 'mago', name: 'Abençoador', color: '#b8d8f0', accent: '#2980b9',
     desc: 'Raios de luz e aura restauradora.',
     hp: 105, speed: 240, str: 8, int: 20, jump: 760,
-    weapon: { name: 'Livro de Luz', base: 14, color: '#2980b9', kind: 'ranged' },
+    weapon: { name: "Bênção da Luz", base: 14, color: '#2980b9', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.MAGIC, speed: 640, cd: 0.34, color: '#bfe8ff', size: 8, pierce: true },
     skills: [
       { id: 'beam', name: 'Raio Divino', key: 'Q', cd: 7, color: '#fff9c4', desc: 'Coluna de luz na direção do cursor.', dmg: 2.7, type: T.MAGIC, range: 360 },
@@ -132,6 +132,7 @@ const SUB_ORDER = ['bispo', 'padre', 'diacono', 'guerreiro', 'arqueiro', 'invent
 const CASTA_ORDER = ['clero', 'populum', 'mago'];
 
 const MAX_EXTRA_SKILLS = 3;
+const MAX_TRAIN_REFLEX = 10; // 10 treinos de +10% de velocidade de ataque/disparo (máx +100%)
 
 const EXTRA_SKILLS = [
   { id: 'reza_maior', name: 'Reza Maior', key: 'R', cd: 9, color: '#fff3b0', cost: 150,
@@ -185,7 +186,7 @@ const MODERN_ITEMS = {
   granada: { id: 'granada', name: 'Granada', key: 'G', color: '#5caeff',
     desc: 'Fab G: explode, destruindo árvores e feras na área.' },
   exorcismo: { id: 'exorcismo', name: 'Exorcismo', key: 'U', color: '#fff3b0',
-    desc: 'Purga divina: mata todos os monstros visíveis.' }
+    desc: 'Purga divina: 200 de dano sagrado em todos os monstros visíveis.' }
 };
 
 const MONSTERS = {
@@ -301,8 +302,8 @@ const MONSTERS = {
   },
   gere_osso: {
     id: 'gere_osso', name: 'Gere Osso, Rei da Noite', color: '#d9d0c0', dark: '#8a7a5a', size: 52,
-    hp: 700, dmg: 28, speed: 105, behavior: 'boss', gold: [180, 240],
-    resist: [T.PHYS], weak: [T.HOLY], aggro: 520, boss: true, crystal: 'sombrio', tier: 4
+    hp: 1600, dmg: 34, speed: 115, behavior: 'boss', gold: [180, 240],
+    resist: [T.PHYS], weak: [T.HOLY], aggro: 540, boss: true, crystal: 'sombrio', tier: 4
   },
   titan: {
     id: 'titan', name: 'Titã do Execra', color: '#8a6a4b', dark: '#4b352a', size: 76,
