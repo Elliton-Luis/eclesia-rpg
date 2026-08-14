@@ -98,18 +98,29 @@ export class World {
   }
 
   // Caminha de (ax, ay) até (bx, by) com viradas suaves e ruído orgânico,
-  // marcando os tiles da trilha. Nunca uma linha reta.
+  // marcando os tiles da trilha como um bloco contínuo de 2-3 tiles de largura.
   walkRoute(ax, ay, bx, by, rnd, wobble, maxSteps) {
     let x = ax, y = ay;
     let cur = Math.atan2(by - ay, bx - ax);
     const maxTurn = 0.14 + wobble * 0.3;
     let steps = 0;
-    const mark = (gx, gy) => {
+    const mark = (gx, gy, width) => {
       if (gx < 4 || gx >= WORLD_W - 4 || gy < 4 || gy >= WORLD_H - 4) return;
-      this.pathTiles.add(gx + ',' + gy);
-      // alguns trechos mais largos (trilha "batida"), sem simetria
-      if (rnd() < 0.14) {
-        const ox = Math.round(rnd() * 2 - 1), oy = Math.round(rnd() * 2 - 1);
+      // Trilha sólida: largura base 2 tiles, aleatoriamente 3
+      const w = width || (rnd() < 0.35 ? 3 : 2);
+      const halfW = Math.floor(w / 2);
+      // Direção perpendicular ao caminho
+      const perp = cur + Math.PI / 2;
+      for (let i = -halfW; i <= halfW; i++) {
+        const ox = Math.round(Math.cos(perp) * i);
+        const oy = Math.round(Math.sin(perp) * i);
+        this.pathTiles.add((gx + ox) + ',' + (gy + oy));
+      }
+      // Ocasionalmente alarga em trechos "batidos"
+      if (rnd() < 0.12) {
+        const extra = rnd() < 0.5 ? -halfW - 1 : halfW + 1;
+        const ox = Math.round(Math.cos(perp) * extra);
+        const oy = Math.round(Math.sin(perp) * extra);
         this.pathTiles.add((gx + ox) + ',' + (gy + oy));
       }
     };
@@ -128,6 +139,7 @@ export class World {
   }
 
   // Trilha curta sem destino: vagueia por alguns passos e simplesmente termina.
+  // Também gera bloco contínuo de 2 tiles de largura.
   walkStub(ax, ay, len, rnd, wobble) {
     let x = ax, y = ay;
     let cur = Math.atan2((rnd() - 0.5) * 2, (rnd() - 0.5) * 2);
@@ -136,7 +148,13 @@ export class World {
       x += Math.cos(cur);
       y += Math.sin(cur);
       if (x >= 4 && x < WORLD_W - 4 && y >= 4 && y < WORLD_H - 4) {
-        this.pathTiles.add(Math.round(x) + ',' + Math.round(y));
+        const gx = Math.round(x), gy = Math.round(y);
+        const perp = cur + Math.PI / 2;
+        for (let i = -1; i <= 1; i++) {
+          const ox = Math.round(Math.cos(perp) * i);
+          const oy = Math.round(Math.sin(perp) * i);
+          this.pathTiles.add((gx + ox) + ',' + (gy + oy));
+        }
       }
     }
   }
@@ -714,7 +732,8 @@ export class World {
       case 'pantano':
         return { trunk: '#3a2e48', leaf: '#7355b5', leaf2: '#8666cf', leaf3: '#543d90', sil: '#251a3f', cones: false };
       case 'cemiterio':
-        return { trunk: '#4a443c', leaf: '#5a6658', leaf2: '#6e7868', leaf3: '#454f45', sil: '#2a302a', cones: true };
+        // Mortas/secas: tronco cinza-escuro, silhueta quase preta, sem folhas verdes
+        return { trunk: '#3a3630', leaf: '#4a4640', leaf2: '#5a5650', leaf3: '#3a3630', sil: '#1a1816', cones: true };
       case 'colinas':
         return { trunk: '#4e3320', leaf: '#c05a2c', leaf2: '#d2723e', leaf3: '#8f3d1d', sil: '#572413', cones: false };
       case 'forte':
@@ -756,82 +775,127 @@ export class World {
     }
   }
 
-  // Árvore com silhuetas variadas (determinístico por tile). A copa é desenhada
-  // com poucas formas grandes + uma silhueta escura por trás, garantindo contraste
-  // de luminosidade e tonalidade contra o chão do bioma (menos teclas, mais leitura).
+  // Interpola entre duas cores hex (ratio 0-1)
+  blendColors(hex1, hex2, ratio) {
+    const r1 = this.hexToRgb(hex1), r2 = this.hexToRgb(hex2);
+    return this.rgbToHex(
+      r1[0] + (r2[0] - r1[0]) * ratio,
+      r1[1] + (r2[1] - r1[1]) * ratio,
+      r1[2] + (r2[2] - r1[2]) * ratio
+    );
+  }
+
+  // Converte cor rgba string para hex com alfa aplicado sobre fundo
+  blendHexWithAlpha(rgba, alpha) {
+    const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+    if (!m) return '#9a7c58';
+    const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]);
+    // Simula alpha sobre fundo médio (aproximação)
+    return this.rgbToHex(r * alpha + 128 * (1 - alpha), g * alpha + 128 * (1 - alpha), b * alpha + 128 * (1 - alpha));
+  }
+
+  // Árvore simples - 1 tile (32x32), 6 formas variadas por bioma
+  // Ancorada no chão (y+31), sem flutuar
   drawTree(ctx, x, y, region, tx, ty, t) {
-    const hv = (hash2(tx * 31, ty * 7) >>> 0) % 100;
+    const hv = (hash2(tx * 31, ty * 7) >>> 0) % 1000;
     const pal = this.treePalette(region);
+    const isDead = region === 'cemiterio';
+    const isSwamp = region === 'pantano';
+    const isPine = region === 'floresta' || region === 'lobos' || region === 'sagrado' || region === 'forte';
+    
+    // 6 formas simples
     let shape;
-    if (pal.cones) shape = hv < 48 ? 2 : hv < 74 ? 0 : hv < 90 ? 1 : 3;
-    else shape = hv < 34 ? 0 : hv < 58 ? 1 : hv < 82 ? 3 : 4;
-    const sway = Math.sin(t * 1.5 + tx * 0.13 + ty * 0.09) * 1.3;
+    if (isDead) shape = hv < 500 ? 4 : 5;      // Morta: galhos nus ou toco
+    else if (isSwamp) shape = hv < 500 ? 3 : 4; // Pântano: retorcida ou fina
+    else if (isPine) shape = hv < 333 ? 0 : hv < 666 ? 1 : 2; // Pinheiro, carvalho, copa redonda
+    else shape = hv < 250 ? 0 : hv < 500 ? 1 : hv < 750 ? 2 : 3; // Variadas
+    
+    const sway = Math.sin(t * 1.5 + tx * 0.13 + ty * 0.09) * 1.0;
     const cx = x + 16, cy = y + 16;
-    const groundY = y + 31; // linha de base do tile: a árvore "toca" o chão
-    const lean = (hv % 3 === 0) ? 1 : 0;
-    const trunkW = shape === 4 ? 4 : shape === 1 ? 5 : 6;
-    // o tronco vai da base da copa até o chão do tile (nunca fica flutuando)
-    const trunkTop = shape === 1 ? cy - 7 : shape === 3 ? cy - 3 : cy - 5;
-    // sombra no chão, alinhada à base do tile
-    ctx.fillStyle = 'rgba(0,0,0,0.16)';
-    ctx.beginPath(); ctx.ellipse(cx, groundY, 10, 2.8, 0, 0, 6.283); ctx.fill();
-    // tronco ancorado no chão + raízes aparentes
+    const groundY = y + 31; // Base do tile
+    const lean = (hv % 3 === 0) ? -1 : (hv % 3 === 1) ? 1 : 0;
+    
+    // Sombra no chão
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.ellipse(cx + lean, groundY, 10, 2.5, 0, 0, 6.283); ctx.fill();
+    
+    // Tronco (sempre toca o chão)
+    const trunkW = shape === 4 ? 3 : shape === 5 ? 2 : 4;
+    const trunkTop = shape === 1 ? cy - 4 : shape === 3 ? cy - 2 : cy - 6;
     ctx.fillStyle = pal.trunk;
     ctx.fillRect(cx - trunkW / 2 + lean, trunkTop, trunkW, groundY - trunkTop);
-    ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.fillRect(cx - trunkW / 2 + lean + trunkW - 2, trunkTop, 2, groundY - trunkTop);
-    ctx.fillStyle = pal.trunk;
-    ctx.fillRect(cx - 6 + lean, groundY - 2, 4, 2);
-    ctx.fillRect(cx + 3 + lean, groundY - 2, 4, 2);
-
+    // Raízes
+    ctx.fillRect(cx - 5 + lean, groundY - 2, 10, 2);
+    
     ctx.save();
-    ctx.translate(sway, 0);
-    // silhueta escura atrás da copa (separação copa/tronco e copa/chão)
+    ctx.translate(sway + lean, 0);
+    
     const sil = pal.sil;
-    if (shape === 2) {
-      // pinheiro: duas camadas de triângulo sobre silhueta
+    const leaf1 = pal.leaf;
+    const leaf2 = pal.leaf2;
+    
+    // Desenha copa simples por forma
+    if (shape === 0) {
+      // Pinheiro/cônica - triângulo + 2 círculos
       ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 29); ctx.lineTo(cx - 13, cy - 5); ctx.lineTo(cx + 13, cy - 5); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 26); ctx.lineTo(cx - 11, cy - 8); ctx.lineTo(cx + 11, cy - 8); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 17); ctx.lineTo(cx - 13, cy + 3); ctx.lineTo(cx + 13, cy + 3); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.10)';
-      ctx.beginPath(); ctx.moveTo(cx, cy - 26); ctx.lineTo(cx - 3, cy - 15); ctx.lineTo(cx + 3, cy - 15); ctx.closePath(); ctx.fill();
-    } else if (shape === 3) {
-      // carvalho largo e baixo
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 11, 16, 9.5, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 10, 14, 8, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 15, 7, 5.5, 0, 0, 6.283); ctx.fill();
-    } else if (shape === 4) {
-      // muda pequena
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.arc(cx, cy - 14, 8.5, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.arc(cx, cy - 14, 7, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 3, cy - 17, 3.5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 18); ctx.lineTo(cx - 12, cy + 2); ctx.lineTo(cx + 12, cy + 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = leaf1;
+      ctx.beginPath(); ctx.moveTo(cx, cy - 15); ctx.lineTo(cx - 10, cy); ctx.lineTo(cx + 10, cy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = leaf2;
+      ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx - 8, cy + 4); ctx.lineTo(cx + 8, cy + 4); ctx.closePath(); ctx.fill();
     } else if (shape === 1) {
-      // alta e esguia
+      // Carvalho alto - 3 elipses verticais
       ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.arc(cx, cy - 18, 12, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.arc(cx, cy - 18, 10, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 4, cy - 21, 5.5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, cy - 10, 11, 9, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf1;
+      ctx.beginPath(); ctx.ellipse(cx, cy - 10, 9, 7, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf2;
+      ctx.beginPath(); ctx.ellipse(cx - 3, cy - 14, 5, 4, 0, 0, 6.283); ctx.fill();
+    } else if (shape === 2) {
+      // Copa redonda cheia - 2 círculos sobrepostos
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.arc(cx, cy - 8, 13, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf1;
+      ctx.beginPath(); ctx.arc(cx, cy - 8, 11, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf2;
+      ctx.beginPath(); ctx.arc(cx - 4, cy - 12, 5, 0, 6.283); ctx.fill();
+    } else if (shape === 3) {
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.ellipse(cx, cy - 4, 14, 7, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf1;
+      ctx.beginPath(); ctx.ellipse(cx, cy - 4, 12, 5, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf2;
+      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 8, 6, 3, 0, 0, 6.283); ctx.fill();
+    } else if (shape === 4) {
+      ctx.fillStyle = sil;
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 4; i++) {
+        const angle = -Math.PI / 2 + (i - 1.5) * 0.5 + (hv % 7) * 0.1;
+        const len = 14 + (i % 3) * 4;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 6);
+        ctx.lineTo(cx + Math.cos(angle) * len, cy - 6 + Math.sin(angle) * len * 0.5);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 1;
     } else {
-      // clássica redonda e cheia
       ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.arc(cx, cy - 13, 15, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.arc(cx, cy - 13, 13, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 5, cy - 16, 5.5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, cy + 2, 8, 5, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = leaf1;
+      ctx.beginPath(); ctx.ellipse(cx, cy + 2, 6, 3, 0, 0, 6.283); ctx.fill();
     }
+    
     ctx.restore();
+  }
+
+  // Escurece/clarea cor hex
+  shadeColor(hex, delta) {
+    const rgb = this.hexToRgb(hex);
+    return this.rgbToHex(
+      Math.max(0, Math.min(255, rgb[0] + delta)),
+      Math.max(0, Math.min(255, rgb[1] + delta)),
+      Math.max(0, Math.min(255, rgb[2] + delta))
+    );
   }
 
   // Pedras com formatos variados (determinístico por tile). Tintadas pelo bioma,
@@ -1040,29 +1104,98 @@ export class World {
         }
         break;
       case 'n': {
-        // trilha de terra batida: cores adaptativas ao bioma + bordas difusas
-        // que se mesclam com o chão ao redor (sem contorno duro)
+        // Trilha sólida contínua (bloco de chão batido) com bordas que se dissolvem
+        // no bioma ao redor (blending suave de 2 tiles nas bordas expostas)
+        
+        // Verifica vizinhos para saber quais bordas estão expostas (não são trilha)
+        const isPath = (dx, dy) => this.pathTiles.has((tx + dx) + ',' + (ty + dy));
+        const left = isPath(-1, 0), right = isPath(1, 0), up = isPath(0, -1), down = isPath(0, 1);
+        const exposed = { left: !left, right: !right, up: !up, down: !down };
+        const anyExposed = exposed.left || exposed.right || exposed.up || exposed.down;
+        
+        // Paleta de trilha por bioma
+        const pathPalette = this.pathPalette(region);
+        
+        // Base: desenha o chão do bioma primeiro
         ctx.fillStyle = blendedColor;
         ctx.fillRect(x, y, TILE, TILE);
         
-        // Paleta de trilha por bioma - derivada da cor do chão do bioma
-        const pathPalette = this.pathPalette(region);
-        
-        // halo externo desbotado -> transição suave para o chão ao redor
-        ctx.fillStyle = pathPalette.halo;
-        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 17, 12, 0, 0, 6.283); ctx.fill();
-        // meio-batido
-        ctx.fillStyle = pathPalette.mid;
-        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 13, 9, 0, 0, 6.283); ctx.fill();
-        // núcleo desgastado (tráfego constante)
+        // Núcleo sólido da trilha (retângulo central 24x24 = 75% do tile)
+        const coreInset = 4;
+        const coreW = TILE - coreInset * 2;
+        const coreH = TILE - coreInset * 2;
         ctx.fillStyle = pathPalette.core;
-        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 9, 6, 0, 0, 6.283); ctx.fill();
-        // pedrinhas soltas determinísticas
-        const np = (hash2(tx, ty) >>> 0) % 6;
-        if (np === 0) {
+        ctx.fillRect(x + coreInset, y + coreInset, coreW, coreH);
+        
+        // Bordas que se dissolvem no bioma (apenas nas bordas expostas)
+        // Usa o blendedColor do bioma com alfa variável para transição suave
+        if (anyExposed) {
+          // Camada de transição média (inset 2)
+          const midInset = 2;
+          const midW = TILE - midInset * 2;
+          const midH = TILE - midInset * 2;
+          
+          // Desenha retângulo de transição nas bordas expostas
+          ctx.fillStyle = this.blendColors(pathPalette.core, pathPalette.mid, 0.5);
+          if (exposed.left) ctx.fillRect(x + midInset, y + midInset, coreInset - midInset, midH);
+          if (exposed.right) ctx.fillRect(x + TILE - coreInset, y + midInset, coreInset - midInset, midH);
+          if (exposed.up) ctx.fillRect(x + midInset, y + midInset, midW, coreInset - midInset);
+          if (exposed.down) ctx.fillRect(x + midInset, y + TILE - coreInset, midW, coreInset - midInset);
+          
+          // Camada de transição externa (borda do tile) - dissolve no bioma
+          ctx.fillStyle = this.blendColors(pathPalette.mid, pathPalette.halo.replace('rgba(', '').replace(')', '').split(',').map(v => parseFloat(v)).slice(0,3).join(','), 0.5);
+          // Melhor: usa o blendedColor com overlay da trilha
+          const outerColor = this.blendHexWithAlpha(pathPalette.halo, 0.4);
+          if (exposed.left) ctx.fillRect(x, y, midInset, TILE);
+          if (exposed.right) ctx.fillRect(x + TILE - midInset, y, midInset, TILE);
+          if (exposed.up) ctx.fillRect(x, y, TILE, midInset);
+          if (exposed.down) ctx.fillRect(x, y + TILE - midInset, TILE, midInset);
+          
+          // Cantos das bordas expostas - preenchimento suave
+          if (exposed.left && exposed.up) {
+            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
+            ctx.beginPath(); ctx.arc(x, y, 4, 0, 6.283); ctx.fill();
+          }
+          if (exposed.right && exposed.up) {
+            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
+            ctx.beginPath(); ctx.arc(x + TILE, y, 4, 0, 6.283); ctx.fill();
+          }
+          if (exposed.left && exposed.down) {
+            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
+            ctx.beginPath(); ctx.arc(x, y + TILE, 4, 0, 6.283); ctx.fill();
+          }
+          if (exposed.right && exposed.down) {
+            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
+            ctx.beginPath(); ctx.arc(x + TILE, y + TILE, 4, 0, 6.283); ctx.fill();
+          }
+        }
+        
+        // Detalhes sutis no núcleo (pedrinhas, marcas de desgaste)
+        const np = (hash2(tx, ty) >>> 0) % 8;
+        if (np < 3) {
           ctx.fillStyle = pathPalette.pebble;
-          ctx.fillRect(x + 6, y + 8, 3, 3);
-          ctx.fillRect(x + 22, y + 20, 3, 3);
+          const px = x + 6 + (np % 3) * 7;
+          const py = y + 8 + Math.floor(np / 3) * 7;
+          ctx.fillRect(px, py, 2, 2);
+        }
+        
+        // Marcas lineares de desgaste (direção do caminho)
+        if ((hash2(tx * 7, ty * 13) >>> 0) % 5 === 0) {
+          ctx.strokeStyle = pathPalette.pebble;
+          ctx.lineWidth = 1;
+          ctx.globalAlpha = 0.3;
+          ctx.beginPath();
+          if (left && right) {
+            // Horizontal
+            ctx.moveTo(x + 4, y + 16);
+            ctx.lineTo(x + 28, y + 16);
+          } else if (up && down) {
+            // Vertical
+            ctx.moveTo(x + 16, y + 4);
+            ctx.lineTo(x + 16, y + 28);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = 1;
         }
         break;
       }

@@ -214,65 +214,60 @@ export class Monster {
 
     if (d.id === 'slime') {
       const r = this.w / 2;
-      // balanço gelatinoso
-      const j = Math.sin(t * 4) * 1.5;
-      const sq = Math.sin(t * 2.5);
+      // balanço gelatinoso sutil
+      const j = Math.sin(t * 4) * 1.2;
+      const sq = Math.sin(t * 2.5) * 0.5;
       // sombra no chão
       ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.ellipse(0, r * 0.95, r * 0.72, r * 0.13, 0, 0, 6.283);
+      ctx.ellipse(0, r * 0.95, r * 0.7, r * 0.12, 0, 0, 6.283);
       ctx.fill();
-      // corpo gelatinoso (gota derretida, convexa)
+      // corpo arredondado simples (sem boca)
       ctx.fillStyle = col;
       ctx.beginPath();
-      ctx.moveTo(-r, r * 0.3);
-      ctx.bezierCurveTo(-r - 2, r * 0.85, -r * 0.55, r * 0.92 - sq * 3, 0, r * 0.72 + j);
-      ctx.bezierCurveTo(r * 0.55, r * 0.92 + sq * 3, r + 2, r * 0.85, r, r * 0.3);
-      ctx.bezierCurveTo(r * 0.7, -r * 0.55, -r * 0.7, -r * 0.55, -r, r * 0.3);
+      // Forma arredondada convexa - quase círculo achatado embaixo
+      ctx.ellipse(0, r * 0.15, r * 0.95, r * 0.75 + j, 0, 0, 6.283);
       ctx.fill();
-      // sombreamento interno (gelo mais denso embaixo)
-      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      // Sombreamento interno (mais escuro embaixo)
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
       ctx.beginPath();
-      ctx.ellipse(0, r * 0.42, r * 0.6, r * 0.3, 0, 0, Math.PI);
+      ctx.ellipse(0, r * 0.35, r * 0.55, r * 0.25, 0, 0, Math.PI);
       ctx.fill();
-      // reflexo de barriga
-      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-      ctx.lineWidth = 1.4;
+      // Reflexo/barriga
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.beginPath();
-      ctx.moveTo(-r * 0.42, r * 0.02);
-      ctx.quadraticCurveTo(-r * 0.5, r * 0.3, -r * 0.26, r * 0.42);
-      ctx.stroke();
-      // brilho no topo
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(-r * 0.28, -r * 0.3, r * 0.2, r * 0.11, -0.5, 0, 6.283);
+      ctx.ellipse(0, -r * 0.1, r * 0.35, r * 0.18, 0, 0, 6.283);
       ctx.fill();
-      // olhos de gota: esferas brilhantes afundadas no gel
-      ctx.fillStyle = '#0e0e16';
-      ctx.beginPath(); ctx.arc(-r * 0.24, -r * 0.08, r * 0.17, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.24, -r * 0.08, r * 0.17, 0, 6.283); ctx.fill();
-      // contorno gelatinoso ao redor dos olhos
-      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(-r * 0.24, -r * 0.08, r * 0.2, 0, 6.283); ctx.stroke();
-      ctx.beginPath(); ctx.arc(r * 0.24, -r * 0.08, r * 0.2, 0, 6.283); ctx.stroke();
-      // brilho dos olhos
+      // Brilho no topo
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(-r * 0.2, -r * 0.35, r * 0.18, r * 0.1, -0.5, 0, 6.283);
+      ctx.fill();
+      // Olhos amarelos brilhantes (sem boca)
+      const eyeY = -r * 0.05;
+      const eyeX = r * 0.22;
+      // Olho esquerdo
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath(); ctx.arc(-eyeX + this.facing * 0.8, eyeY, r * 0.16, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-r * 0.24 + this.facing * 0.4, -r * 0.12, r * 0.055, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.24 + this.facing * 0.4, -r * 0.12, r * 0.055, 0, 6.283); ctx.fill();
-      // boca pequena discreta
-      ctx.strokeStyle = '#0e0e16';
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(0, r * 0.18, r * 0.1, 0.25, Math.PI - 0.25);
-      ctx.stroke();
-      // gota escorrendo de vez em quando
+      ctx.beginPath(); ctx.arc(-eyeX + this.facing * 1.2, eyeY - 1, r * 0.05, 0, 6.283); ctx.fill();
+      // Olho direito
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath(); ctx.arc(eyeX + this.facing * 0.8, eyeY, r * 0.16, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(eyeX + this.facing * 1.2, eyeY - 1, r * 0.05, 0, 6.283); ctx.fill();
+      // Bolinha pequena no topo da cabeça
       ctx.fillStyle = col;
-      ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.arc(0, -r * 0.65, r * 0.18, 0, 6.283); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.beginPath(); ctx.arc(-r * 0.05, -r * 0.7, r * 0.06, 0, 6.283); ctx.fill();
+      // Gotinha caindo ocasional
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.6;
       const drip = Math.sin(t * 2 + 1) > 0.6 ? Math.sin(t * 6) : 0;
       if (drip > 0) {
         ctx.beginPath();
-        ctx.arc(-r * 0.7, r * 0.55 + drip * r * 0.25, r * 0.08, 0, 6.283);
+        ctx.arc(0, r * 0.4 + drip * 8, 2, 0, 6.283);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
