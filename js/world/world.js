@@ -604,46 +604,52 @@ export class World {
 
   // Cor de chão por bioma — usada no piso e como fundo dos elementos do cenário
   // (árvores, pedras, lápides), para que se integrem ao terreno do entorno.
+  // Cada bioma tem identidade própria: pântano é roxo-sombrio, ruínas/templo são
+  // avermelhados, a torre arcana é roxa e a cova do demônio, vermelho-escura.
   groundColor(region) {
     switch (region) {
-      case 'prado': case 'norte': case 'varzea': case 'vila': return '#5a8f4a';
+      case 'prado': case 'norte': case 'varzea': case 'vila': return '#5d9250';
       case 'campos': return '#8a9a45';
-      case 'floresta': case 'lobos': case 'sagrado': return '#467a38';
-      case 'pantano': return '#5f7a48';
-      case 'cemiterio': return '#7a7d57';
+      case 'floresta': case 'lobos': case 'sagrado': return '#3f6e34';
+      case 'pantano': return '#5a4670';
+      case 'cemiterio': return '#6f7a5a';
       case 'colinas': return '#8d8a62';
-      case 'ruinas': case 'templo': return '#6f6f5f';
+      case 'ruinas': return '#8a5a4a';
+      case 'templo': return '#7a4a52';
       case 'forte': return '#5a6a4a';
       case 'catacumbas': case 'gruta': case 'cova': case 'torre': return '#343a44';
       default: return '#5a8f4a';
     }
   }
 
-  // Paleta de árvores por bioma: cada bioma tem suas próprias cores e silhuetas.
+  // Paleta de árvores por bioma: copas com contraste claro contra o chão do
+  // bioma (silhueta escura + tonalidade própria), incluindo identidades roxa
+  // (pântano) e vermelha/outono (colinas).
   treePalette(region) {
     switch (region) {
       case 'floresta': case 'lobos': case 'sagrado':
-        return { trunk: '#5f4228', leaf: '#3f7a2e', leaf2: '#4d8f3a', leaf3: '#2f6422', cones: true };
+        return { trunk: '#4a331f', leaf: '#57a33c', leaf2: '#6cb94a', leaf3: '#3a7a2b', sil: '#1d3a14', cones: true };
       case 'campos':
-        return { trunk: '#6b4a2a', leaf: '#5c8a32', leaf2: '#6f9c3c', leaf3: '#477022', cones: false };
+        return { trunk: '#5f4425', leaf: '#6a9c38', leaf2: '#7db246', leaf3: '#4a7626', sil: '#334d18', cones: false };
       case 'pantano':
-        return { trunk: '#4a3826', leaf: '#3f6b38', leaf2: '#507c40', leaf3: '#2f5430', cones: false };
+        return { trunk: '#3a2e48', leaf: '#7355b5', leaf2: '#8666cf', leaf3: '#543d90', sil: '#251a3f', cones: false };
       case 'cemiterio':
-        return { trunk: '#5a514a', leaf: '#70705e', leaf2: '#83836c', leaf3: '#5f5f50', cones: true };
+        return { trunk: '#4a443c', leaf: '#5a6658', leaf2: '#6e7868', leaf3: '#454f45', sil: '#2a302a', cones: true };
       case 'colinas':
-        return { trunk: '#6b5a3a', leaf: '#5f7a3c', leaf2: '#6e8a46', leaf3: '#4c642e', cones: true };
+        return { trunk: '#4e3320', leaf: '#c05a2c', leaf2: '#d2723e', leaf3: '#8f3d1d', sil: '#572413', cones: false };
       case 'forte':
-        return { trunk: '#6b4a2a', leaf: '#8a7a4a', leaf2: '#9c8a54', leaf3: '#6f6240', cones: true };
+        return { trunk: '#5a4024', leaf: '#8a7a46', leaf2: '#9c8c54', leaf3: '#6c6138', sil: '#3b341f', cones: true };
       default:
-        return { trunk: '#7a5230', leaf: '#3f7a2e', leaf2: '#4d8f3a', leaf3: '#2f6422', cones: false };
+        return { trunk: '#6b4a2a', leaf: '#337c3c', leaf2: '#42914a', leaf3: '#245c2c', sil: '#17331b', cones: false };
     }
   }
 
-  // Árvore com formatos, tamanhos e silhuetas variados (determinístico por tile).
+  // Árvore com silhuetas variadas (determinístico por tile). A copa é desenhada
+  // com poucas formas grandes + uma silhueta escura por trás, garantindo contraste
+  // de luminosidade e tonalidade contra o chão do bioma (menos teclas, mais leitura).
   drawTree(ctx, x, y, region, tx, ty, t) {
     const hv = (hash2(tx * 31, ty * 7) >>> 0) % 100;
     const pal = this.treePalette(region);
-    // biomas com pinheiros têm mais coníferas; os demais variam copas arredondadas
     let shape;
     if (pal.cones) shape = hv < 48 ? 2 : hv < 74 ? 0 : hv < 90 ? 1 : 3;
     else shape = hv < 34 ? 0 : hv < 58 ? 1 : hv < 82 ? 3 : 4;
@@ -653,56 +659,60 @@ export class World {
     const trunkW = shape === 4 ? 4 : shape === 1 ? 5 : 6;
     const trunkH = shape === 1 ? 14 : shape === 3 ? 10 : 11;
     // sombra no chão
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath(); ctx.ellipse(cx, cy + 15, 8, 2.5, 0, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 15, 9, 2.6, 0, 0, 6.283); ctx.fill();
     // tronco
     ctx.fillStyle = pal.trunk;
     ctx.fillRect(cx - trunkW / 2 + lean, cy - trunkH + 1, trunkW, trunkH);
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.fillRect(cx - trunkW / 2 + lean + trunkW - 2, cy - trunkH + 1, 2, trunkH);
 
     ctx.save();
     ctx.translate(sway, 0);
+    // silhueta escura atrás da copa (separação copa/tronco e copa/chão)
+    const sil = pal.sil;
     if (shape === 2) {
-      // pinheiro: camadas de triângulos
-      ctx.fillStyle = pal.leaf3;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 27); ctx.lineTo(cx - 6, cy - 8); ctx.lineTo(cx + 6, cy - 8); ctx.closePath(); ctx.fill();
+      // pinheiro: duas camadas de triângulo sobre silhueta
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.moveTo(cx, cy - 29); ctx.lineTo(cx - 13, cy - 5); ctx.lineTo(cx + 13, cy - 5); ctx.closePath(); ctx.fill();
       ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 21); ctx.lineTo(cx - 9, cy - 3); ctx.lineTo(cx + 9, cy - 3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 26); ctx.lineTo(cx - 11, cy - 8); ctx.lineTo(cx + 11, cy - 8); ctx.closePath(); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 14); ctx.lineTo(cx - 12, cy + 4); ctx.lineTo(cx + 12, cy + 4); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 17); ctx.lineTo(cx - 13, cy + 3); ctx.lineTo(cx + 13, cy + 3); ctx.closePath(); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,0.10)';
-      ctx.beginPath(); ctx.moveTo(cx, cy - 27); ctx.lineTo(cx - 3, cy - 16); ctx.lineTo(cx + 3, cy - 16); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 26); ctx.lineTo(cx - 3, cy - 15); ctx.lineTo(cx + 3, cy - 15); ctx.closePath(); ctx.fill();
     } else if (shape === 3) {
       // carvalho largo e baixo
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.ellipse(cx, cy - 11, 16, 9.5, 0, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf;
       ctx.beginPath(); ctx.ellipse(cx, cy - 10, 14, 8, 0, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 15, 8, 7, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf3;
-      ctx.beginPath(); ctx.ellipse(cx + 7, cy - 12, 7, 6, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 15, 7, 5.5, 0, 0, 6.283); ctx.fill();
     } else if (shape === 4) {
       // muda pequena
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.arc(cx, cy - 14, 8.5, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf;
       ctx.beginPath(); ctx.arc(cx, cy - 14, 7, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 3, cy - 17, 4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 3, cy - 17, 3.5, 0, 6.283); ctx.fill();
     } else if (shape === 1) {
       // alta e esguia
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.arc(cx, cy - 18, 12, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf;
       ctx.beginPath(); ctx.arc(cx, cy - 18, 10, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 4, cy - 21, 6, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf3;
-      ctx.beginPath(); ctx.arc(cx + 5, cy - 15, 5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 4, cy - 21, 5.5, 0, 6.283); ctx.fill();
     } else {
       // clássica redonda e cheia
+      ctx.fillStyle = sil;
+      ctx.beginPath(); ctx.arc(cx, cy - 13, 15, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf;
       ctx.beginPath(); ctx.arc(cx, cy - 13, 13, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 5, cy - 16, 6, 0, 6.283); ctx.fill();
-      ctx.fillStyle = pal.leaf3;
-      ctx.beginPath(); ctx.arc(cx + 6, cy - 9, 5, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 5, cy - 16, 5.5, 0, 6.283); ctx.fill();
     }
     ctx.restore();
   }
@@ -791,11 +801,9 @@ export class World {
         ctx.fillStyle = gc;
         ctx.fillRect(x, y, TILE, TILE);
         const gd = (hash2(tx, ty) >>> 0) % 10;
-        // manchas que quebram a repetição
+        // mancha sutil que quebra a repetição
         if (gd === 0) { ctx.fillStyle = 'rgba(0,0,0,0.06)'; ctx.fillRect(x + 8, y + 18, 8, 5); }
-        ctx.fillStyle = 'rgba(0,0,0,0.07)';
-        ctx.beginPath(); ctx.ellipse(x + 6 + gd * 2, y + 6 + (gd % 3) * 7, 5, 2, 0.3, 0, 6.283); ctx.fill();
-        // pequenos detalhes ambientais de cada bioma
+        // um pequeno detalhe ambiental de cada bioma (menos ruído por tile)
         if (region === 'campos') {
           ctx.fillStyle = '#c9b84b';
           ctx.fillRect(x + 5 + gd * 2, y + 3 + (gd % 3) * 8, 2, 8);
@@ -804,30 +812,21 @@ export class World {
             ctx.fillStyle = '#2e5c22';
             ctx.beginPath(); ctx.ellipse(x + 8 + gd * 6, y + 22, 6, 3, 0, 0, 6.283); ctx.fill();
           }
-          if ((hash2(tx, ty) >>> 0) % 31 === 0) {
-            ctx.fillStyle = '#b5651d'; ctx.fillRect(x + 14, y + 20, 3, 4);
-            ctx.fillStyle = '#e8e8f0'; ctx.beginPath(); ctx.arc(x + 15.5, y + 20, 3.5, Math.PI, 0); ctx.fill();
-          }
         } else if (region === 'pantano') {
-          ctx.fillStyle = 'rgba(40,70,50,0.35)';
+          ctx.fillStyle = 'rgba(28,18,48,0.45)';
           ctx.beginPath(); ctx.ellipse(x + 10 + gd * 3, y + 20, 8, 3, 0, 0, 6.283); ctx.fill();
+        } else if (region === 'cemiterio') {
+          ctx.fillStyle = 'rgba(90,90,70,0.55)';
+          ctx.fillRect(x + 6, y + 23, 5, 2);
         } else if (region === 'colinas') {
           if (gd < 4) {
             ctx.fillStyle = '#7a7a70';
             ctx.fillRect(x + 4 + gd * 6, y + 18 + gd, 4, 3);
           }
-        } else if (region === 'cemiterio') {
-          ctx.fillStyle = 'rgba(90,90,70,0.55)';
-          ctx.fillRect(x + 6, y + 23, 5, 2);
-          ctx.fillRect(x + 21, y + 17, 4, 2);
-        } else if (region === 'ruinas' || region === 'templo') {
-          ctx.fillStyle = 'rgba(120,110,90,0.5)';
-          ctx.fillRect(x + (gd % 3) * 9, y + 8, 6, 3);
         } else if (region === 'prado' || region === 'norte' || region === 'varzea' || region === 'vila' || region === '') {
           if (gd === 0) {
             ctx.fillStyle = '#e8d05a';
-            ctx.fillRect(x + 6, y + 10, 2, 2);
-            ctx.fillRect(x + 22, y + 20, 2, 2);
+            ctx.fillRect(x + 14, y + 16, 2, 2);
           }
         }
         break;
@@ -882,19 +881,21 @@ export class World {
         this.drawRock(ctx, x, y, tx, ty, region);
         break;
       case 's':
-        ctx.fillStyle = '#5a4b3a';
+        // lodo do pântano roxo-sombrio
+        ctx.fillStyle = '#4a3f56';
         ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = '#6f5a42';
+        ctx.fillStyle = '#5d4f6b';
         ctx.beginPath();
         ctx.ellipse(x + 16, y + 16, 8, 5, 0, 0, 6.283);
         ctx.fill();
-        ctx.fillStyle = 'rgba(120,100,80,0.4)';
+        ctx.fillStyle = 'rgba(150,125,180,0.35)';
         ctx.fillRect(x + 4, y + 6, 8, 3);
         break;
       case 'q':
-        ctx.fillStyle = '#3a5f4a';
+        // água turva do pântano roxo
+        ctx.fillStyle = '#3a3f5a';
         ctx.fillRect(x, y, TILE, TILE);
-        ctx.strokeStyle = 'rgba(90,150,110,0.5)';
+        ctx.strokeStyle = 'rgba(150,155,215,0.5)';
         ctx.lineWidth = 1.5;
         for (let i = 0; i < 2; i++) {
           const yy = y + 10 + i * 14 + Math.sin(t * 2 + tx * 0.7 + i) * 2;
@@ -944,26 +945,33 @@ export class World {
         ctx.fillRect(x + 10, y + 18, 12, 1);
         break;
       case 'x':
-        ctx.fillStyle = '#6a6058';
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = '#7a7068';
-        ctx.beginPath();
-        ctx.moveTo(x + 5, y + 24);
-        ctx.lineTo(x + 8, y + 4);
-        ctx.lineTo(x + 24, y + 7);
-        ctx.lineTo(x + 20, y + 26);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = '#55504a';
-        for (let i = 0; i < 3; i++) {
-          ctx.fillRect(x + 8 + i * 5, y + 12, 3, 3);
+        {
+          // escombros tintados pelo bioma (ruínas avermelhadas, torre arcana roxa)
+          let base, mid, dark, moss;
+          if (region === 'torre') { base = '#3a3055'; mid = '#453a66'; dark = '#2a2240'; moss = '#4a3d70'; }
+          else if (region === 'ruinas' || region === 'templo') { base = '#6a4a3c'; mid = '#7a5a46'; dark = '#55402f'; moss = '#5a7a3c'; }
+          else { base = '#6a6058'; mid = '#7a7068'; dark = '#55504a'; moss = '#4a7c3c'; }
+          ctx.fillStyle = base;
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = mid;
+          ctx.beginPath();
+          ctx.moveTo(x + 5, y + 24);
+          ctx.lineTo(x + 8, y + 4);
+          ctx.lineTo(x + 24, y + 7);
+          ctx.lineTo(x + 20, y + 26);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = dark;
+          for (let i = 0; i < 3; i++) {
+            ctx.fillRect(x + 8 + i * 5, y + 12, 3, 3);
+          }
+          if ((hash2(tx, ty) >>> 0) % 4 === 0) {
+            ctx.fillStyle = moss;
+            ctx.fillRect(x + 5, y + 24, 3, 6);
+            ctx.fillRect(x + 24, y + 22, 3, 6);
+          }
+          break;
         }
-        if ((hash2(tx, ty) >>> 0) % 4 === 0) {
-          ctx.fillStyle = '#4a7c3c';
-          ctx.fillRect(x + 5, y + 24, 3, 6);
-          ctx.fillRect(x + 24, y + 22, 3, 6);
-        }
-        break;
       case 'k':
         ctx.fillStyle = '#cfc4a8';
         ctx.fillRect(x, y, TILE, TILE);
@@ -1081,25 +1089,48 @@ export class World {
         }
         break;
       case 'c':
-        ctx.fillStyle = '#3a3f4a';
-        ctx.fillRect(x, y, TILE, TILE);
-        if ((tx * 7 + ty * 13) % 11 === 0) {
-          ctx.fillStyle = '#454b57';
-          ctx.fillRect(x + 8, y + 8, 4, 4);
+        // piso de masmorra tintado: cova vermelho-escura, torre arcana roxa
+        if (region === 'cova') {
+          ctx.fillStyle = '#3a2527';
+          ctx.fillRect(x, y, TILE, TILE);
+          if ((tx * 7 + ty * 13) % 11 === 0) {
+            ctx.fillStyle = '#4a3133';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+          }
+        } else if (region === 'torre') {
+          ctx.fillStyle = '#2b2440';
+          ctx.fillRect(x, y, TILE, TILE);
+          if ((tx * 7 + ty * 13) % 11 === 0) {
+            ctx.fillStyle = '#3a3150';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+          }
+        } else {
+          ctx.fillStyle = '#3a3f4a';
+          ctx.fillRect(x, y, TILE, TILE);
+          if ((tx * 7 + ty * 13) % 11 === 0) {
+            ctx.fillStyle = '#454b57';
+            ctx.fillRect(x + 8, y + 8, 4, 4);
+          }
         }
         break;
       case 'v':
-        // parede de masmorra: pedra trabalhada
-        ctx.fillStyle = '#2b2f38';
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = '#3a3f4a';
-        ctx.fillRect(x, y, TILE, 4);
-        const br = (hash2(tx, ty) >>> 0) % 2;
-        ctx.fillStyle = br ? '#343943' : '#3a3f4a';
-        ctx.fillRect(x + (br ? 4 : 14), y + 8, 12, 6);
-        ctx.fillStyle = '#252a32';
-        ctx.fillRect(x, y + 13, TILE, 1);
-        ctx.fillRect(x + (br ? 16 : 6), y + 8, 1, 6);
+        // parede de masmorra tintada pela identidade da região
+        {
+          let base, light, dark;
+          if (region === 'cova') { base = '#2a1d1f'; light = '#3c2628'; dark = '#221416'; }
+          else if (region === 'torre') { base = '#1f1a30'; light = '#2b2442'; dark = '#171226'; }
+          else { base = '#2b2f38'; light = '#3a3f4a'; dark = '#252a32'; }
+          ctx.fillStyle = base;
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = light;
+          ctx.fillRect(x, y, TILE, 4);
+          const br = (hash2(tx, ty) >>> 0) % 2;
+          ctx.fillStyle = br ? light : dark;
+          ctx.fillRect(x + (br ? 4 : 14), y + 8, 12, 6);
+          ctx.fillStyle = dark;
+          ctx.fillRect(x, y + 13, TILE, 1);
+          ctx.fillRect(x + (br ? 16 : 6), y + 8, 1, 6);
+        }
         break;
       case 'd':
         // porta em arco com moldura e soleira
@@ -1123,16 +1154,28 @@ export class World {
         ctx.fillRect(x, y + 28, TILE, 3);
         break;
       case 'f':
-        if (region === 'ruinas' || region === 'templo' || region === 'torre') {
-          // piso de ruínas desgastado
+        if (region === 'torre') {
+          // piso arcano roxo
           const rv = (hash2(tx, ty) >>> 0) % 3;
-          ctx.fillStyle = rv === 0 ? '#7f7567' : rv === 1 ? '#766d60' : '#6f675b';
+          ctx.fillStyle = rv === 0 ? '#4a3a6a' : rv === 1 ? '#443660' : '#3f3058';
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = 'rgba(0,0,0,0.22)';
+          ctx.fillRect(x + 8, y + 8, 14, 1);
+          ctx.fillRect(x + 4, y + 16, 20, 1);
+          if (rv === 2) {
+            ctx.fillStyle = 'rgba(170,140,255,0.14)';
+            ctx.beginPath(); ctx.ellipse(x + 12, y + 20, 5, 2, 0, 0, 6.283); ctx.fill();
+          }
+        } else if (region === 'ruinas' || region === 'templo') {
+          // piso de ruínas avermelhado (identidade do bioma)
+          const rv = (hash2(tx, ty) >>> 0) % 3;
+          ctx.fillStyle = rv === 0 ? '#8a5f4a' : rv === 1 ? '#815a46' : '#7a5542';
           ctx.fillRect(x, y, TILE, TILE);
           ctx.fillStyle = 'rgba(0,0,0,0.2)';
           ctx.fillRect(x + 8, y + 8, 14, 1);
           ctx.fillRect(x + 4, y + 16, 20, 1);
           if (rv === 2) {
-            ctx.fillStyle = 'rgba(90,70,40,0.4)';
+            ctx.fillStyle = 'rgba(90,60,40,0.4)';
             ctx.beginPath(); ctx.ellipse(x + 12, y + 20, 5, 2, 0, 0, 6.283); ctx.fill();
           }
         } else {
@@ -1155,10 +1198,11 @@ export class World {
   }
 
   draw(ctx, cam, t) {
-    const tx0 = Math.max(0, Math.floor(cam.x / TILE) - 1);
-    const tx1 = Math.min(this.cols - 1, Math.ceil((cam.x + cam.w) / TILE) + 1);
-    const ty0 = Math.max(0, Math.floor(cam.y / TILE) - 1);
-    const ty1 = Math.min(this.rows - 1, Math.ceil((cam.y + cam.h) / TILE) + 1);
+    // Margem de 2 tiles ao redor da viewport: cobre shake e evita pop-in.
+    const tx0 = Math.max(0, Math.floor(cam.x / TILE) - 2);
+    const tx1 = Math.min(this.cols - 1, Math.ceil((cam.x + cam.w) / TILE) + 2);
+    const ty0 = Math.max(0, Math.floor(cam.y / TILE) - 2);
+    const ty1 = Math.min(this.rows - 1, Math.ceil((cam.y + cam.h) / TILE) + 2);
     let lastCh = null;
     for (let ty = ty0; ty <= ty1; ty++) {
       for (let tx = tx0; tx <= tx1; tx++) {

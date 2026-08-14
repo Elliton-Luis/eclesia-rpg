@@ -4,16 +4,23 @@ export const render = {
   render() {
     const ctx = this.ctx;
     const t = this.time;
+    const cam = this.cam;
     ctx.save();
 
     if (this.shake > 0.5) {
       ctx.translate((Math.random() * 2 - 1) * this.shake, (Math.random() * 2 - 1) * this.shake);
     }
 
-    const sky = ctx.createLinearGradient(0, 0, 0, this.ch);
-    sky.addColorStop(0, '#2b3a55');
-    sky.addColorStop(0.6, '#5b7aa8');
-    sky.addColorStop(1, '#88a9c9');
+    // Gradiente do céu cacheado (não recriado por frame; só quando a tela muda).
+    let sky = this._skyGrad;
+    if (!sky || this._skyH !== this.ch) {
+      sky = ctx.createLinearGradient(0, 0, 0, this.ch);
+      sky.addColorStop(0, '#2b3a55');
+      sky.addColorStop(0.6, '#5b7aa8');
+      sky.addColorStop(1, '#88a9c9');
+      this._skyGrad = sky;
+      this._skyH = this.ch;
+    }
     ctx.fillStyle = sky;
     ctx.fillRect(-20, -20, this.cw + 40, this.ch + 40);
 
@@ -47,62 +54,70 @@ export const render = {
     }
 
     ctx.save();
-    ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
-    this.world.draw(ctx, this.cam, t);
+    ctx.translate(-Math.round(cam.x), -Math.round(cam.y));
+    this.world.draw(ctx, cam, t);
 
     // Aura da Igreja Central: círculo estático único ao redor da cidade,
     // desenhado uma vez por frame (sem os anéis animados que travavam o jogo).
+    // Só desenha quando o círculo está (ao menos em parte) na tela.
     if (this.churchRing) {
-      const cx = 118 * TILE, cy = 120 * TILE;
-      ctx.fillStyle = 'rgba(255,255,0,0.05)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 640, 0, 6.283);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,0,0.45)';
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([10, 8]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 640, 0, 6.283);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.strokeStyle = 'rgba(255,255,0,0.15)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 660, 0, 6.283);
-      ctx.stroke();
+      const cx = 118 * TILE, cy = 120 * TILE, cr = 660;
+      if (cx + cr >= cam.x && cx - cr <= cam.x + this.cw && cy + cr >= cam.y && cy - cr <= cam.y + this.ch) {
+        ctx.fillStyle = 'rgba(255,255,0,0.05)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 640, 0, 6.283);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,0,0.45)';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([10, 8]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 640, 0, 6.283);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = 'rgba(255,255,0,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 660, 0, 6.283);
+        ctx.stroke();
 
-      // Cruz central da igreja — o motivo da proteção, ao lado do Bispo Cedric (119,119)
-      const bx = 120 * TILE, by = 120 * TILE;
-      const glow = ctx.createRadialGradient(bx, by, 4, bx, by, 48);
-      glow.addColorStop(0, 'rgba(255,230,120,0.35)');
-      glow.addColorStop(1, 'rgba(255,230,120,0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(bx, by, 48, 0, 6.283);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,236,160,0.92)';
-      ctx.strokeStyle = 'rgba(120,90,20,0.6)';
-      ctx.lineWidth = 2;
-      ctx.fillRect(bx - 4, by - 26, 8, 52);
-      ctx.strokeRect(bx - 4, by - 26, 8, 52);
-      ctx.fillRect(bx - 18, by - 12, 36, 8);
-      ctx.strokeRect(bx - 18, by - 12, 36, 8);
+        // Cruz central da igreja — o motivo da proteção, ao lado do Bispo Cedric (119,119)
+        const bx = 120 * TILE, by = 120 * TILE;
+        const glow = ctx.createRadialGradient(bx, by, 4, bx, by, 48);
+        glow.addColorStop(0, 'rgba(255,230,120,0.35)');
+        glow.addColorStop(1, 'rgba(255,230,120,0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(bx, by, 48, 0, 6.283);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,236,160,0.92)';
+        ctx.strokeStyle = 'rgba(120,90,20,0.6)';
+        ctx.lineWidth = 2;
+        ctx.fillRect(bx - 4, by - 26, 8, 52);
+        ctx.strokeRect(bx - 4, by - 26, 8, 52);
+        ctx.fillRect(bx - 18, by - 12, 36, 8);
+        ctx.strokeRect(bx - 18, by - 12, 36, 8);
+      }
     }
 
     const inCave = this.indoorNames[this.zoneTitle];
     if (inCave) {
       ctx.fillStyle = 'rgba(8,10,18,0.30)';
-      ctx.fillRect(this.cam.x, this.cam.y, this.cw, this.ch);
+      ctx.fillRect(cam.x, cam.y, this.cw, this.ch);
     }
 
-    for (const pk of this.pickups) pk.draw(ctx, t);
-    for (const n of this.npcs) this.drawNPC(ctx, n, t);
-    for (const m of this.monsters) m.draw(ctx, t);
+    // Culling por viewport: só desenha entidades visíveis (com margem de 64px
+    // para evitar pop-in nas bordas). A atualização/lógica continua rodando para
+    // todas as entidades — apenas o custo de desenho fora da tela é evitado.
+    const vx = cam.x - 64, vy = cam.y - 64, vw = this.cw + 128, vh = this.ch + 128;
+    const vis = (x, y, pad) => x + pad >= vx && x - pad <= vx + vw && y + pad >= vy && y - pad <= vy + vh;
+    for (const pk of this.pickups) if (vis(pk.x, pk.y, 20)) pk.draw(ctx, t);
+    for (const n of this.npcs) if (vis(n.px, n.py, 38)) this.drawNPC(ctx, n, t);
+    for (const m of this.monsters) if (vis(m.x, m.y, m.w * 0.6 + 18)) m.draw(ctx, t);
     if (this.player) this.player.draw(ctx, t);
-    for (const pr of this.projectiles) pr.draw(ctx);
-    for (const r of this.rings) r.draw(ctx);
-    for (const pa of this.particles) pa.draw(ctx);
-    for (const tx of this.texts) tx.draw(ctx);
+    for (const pr of this.projectiles) if (vis(pr.x, pr.y, pr.size + 6)) pr.draw(ctx);
+    for (const r of this.rings) if (vis(r.x, r.y, r.r + 10)) r.draw(ctx);
+    for (const pa of this.particles) if (vis(pa.x, pa.y, pa.size + 4)) pa.draw(ctx);
+    for (const tx of this.texts) if (vis(tx.x, tx.y, 40)) tx.draw(ctx);
 
     if (this.mouseActive) {
       ctx.strokeStyle = 'rgba(255,255,255,0.7)';
@@ -124,9 +139,17 @@ export const render = {
 
     ctx.restore();
 
-    const vig = ctx.createRadialGradient(this.cw / 2, this.ch / 2, this.ch * 0.45, this.cw / 2, this.ch / 2, this.ch * 0.95);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(0,0,0,0.42)');
+    // Vignette cacheado (não recriado por frame).
+    let vig = this._vigGrad;
+    if (!vig || this._vigW !== this.cw || this._vigH !== this.ch) {
+      const vgx = this.cw / 2, vgy = this.ch / 2;
+      vig = ctx.createRadialGradient(vgx, vgy, this.ch * 0.45, vgx, vgy, this.ch * 0.95);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(0,0,0,0.42)');
+      this._vigGrad = vig;
+      this._vigW = this.cw;
+      this._vigH = this.ch;
+    }
     ctx.fillStyle = vig;
     ctx.fillRect(0, 0, this.cw, this.ch);
 
