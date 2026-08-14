@@ -210,6 +210,10 @@ class Player {
     ctx.fillStyle = s.accent;
     if (s.casta === 'clero') {
       ctx.fillRect(-r, fy - 21, r * 2, 3);
+    } else if (s.casta === 'templarios') {
+      // cruz do Templo sobre o manto branco
+      ctx.fillRect(-1.5, fy - 23, 3, 11);
+      ctx.fillRect(-5.5, fy - 19.5, 11, 3);
     } else {
       ctx.fillRect(-r, fy - 18, r * 2, 2);
     }
@@ -223,14 +227,16 @@ class Player {
       ctx.fillStyle = s.accent;
       ctx.fillRect(-1, fy - 14, 2, 5);
       ctx.fillRect(-2.5, fy - 12, 5, 2);
-    } else if (s.id === 'guerreiro') { // ombreiras
+    } else if (s.id === 'guerreiro') { // ombreiras de aço
+      ctx.fillStyle = '#c9c9d2';
       ctx.beginPath();
       ctx.arc(-r, fy - 26, 3.5, 0, 6.283);
       ctx.arc(r, fy - 26, 3.5, 0, 6.283);
       ctx.fill();
     } else if (s.id === 'arqueiro') { // aljava
+      ctx.fillStyle = s.accent;
       ctx.fillRect(-r - 3, fy - 24, 4, 9);
-    } else if (s.id === 'inventor') { // avental
+    } else if (s.id === 'inventor') { // avental de couro do engenho
       ctx.fillStyle = '#8a6a3a';
       ctx.fillRect(-6, fy - 17, 12, 9);
       ctx.fillStyle = s.accent;
@@ -258,10 +264,12 @@ class Player {
       ctx.beginPath();
       ctx.arc(0, fy - 34, 3, Math.PI, 0);
       ctx.fill();
-    } else if (s.id === 'guerreiro') { // capacete
+    } else if (s.id === 'guerreiro') { // elmo de aço
+      ctx.fillStyle = '#c9c9d2';
       ctx.beginPath();
       ctx.arc(0, fy - 35, 7, Math.PI, 0);
       ctx.fill();
+      ctx.fillRect(-7, fy - 36, 14, 3);
     } else if (s.id === 'inventor') { // barbo e óculos
       ctx.fillStyle = s.color;
       ctx.beginPath();
@@ -306,12 +314,10 @@ class Player {
       ctx.beginPath();
       ctx.arc(0, fy - 38, 6.5, Math.PI * 1.05, Math.PI * 1.95);
       ctx.fill();
-    } else if (s.id === 'guerreiro') { // pluma
-      ctx.fillStyle = '#e74c3c';
-      ctx.beginPath();
-      ctx.moveTo(4, fy - 42);
-      ctx.quadraticCurveTo(9, fy - 52, 6, fy - 40);
-      ctx.fill();
+    } else if (s.id === 'guerreiro') { // cruz do Templo no elmo
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(-1, fy - 46, 2, 7);
+      ctx.fillRect(-3.5, fy - 43.5, 7, 2);
     } else if (s.id === 'arqueiro') { // capuz de caçador
       ctx.beginPath();
       ctx.arc(0, fy - 38, 7, Math.PI * 0.9, Math.PI * 2.1);

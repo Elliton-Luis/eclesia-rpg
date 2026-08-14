@@ -7,7 +7,7 @@ const TYPE_MULT = { WEAK: 1.6, RESIST: 0.45 };
 
 const CASTAS = {
   clero:   { name: 'Clero',   color: '#f5e6b8', accent: '#c9a227', desc: 'Servos da luz. Curam aliados e golpeiam com poder sagrado.' },
-  populum: { name: 'Populum', color: '#d8c9a3', accent: '#b5651d', desc: 'Guerreiros comuns. Dependem de armas, coragem e engenho.' },
+  templarios: { name: 'Templários', color: '#e8e4d8', accent: '#c0392b', desc: 'Cavaleiros templários. Fé em combate, aço e devoção.' },
   mago:    { name: 'Mago',    color: '#b8b8f5', accent: '#7a6bd8', desc: 'Eruditos do arcano. Desencadeiam magia pura e devastadora.' }
 };
 
@@ -61,10 +61,10 @@ const SUBCLASSES = {
     ]
   },
   guerreiro: {
-    id: 'guerreiro', casta: 'populum', name: 'Guerreiro', color: '#f0b8a8', accent: '#c0392b',
-    desc: 'Combo de espada, giro e investida.',
+    id: 'guerreiro', casta: 'templarios', name: 'Guerreiro', color: '#e8e0d0', accent: '#c0392b',
+    desc: 'Cavaleiro do Templo: combo de espada, giro e investida.',
     hp: 155, speed: 255, str: 18, int: 6, jump: 750,
-    weapon: { name: 'Espada do Povo', base: 16, color: '#c0392b', kind: 'melee' },
+    weapon: { name: 'Espada do Templo', base: 16, color: '#c9c9d2', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.2, type: T.PHYS, range: 82, cd: 0.32, combo: 3, color: '#ffd6a5' },
     skills: [
       { id: 'spin', name: 'Giro', key: 'Q', cd: 5, color: '#ff9d5c', desc: 'Golpe circular ao redor.', dmg: 1.5, type: T.PHYS, radius: 95 },
@@ -72,10 +72,10 @@ const SUBCLASSES = {
     ]
   },
   arqueiro: {
-    id: 'arqueiro', casta: 'populum', name: 'Arqueiro', color: '#b8e0b0', accent: '#3f7a2e',
-    desc: 'Flechas rápidas e chuva de projéteis.',
+    id: 'arqueiro', casta: 'templarios', name: 'Arqueiro', color: '#d8e0c0', accent: '#c0392b',
+    desc: 'Arqueiro do Templo: flechas rápidas e chuva de projéteis.',
     hp: 100, speed: 265, str: 13, int: 9, jump: 820,
-    weapon: { name: 'Arco de Madeira', base: 13, color: '#7a5a2b', kind: 'ranged' },
+    weapon: { name: 'Arco do Templo', base: 13, color: '#7a5a2b', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.PHYS, speed: 660, cd: 0.42, color: '#f0e6c8', size: 8 },
     skills: [
       { id: 'spread', name: 'Rajada', key: 'Q', cd: 3.5, color: '#7ec8e3', desc: '3 flechas em leque.', dmg: 0.85, type: T.PHYS, speed: 660, n: 3, spread: 0.32 },
@@ -83,14 +83,14 @@ const SUBCLASSES = {
     ]
   },
   inventor: {
-    id: 'inventor', casta: 'populum', name: 'Inventor', color: '#f0d0a8', accent: '#d35400',
-    desc: 'Granadas explosivas e sobrecarga.',
+    id: 'inventor', casta: 'templarios', name: 'Inventor', color: '#d8ccb0', accent: '#c0392b',
+    desc: 'Engenho do Templo: artilharia explosiva e fervor de batalha.',
     hp: 125, speed: 245, str: 15, int: 10, jump: 770,
-    weapon: { name: 'Chave de Grifo', base: 14, color: '#d35400', kind: 'melee' },
+    weapon: { name: 'Martelo do Templo', base: 14, color: '#c98a2e', kind: 'melee' },
     attack: { kind: 'melee', dmg: 1.1, type: T.PHYS, range: 70, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
-      { id: 'grenade', name: 'Granada', key: 'Q', cd: 5, color: '#ffb020', desc: 'Granada que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
-      { id: 'overclock', name: 'Sobrecarga', key: 'E', cd: 15, color: '#7cffb0', desc: 'Overclock: muito dano e velocidade por 6s.', dmg: 0.6, spd: 0.35, dur: 6 }
+      { id: 'grenade', name: 'Bombarda', key: 'Q', cd: 5, color: '#ffb020', desc: 'Bombarda incendiária que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
+      { id: 'overclock', name: 'Fervor da Cruzada', key: 'E', cd: 15, color: '#7cffb0', desc: 'Fervor sagrado: muito dano e velocidade por 6s.', dmg: 0.6, spd: 0.35, dur: 6 }
     ]
   },
   elemental: {
@@ -128,8 +128,8 @@ const SUBCLASSES = {
   }
 };
 
-const SUB_ORDER = ['bispo', 'padre', 'diacono', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
-const CASTA_ORDER = ['clero', 'populum', 'mago'];
+const SUB_ORDER = ['diacono', 'padre', 'bispo', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
+const CASTA_ORDER = ['clero', 'templarios', 'mago'];
 
 const MAX_EXTRA_SKILLS = 3;
 const MAX_TRAIN_REFLEX = 10; // 10 treinos de +10% de velocidade de ataque/disparo (máx +100%)
@@ -316,7 +316,7 @@ const MONSTERS = {
   general: {
     id: 'general', name: 'General Tarraske', color: '#a0a8a0', dark: '#4b524b', size: 82,
     hp: 2600, dmg: 55, speed: 142, behavior: 'boss', gold: [1500, 1500],
-    resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'populum', tier: 5
+    resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'templarios', tier: 5
   },
   arcano: {
     id: 'arcano', name: 'O Arcano Devorador', color: '#a08ad8', dark: '#4b3f7a', size: 86,
@@ -338,13 +338,13 @@ const FINAL_ENDINGS = {
     ]
   },
   general: {
-    casta: 'populum', poster: 'Guerreiro',
+    casta: 'templarios', poster: 'Guerreiro',
     title: 'A FRONTEIRA SEGURA',
-    msg: 'O General caiu. A fronteira do povo está segura.',
+    msg: 'O General caiu. A fronteira dos templários está segura.',
     intro: [
-      'O General Tarraske sitiou as aldeias e escravizou a fronteira.',
+      'O General Tarraske sitiou as aldeias e desafiou a cruz do Templo.',
       'Suas guarnições cercam o forte ao sul-leste.',
-      'Derrotai o General e libertai o povo de Eclésia.'
+      'Derrotai o General e libertai a fronteira de Eclésia.'
     ]
   },
   arcano: {
@@ -477,39 +477,39 @@ const NPC_DEFS = [
   { id: 'santa_ana', name: 'Ana, a Lavadeira', kind: 'talk', x: 107, y: 132, color: '#b8a080', accent: '#d8c0a0',
     event: 'confess', lines: {
       clero: 'Padre, eu... roubei pão para os meus filhos. A fome me cegou.',
-      populum: 'A vida na vila é dura, viajante. Nem sempre temos o que comer.',
+      templarios: 'Cavaleiro do Templo, a vila passa fome. Nem sempre temos o que comer.',
       mago: 'Sussurram que magos andam sumidos pelas ruínas. Tome cuidado.'
     } },
   { id: 'guarda_bira', name: 'Guarda Bira', kind: 'talk', x: 125, y: 132, color: '#8a9a8a', accent: '#c8d8c8',
     event: 'war', lines: {
       clero: 'A reza não afasta o lobo, mas talvez acalme o medo. Boa noite, padre.',
-      populum: 'Um bom soldado se mede pelo aço. Prove seu valor em campo e terá meu respeito.',
+      templarios: 'Vosso manto branco não basta. Prove seu valor em campo, cavaleiro, e terá meu respeito.',
       mago: 'Feiticeiros... sustento que valem tanto quanto mãos firmes. Humpf.'
     } },
   { id: 'coroinha', name: 'Coroinha Benjamim', kind: 'talk', x: 113, y: 117, color: '#e8d8b0', accent: '#ffd76a',
     event: 'lore', lines: {
       clero: 'O Pároco diz que o Senhor fala pelos ventos do leste. Ouviu? Eu ouvi.',
-      populum: 'Corro até o poço e volto. A vila inteira me conhece!',
+      templarios: 'Cavaleiro do Templo, corri até o poço e voltei. A vila inteira me conhece!',
       mago: 'O homem do livro lê palavras que brilham. Juro que brilham!'
     } },
   // Campos de Trigo
   { id: 'fazendeiro', name: 'Tomás, Fazendeiro', kind: 'talk', x: 40, y: 122, color: '#c9b37a', accent: '#f0d8a0',
     event: 'lore', lines: {
       clero: 'A terra é gentil, mas os espantalhos andam. Sim, padre... ANDAM.',
-      populum: 'De noite os espantalhos se mexem. Se for da vila, cuide dos campos.',
+      templarios: 'De noite os espantalhos se mexem. Cavaleiro, protegei os campos da vila.',
       mago: 'Trigo bom é trigo que canta. E o meu canta assustado.'
     } },
   { id: 'roceira', name: 'Dona Zilda', kind: 'talk', x: 35, y: 132, color: '#c8a8a0', accent: '#e0c0b0',
     event: 'confess', lines: {
       clero: 'Padre, menti sobre a colheita para o imposto. É um peso que não sai de mim.',
-      populum: 'As fogueiras de junho deviam alegrar. Hoje só a fazem tremer.',
+      templarios: 'As fogueiras de junho deviam alegrar. Hoje só a fazem tremer, cavaleiro.',
       mago: 'Forasteiros passam com poções. Nada como suor de verdade.'
     } },
   // Bosque Sagrado
   { id: 'peregrino', name: 'Peregrino Inácio', kind: 'talk', x: 158, y: 76, color: '#b8b0a0', accent: '#e8e0c8',
     event: 'lore', lines: {
       clero: 'Peregrino que sou, vi um altar profano além dos rochedos. O Demônio ronca no leste.',
-      populum: 'O caminho para leste é mau. As criaturas ficam maiores e mais cruéis.',
+      templarios: 'Cavaleiro, o caminho para leste é mau. As criaturas ficam maiores e mais cruéis.',
       mago: 'Por estas árvores, ouvi encantamentos antigos. O saber dorme onde a fé acorda.'
     } },
   { id: 'capela_sagrada', name: 'Capela do Bosque', kind: 'church', x: 186, y: 78, color: '#f0e0c0', accent: '#fff3b0',
@@ -518,20 +518,20 @@ const NPC_DEFS = [
   { id: 'pescador', name: 'Pescador Duro', kind: 'talk', x: 218, y: 84, color: '#8a8a9a', accent: '#b0c0d0',
     event: 'lore', lines: {
       clero: 'No pântano as luzinhas dançam. São almas perdidas pedindo reza.',
-      populum: 'Não pise nas poças. O que mora dentro tem dentes.',
+      templarios: 'Não pise nas poças, cavaleiro. O que mora dentro tem dentes.',
       mago: 'As luzes falsas são velhas mentiras arcanas. Nada novo no brejo.'
     } },
   // Cemitério
   { id: 'coveiro', name: 'Coveiro Nico', kind: 'talk', x: 42, y: 186, color: '#6a7a6a', accent: '#a8b8a8',
     event: 'confess', lines: {
       clero: 'Padre... enterrei vivo o velho Zé para ficar com a herdade. Perdoai-me.',
-      populum: 'Cavei alvejar de guerra. Os lençóis cobrem muita coisa, meu amigo.',
+      templarios: 'Cavei o que a guerra não enterrou. Os lençóis cobrem muita coisa, cavaleiro.',
       mago: 'Os mortos aqui... se mexem. E não é por causa da terra.'
     } },
   { id: 'velha_zefa', name: 'Velha Zefa', kind: 'talk', x: 52, y: 198, color: '#9a8a80', accent: '#c0b0a0',
     event: 'lore', lines: {
       clero: 'Ah, filho da luz... os zumbis foram gente que não ouviu o chamado. Conduze-os.',
-      populum: 'Paguei para ver a lua cheia. Ver o que se arrasta aqui não foi favor.',
+      templarios: 'Paguei para ver a lua cheia. Ver o que se arrasta aqui não foi favor, cavaleiro.',
       mago: 'O Necromante queimou minhas ervas. Guarde as suas, moço.'
     } },
   { id: 'ermida_cemiterio', name: 'Padre Casimiro', kind: 'church', x: 56, y: 193, color: '#c9b8a8', accent: '#fff3b0',
@@ -540,7 +540,7 @@ const NPC_DEFS = [
   { id: 'arqueologo', name: 'Dante, Arqueólogo', kind: 'talk', x: 172, y: 148, color: '#b0a080', accent: '#e0d0a0',
     event: 'saber', lines: {
       clero: 'Estas paredes tinham um altar. O que o profanou... ainda habita o chão.',
-      populum: 'Há aço antigo sob os escombros. Permita-me mostrar-lhe o caminho?',
+      templarios: 'Há aço antigo sob os escombros, digno de um templário. Permita-me mostrar-lhe o caminho?',
       mago: 'Glifos! Glifos preservados! O saber destas ruínas vale ouro e vida.'
     } },
   { id: 'ferreiro_ruinas', name: 'Ferreiro das Ruínas', kind: 'forge', x: 184, y: 158, color: '#8a6a4b', accent: '#ff9d5c' },
@@ -550,7 +550,7 @@ const NPC_DEFS = [
   { id: 'mineiro', name: 'Mineiro Pedro', kind: 'talk', x: 252, y: 172, color: '#9a9a7a', accent: '#c8c890',
     event: 'lore', lines: {
       clero: 'Na serra mora um gigante que dorme. A fé não o acorda; o ouro, sim.',
-      populum: 'O fedor de minério é o cheiro do trabalho. Aqui ninguém se ajoelha.',
+      templarios: 'O fedor de minério é o cheiro do trabalho. Aqui ninguém se ajoelha, nem para o Templo.',
       mago: 'A rocha aqui tem veios que a magia escuta. Ouço quando estou só.'
     } },
   { id: 'igreja_colinas', name: 'Padre Belisário', kind: 'church', x: 264, y: 184, color: '#b8ac98', accent: '#fff3b0',
@@ -559,7 +559,7 @@ const NPC_DEFS = [
   { id: 'sabio', name: 'Sábio Laude', kind: 'talk', x: 284, y: 76, color: '#b8b8d8', accent: '#d8d8f0',
     event: 'saber', lines: {
       clero: 'O templo fora consagrado à luz. As gárgulas esqueceram o que guardavam.',
-      populum: 'Lendas falam de um tesouro. Lendas também falam de dunas de criaturas.',
+      templarios: 'Lendas falam de um tesouro. Lendas também falam de hordas de criaturas, cavaleiro.',
       mago: 'Aqui o véu é fino. Sinta a vibração arcana nas colunas quebradas.'
     } },
   { id: 'catedral_templo', name: 'Bispo Eleutério', kind: 'church', x: 296, y: 86, color: '#e8b0b0', accent: '#8a3b3b',
@@ -569,7 +569,7 @@ const NPC_DEFS = [
   { id: 'soldado_desertor', name: 'Desertor Valdomiro', kind: 'talk', x: 328, y: 198, color: '#7a8a7a', accent: '#a8c0a8',
     event: 'war', lines: {
       clero: 'O General vendeu a alma por ferro e pólvora. Reze por nós, padre.',
-      populum: 'Treinei na fronteira. Se quer o meu respeito, lute até a última gota.',
+      templarios: 'Treinei na fronteira. Se quer o respeito do Templo, lute até a última gota.',
       mago: 'Aquelas armas engolem sombras. Melhor nem entender.'
     } },
   { id: 'capela_forte', name: 'Bispo Anselmo', kind: 'church', x: 344, y: 192, color: '#e8b0b0', accent: '#6a2b2b',
@@ -578,7 +578,7 @@ const NPC_DEFS = [
   { id: 'devoto_trevas', name: 'Devoto das Trevas', kind: 'talk', x: 326, y: 70, color: '#5a4a6a', accent: '#a0a0ff',
     event: 'lore', lines: {
       clero: 'Mastema prometeu a eternidade a quem abandonasse a luz. Eu escutei.',
-      populum: 'Enquanto houver uma vila em pé, há esperança de sair daqui.',
+      templarios: 'Enquanto houver um templário em pé, há esperança de sair daqui.',
       mago: 'O altar consome arcano. Não se aproxime sem arma, sem nome e sem fé.'
     } }
 ];
@@ -592,11 +592,11 @@ const LORE = {
     { id: 'promessa', title: 'A Promessa', text: 'No leste, um selo profano esconde o altar de Mastema. Fechai-o para sempre e guiai as almas do Senhor a Ele.' },
     { id: 'servico', title: 'O Servo fiel', text: 'O Diácono que serve sem buscar glória é o coração da Igreja. Quem alimenta o pobre, visita o enfermo e batiza com humor guarda o tesouro do Céu.' }
   ],
-  populum: [
-    { id: 'fronteira', title: 'A Fronteira', text: 'O povo de Eclésia vive sob o jugo de bestas e bandos. A vila pede: espadas, flechas e engenho bastam?' },
-    { id: 'guarnicao', title: 'Guarnições', text: 'Mercenários dizem que as ruínas guardam aço antigo. Um povo que se arma é um povo que resiste.' },
+  templarios: [
+    { id: 'fronteira', title: 'A Fronteira', text: 'O Templo de Eclésia vela sobre a fronteira. As bestas e bandos açoitam as aldeias — espadas, flechas e engenho dos templários são a sua guarda.' },
+    { id: 'guarnicao', title: 'As Guarnições', text: 'Dizem que as ruínas guardam aço sagrado. Um cavaleiro que se arma com fé e aço é um cavaleiro que resiste.' },
     { id: 'forte', title: 'O Forte', text: 'Ao sul-leste, um General rebelde ergue um forte para escravizar as aldeias. Enquanto ele viver, a fronteira sangra.' },
-    { id: 'chama', title: 'A Chama do Povo', text: 'O General caiu. A chama da resistência ascende — e a fronteira, enfim, respira.' }
+    { id: 'chama', title: 'A Cruz do Templo', text: 'O General caiu. A cruz do Templo ascende sobre a fronteira — e ela, enfim, respira.' }
   ],
   mago: [
     { id: 'veo', title: 'O Véu Rasgado', text: 'Existe arcano antes do tempo. Os sabidos dizem que algo, no norte, desfiou o véu que separa o mundo e a eternidade.' },
@@ -609,7 +609,7 @@ const LORE = {
 // Habilitação de lore por casta ao entrar em zonas especiais
 const LORE_ZONE = {
   clero: [['sagrado', 'chamado'], ['sagrado', 'servico'], ['cova', 'promessa']],
-  populum: [['forte', 'forte']],
+  templarios: [['forte', 'forte']],
   mago: [['torre', 'torre']]
 };
 
@@ -670,13 +670,13 @@ const BIBLIA_PASSAGENS = {
     '"Posso tudo naquele que me fortalece." - Filipenses 4:13',
     '"O Senhor está próximo de todos os que O invocam, de todos os que O invocam com sinceridade." - Salmo 145:18'
   ],
-  populum: [
-    '"Coragem, fiéis! A luz vence as trevas." - Isaías 54:17',
-    '"Não tema, pois eu sou contigo; não se assuste, pois eu sou o seu Deus." - Isaías 41:10',
-    '"Entregue ao Senhor o seu caminho, e nele confia." - Salmo 37:5',
-    '"O justo clama, e o Senhor o ouve; livra-o de todas as suas angústias." - Salmo 34:17',
-    '"Alegrai-vos no Senhor, ó justos; louvável é o louvo dos retos." - Salmo 33:1',
-    '"Louvai ao Senhor, porque é bom; cantar a seu nome é agradável, ó quasi." - Salmo 135:3'
+  templarios: [
+    '"Vai, e faze o mesmo." - Lucas 10:37',
+    '"Vigiai, pois, porque não sabeis o dia nem a hora." - Mateus 25:13',
+    '"Bem-aventurados os que têm fome e sede de justiça." - Mateus 5:6',
+    '"A minha força está no Senhor." - Salmo 28:7',
+    '"Sê forte e corajoso; não temas." - Josué 1:9',
+    '"Ninguém tem maior amor do que este: de dar a própria vida pelos seus amigos." - João 15:13'
   ],
   mago: [
     '"O conhecimento é o caminho da sabedoria." - Provérbios 4:7',

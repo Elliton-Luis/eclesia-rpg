@@ -11,7 +11,7 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 
 ## Funcionalidades
 
-- **3 castas / 9 subclasses**: Clero (Padre, Bispo, Diácono), Populum (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E).
+- **3 castas / 9 subclasses**: Clero (Diácono, Padre, Bispo), Templários (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E). As subclasses de cada casta seguem uma progressão de poder da mais fraca para a mais forte.
 - **Habilidades extras**: até 3 habilidades adicionais compráveis (R/T/Y) no Mestre das Artes.
 - **Combate**: corpo a corpo, projéteis, auras e área; sistema de fraquezas/resistências por tipo de dano (Físico, Sagrado, Mágico).
 - **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras e treinar reflexos (ataque/disparo mais rápidos).
@@ -21,19 +21,19 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - **Sistema de spawn melhorado**: monstros nascem em pontos determinísticos por chunk, nunca em cima do jogador (distância mínima 210px), com cooldowns baseados no perigo da região.
 - **Estabelecimentos por casta**:
   - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero), Missa/Crisma/Ordenação por grau do clero.
-  - **Taverna** (Populum): bebida (cura por ouro), histórias de guerra (lore do Populum), treino forjado (+força permanente), treino de reflexos (+10% de velocidade de ataque/disparo por nível).
+  - **Taverna** (Templários): bebida (cura por ouro), histórias de guerra (lore dos Templários), treino forjado (+força permanente), treino de reflexos (+10% de velocidade de ataque/disparo por nível).
   - **Torre Arcana** (Mago): meditar (cura + reset cooldowns grátis), grimório (lore do Mago), consulta arcana (+inteligência permanente).
 - **Sistema de Bênçãos**: 10 bênçãos sagradas aprendidas ao explorar — ensinadas por Padres e Bispos espalhados pelo mundo (igrejas/capelas em biomas variados). Padres ensinam bênçãos comuns/intermediárias (Luz, Misericórdia, Coragem, Escudo da Fé, Passos do Peregrino); Bispos ensinam as raras (Cadência, Precisão, Fúria, Julgamento). Teclas B/G/U/V/N (reutilizando o pipeline de habilidades). Até 6 por partida.
 - **O Papa (10% de chance por partida)**: aparição rara num bioma perigoso distante da vila. Ao ser encontrado, ensina a **Bênção Suprema** (tecla H) — o milagre mais poderoso do jogo.
 - **Bênção Suprema**: uso único por partida (consumida permanentemente ao usar). Cria uma coluna de luz divina que **aniquila instantaneamente qualquer ser na área do impacto** (raio ~430px), ignorando vida e resistências — inclusive chefes — mas NÃO afeta o mapa inteiro.
 - **NPCs e pequenas histórias**: 22 NPCs espalhados com diálogos específicos por casta. Interações exclusivas:
   - **Confissão** (Clero): NPCs revelam segredos; jogador ganha +10 vida máx, +2 int, dano +35% temporário, visual de bênção dourada.
-  - **Treino** (Populum): +2 força + dano +25% temporário.
+  - **Treino** (Templários): +2 força + dano +25% temporário.
   - **Saber arcano** (Mago): +3 inteligência permanente.
-- **Lore progressiva por casta**: 4 capítulos do Clero, 4 do Populum, 4 do Mago, descobertos naturalmente em igrejas, tavernas, torres, zonas especiais e NPCs.
+- **Lore progressiva por casta**: 4 capítulos do Clero, 4 dos Templários, 4 do Mago, descobertos naturalmente em igrejas, tavernas, torres, zonas especiais e NPCs.
 - **Finais específicos por casta** (cada um com arena, intro, padrões únicos):
   - **Clero**: Mastema, o Demônio (Cova do Demônio) → "Você guiou as almas do Senhor a Ele."
-  - **Populum**: General Tarraske (Forte do General) → "O General caiu. A fronteira do povo está segura."
+  - **Templários**: General Tarraske (Forte do General) → "O General caiu. A fronteira dos templários está segura."
   - **Mago**: O Arcano Devorador (Torre Perdida) → "O véu tornou a se fechar. O saber prevalece."
 - **Final alternativo**: derrotar o chefe de outra casta exibe "Você é bom nisso... já pensou em ser [Padre/Guerreiro/Mago]?" e permite continuar explorando.
 - **Progressão por Selos**: 5 selos interativos (Catacumbas, Gruta, Cova do Demônio, Forte, Torre) exigem cristais específicos (Floresta, Sombrio, Final) para abrir.
@@ -50,7 +50,7 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 
 ### Subclasses
 Definidas em `js/data.js` (`SUBCLASSES`). Cada uma contém:
-- `casta` (clero/populum/mago), `hp`, `speed`, `str`, `int`, `jump`
+- `casta` (clero/templarios/mago), `hp`, `speed`, `str`, `int`, `jump`
 - `weapon`: nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
 - `attack`: tipo, multiplicador, alcance/cadência, cor, propriedades extras (pierce, combo, etc.)
 - `aura` (opcional): raio, dano por tick, intervalo

@@ -57,7 +57,7 @@ const GAME = {
   progressionGranted: {},
   progressLevel: 0,
   ending: null,
-  loreDiscovered: { clero: [], populum: [], mago: [] },
+  loreDiscovered: { clero: [], templarios: [], mago: [] },
   comboStreak: 0,
   comboT: 0,
   visited: {},
@@ -171,7 +171,7 @@ const GAME = {
     this.sealsBroken = {};
     this.progressionGranted = {};
     this.ending = null;
-    this.loreDiscovered = { clero: [], populum: [], mago: [] };
+    this.loreDiscovered = { clero: [], templarios: [], mago: [] };
     this.comboStreak = 0;
     this.comboT = 0;
     this.visited = {};
@@ -722,7 +722,7 @@ doTalk(npc) {
 
   classEventButton(npc, casta) {
     if (!npc.event) return '';
-    if (npc.event === 'war' && casta === 'populum') return '<button class="btn" id="dlgEvent">Treinar (Grátis)</button>';
+    if (npc.event === 'war' && casta === 'templarios') return '<button class="btn" id="dlgEvent">Treinar (Grátis)</button>';
     if (npc.event === 'saber' && casta === 'mago') return '<button class="btn" id="dlgEvent">Estudar (+Int)</button>';
     if (npc.event === 'lore') return '';
     return '';
@@ -760,7 +760,7 @@ doTalk(npc) {
   doClassEvent(npc) {
     const casta = this.player.sub.casta;
     const p = this.player;
-    if (npc.event === 'war' && casta === 'populum') {
+    if (npc.event === 'war' && casta === 'templarios') {
       p.str += 2;
       npc.eventDone = true;
       this.burst(p.x, p.y - 20, '#c0392b', 12, 200);
@@ -828,10 +828,10 @@ doTalk(npc) {
       html += `<div class="item"><div><b>Liturgia</b><div class="desc">Um trecho da palavra. Descobre parte da lore do Clero.</div></div><button class="btn" data-bact="liturgia">Ouvir</button></div>`;
       if (casta !== 'clero') html += `<div class="hint">O clero sente sua presença, mas nada cobra pela reza.</div>`;
     } else if (npc.kind === 'tavern') {
-      html = `<h2><span class="bldIcon">🍺</span> ${npc.name}</h2><div class="bldSub">Ponto do Povo — músculos e histórias</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html = `<h2><span class="bldIcon">🍺</span> ${npc.name}</h2><div class="bldSub">Guarnição do Templo — aço e histórias</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
       html += `<div class="item"><div><b>Cerveja & Caldo</b><div class="desc">Recupera toda a vida. (30 ●)</div></div><button class="btn" data-bact="drink">30</button></div>`;
       html += `<div class="item"><div><b>Histórias de Guerra</b><div class="desc">Revela segredos da fronteira.</div></div><button class="btn" data-bact="hist">Ouvir</button></div>`;
-      if (casta === 'populum') html += `<div class="item"><div><b>Treino Forjado</b><div class="desc">+5 de força permanente. (150 ●)</div></div><button class="btn" data-bact="train">150</button></div>`;
+      if (casta === 'templarios') html += `<div class="item"><div><b>Treino Forjado</b><div class="desc">+5 de força permanente. (150 ●)</div></div><button class="btn" data-bact="train">150</button></div>`;
       // Treino de Reflexos: aumenta velocidade de ataque/disparo (todas as castas).
       {
         const n = this.shopN.trainreflex || 0;
@@ -874,7 +874,7 @@ doTalk(npc) {
         this.banner('Bênção permanente: +15 de vida máxima', '#ffe9b0', 2.2);
       } else if (act === 'liturgia') {
         if (casta === 'clero') this.discoverLore('clero', this.loreDiscovered.clero.includes('chamado') ? 'promessa' : 'chamado');
-        else this.discoverLore(casta === 'mago' ? 'mago' : 'populum', casta === 'mago' ? 'veo' : 'fronteira');
+        else this.discoverLore(casta === 'mago' ? 'mago' : 'templarios', casta === 'mago' ? 'veo' : 'fronteira');
       } else if (act === 'proclaim' && !sub.ordained && sub.exorcistLevel === 0) {
         // Diácono: Proclamar Palavra
         // Verificar cooldown - não permitir proclamar novamente enquanto fatigue durar
@@ -932,8 +932,8 @@ doTalk(npc) {
         this.sfx.heal();
         this.banner('Cerveja e caldo quente! Vida cheia.', '#ffd27f', 2);
       } else if (act === 'hist') {
-        if (casta === 'populum') this.discoverLore('populum', this.loreDiscovered.populum.includes('fronteira') ? 'guarnicao' : 'fronteira');
-        else this.discoverLore('populum', 'fronteira');
+        if (casta === 'templarios') this.discoverLore('templarios', this.loreDiscovered.templarios.includes('fronteira') ? 'guarnicao' : 'fronteira');
+        else this.discoverLore('templarios', 'fronteira');
       } else if (act === 'train') {
         if (!ok(150)) { this.openBuilding(npc); return; }
         p.str += 5;
