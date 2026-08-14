@@ -21,7 +21,17 @@ export const interactions = {
       byId('skills').classList.remove('hidden');
     } else if (npc.kind === 'guide') {
       this.state = 'guide';
-      byId('guidePanel').innerHTML = `<h2>${npc.name}</h2><p>${npc.text}</p><button class="btn" id="closeGuide">Entendido</button>`;
+      // O Cronista revela o mundo aos poucos, conforme o Nível de Batalha.
+      // Cada fala nova acrescenta um fragmento; nada é repetido.
+      const hints = npc.hints || [];
+      const avail = hints.filter(h => h.need <= this.progressLevel).length;
+      const fresh = hints.slice(npc.hintsDone || 0, avail);
+      byId('guidePanel').innerHTML = `<h2>${npc.name}</h2><div class="dlgbody">${
+        fresh.length
+          ? fresh.map(h => `<p>«${h.text}»</p>`).join('')
+          : '<p>Nada de novo por ora. O mundo guarda segredos para quem batalha.</p>'
+      }</div><button class="btn" id="closeGuide">Entendido</button>`;
+      npc.hintsDone = avail;
       byId('guide').classList.remove('hidden');
       byId('closeGuide').onclick = () => this.closeOverlay();
     } else if (npc.kind === 'church' || npc.kind === 'tavern' || npc.kind === 'tower') {

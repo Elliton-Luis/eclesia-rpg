@@ -9,7 +9,7 @@ export const CASTAS = {
 export const SUBCLASSES = {
   padre: {
     id: 'padre', casta: 'clero', name: 'Padre', color: '#f2e2a8', accent: '#c9a227',
-    desc: 'Sacerdote: confessa, cura e enfrenta o maligno com orações de libertação.',
+    desc: 'Sacerdote: confessa, cura e enfrenta o maligno com orações.',
     hp: 120, speed: 240, str: 8, int: 18, jump: 780,
     ordained: true, exorcistLevel: 1,
     weapon: { name: 'Cajado do Pastor', base: 12, color: '#8a5a2b', kind: 'aura' },
@@ -26,7 +26,7 @@ export const SUBCLASSES = {
   },
   bispo: {
     id: 'bispo', casta: 'clero', name: 'Bispo', color: '#e8b0b0', accent: '#a23b3b',
-    desc: 'Plenitude do sacerdócio: exorcismo solene, autoridade e milagres.',
+    desc: 'Plenitude do sacerdócio: autoridade, exorcismo solene e milagres.',
     hp: 165, speed: 205, str: 12, int: 16, jump: 760,
     ordained: true, exorcistLevel: 2,
     weapon: { name: 'Báculo Episcopal', base: 17, color: '#7a3b3b', kind: 'aura' },
@@ -41,7 +41,7 @@ export const SUBCLASSES = {
   },
   diacono: {
     id: 'diacono', casta: 'clero', name: 'Diácono', color: '#c8e8e0', accent: '#2f8a8a',
-    desc: 'Servo: batiza, proclama, abençoa. Utilidade e caridade — não exorciza nem confessa.',
+    desc: 'Servo: batiza, proclama e abençoa. Não exorciza nem confessa.',
     hp: 105, speed: 275, str: 9, int: 18, jump: 800,
     ordained: false, exorcistLevel: 0,
     weapon: { name: 'Cajado da Devoção', base: 12, color: '#2f8a8a', kind: 'ranged' },

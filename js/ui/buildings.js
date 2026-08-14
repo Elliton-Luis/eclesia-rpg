@@ -10,18 +10,23 @@ export const buildings = {
     const gold = p.gold;
     let html = '';
     if (npc.kind === 'church') {
-      html = `<h2><span class="bldIcon">⛪</span> ${npc.name}</h2><div class="bldSub">Casa do Clero — lugar seguro</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      // O grau do templo é definido pelo ministro: só a sede de um Bispo
+      // administra Crisma e Ordenação — um Pároco (padre) não as realiza.
+      const bldSub = npc.rank === 'bispo' ? 'Sede episcopal — plenitude do sacerdócio'
+        : npc.rank === 'padre' ? 'Igreja da paróquia — a missa e as bênçãos'
+        : 'Capela — oração e bênçãos';
+      html = `<h2><span class="bldIcon">⛪</span> ${npc.name}</h2><div class="bldSub">${bldSub}</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
       // Ações específicas por grau
-      // Diácono: Proclamar Palavra (não cura/missa, mas bénção de estudo)
+      // Diácono: Proclamar Palavra (não cura/missa, mas bênção de estudo)
       if (!sub.ordained && sub.exorcistLevel === 0) {
-        html += `<div class="item"><div><b>Proclamar Palavra</b><div class="desc">Ler o Evangelho para a assembleia. +10 de inteligência temporário. (Grátis)</div></div><button class="btn" data-bact="proclaim">Proclamar</button></div>`;
+        html += `<div class="item"><div><b>Proclamar Palavra</b><div class="desc">Ler o Evangelho para a assembleia. +5 de inteligência. (Grátis)</div></div><button class="btn" data-bact="proclaim">Proclamar</button></div>`;
       }
-      // Padre: Missa (cura total + buff)
+      // Padre e Bispo: Missa (cura total + bênção temporária)
       if (sub.ordained && sub.exorcistLevel >= 1) {
-        html += `<div class="item"><div><b>Missa</b><div class="desc">Celebrar a Eucaristia. Cura total e +30 de vida máxima. (100 ●)</div></div><button class="btn" data-bact="mass">Missa</button></div>`;
+        html += `<div class="item"><div><b>Missa</b><div class="desc">Celebrar a Eucaristia. Vida plena e bênção de combate temporária. (Grátis)</div></div><button class="btn" data-bact="mass">Missa</button></div>`;
       }
-      // Bispo: Crisma e Ordenação
-      if (sub.exorcistLevel >= 2) {
+      // Crisma e Ordenação: exclusivas de um Bispo (jogador Bispo em sede episcopal)
+      if (sub.exorcistLevel >= 2 && npc.rank === 'bispo') {
         html += `<div class="item"><div><b>Crisma</b><div class="desc">Administrar Crisma/Confirmação. +40 de vida máxima e +2 inteligência permanentes. (200 ●)</div></div><button class="btn" data-bact="chrism">Crisma</button></div>`;
         html += `<div class="item"><div><b>Ordenar</b><div class="desc">Ordenar novo Diácono/Padre. Recompensa divina única. (300 ●)</div></div><button class="btn" data-bact="ordain">Ordenar</button></div>`;
       }
@@ -30,7 +35,7 @@ export const buildings = {
       // Leigos (Templários e fiéis não ordenados) recebem apenas bênçãos de sustento.
       const layOnly = casta !== 'clero';
       if (npc.teaches && npc.teaches.length) {
-        html += `<div class="item"><div><b>${layOnly ? '📿 BÊNÇÃOS DE SUSTENTO' : '📿 BÊNÇÃOS SAGRADAS'}</b><div class="desc">${npc.name} partilha um dom divino com quem busca a luz.${layOnly ? ' Aos leigos cabem as bênçãos de sustento, força e proteção — os dons sacramentais pertencem ao Clero ordenado.' : ''}</div>`;
+        html += `<div class="item"><div><b>${layOnly ? '📿 BÊNÇÃOS DE SUSTENTO' : '📿 BÊNÇÃOS SAGRADAS'}</b><div class="desc">${npc.name} partilha um dom divino com quem busca a luz.${layOnly ? ' Aos leigos as bênçãos de sustento; os dons sacramentais são do Clero.' : ''}</div>`;
         let shown = 0;
         for (const bid of npc.teaches) {
           const b = BLESSINGS[bid];
@@ -49,14 +54,13 @@ export const buildings = {
         }
         html += `</div></div>`;
       }
-      // Padre também pode fazer Missa se exorcistLevel == 1 (já coberto acima)
       // Todas as classes podem rezar (grátis)
       html += `<div class="item"><div><b>Rezar</b><div class="desc">Recupera toda a vida. (Grátis)</div></div><button class="btn" data-bact="pray">Rezar</button></div>`;
       html += `<div class="item"><div><b>Estudar Escrituras</b><div class="desc">+15 de vida máxima.<br>Custo crescente.</div></div><button class="btn" data-bact="bless">${100 + (this.shopN.igrejabless || 0) * 60}</button></div>`;
       html += `<div class="item"><div><b>Liturgia</b><div class="desc">Um trecho da palavra. Descobre parte da lore do Clero.</div></div><button class="btn" data-bact="liturgia">Ouvir</button></div>`;
       if (casta === 'clero') html += `<div class="hint">Vossa vocação vos autoriza aos dons sacramentais.</div>`;
-      else if (casta === 'templarios') html += `<div class="hint">Leigos do Templo: rezai e recebei as bênçãos de sustento, força e proteção. Não sois um padre com espada — mas a vossa fé move montanhas (Elias e Sansão que o digam).</div>`;
-      else html += `<div class="hint">A Igreja vos recebe com reserva, pagão. Apenas as bênçãos universais de sustento são concedidas a quem está de fora.</div>`;
+      else if (casta === 'templarios') html += `<div class="hint">Leigos do Templo: as bênçãos de sustento são vossas; os sacramentos, do Clero. Vossa fé é a vossa força.</div>`;
+      else html += `<div class="hint">Pagãos: tendes acesso apenas às bênçãos universais de sustento.</div>`;
     } else if (npc.kind === 'tavern') {
       html = `<h2><span class="bldIcon">🍺</span> ${npc.name}</h2><div class="bldSub">Guarnição do Templo — aço e histórias</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
       html += `<div class="item"><div><b>Cerveja & Caldo</b><div class="desc">Recupera toda a vida. (30 ●)</div></div><button class="btn" data-bact="drink">30</button></div>`;
@@ -128,27 +132,41 @@ export const buildings = {
         p.int += 5; // bônus menor, temporário
         p.status.fatigue = 20; // 20s de exaustão após proclamar
         this.burst(p.x, p.y - 20, '#bfe8ff', 8, 150);
-        this.text(p.x, p.y - 30, 'INT +5 TEMP.', '#bfe8ff', 14);
+        this.text(p.x, p.y - 30, 'INT +5', '#bfe8ff', 14);
         this.sfx.buff();
         this.banner('Palavra proclamada: ' + passagem, '#bfe8ff', 3);
         this.openBuilding(npc);
       } else if (act === 'mass' && sub.ordained && sub.exorcistLevel >= 1) {
-        // Padre: Missa
-        p.hp = p.maxHp + 30;
-        p.maxHp += 30;
-        this.blessingFx(p, '#ffe66d', 16);
+        // Missa: celebração solene — vida plena, bênção temporária de combate
+        // e uma frase litúrgica breve para marcar a participação na Eucaristia.
+        const frases = [
+          'Por Cristo, com Cristo e em Cristo...',
+          'O Senhor está no meio de nós.',
+          'Tomai e comei: isto é o meu Corpo, entregue por vós.',
+          'Bendito o que vem em nome do Senhor.'
+        ];
+        const frase = frases[Math.floor(Math.random() * frases.length)];
+        p.hp = p.maxHp;
+        p.status.venom = 0; p.status.venomCd = 0;
+        p.status.dmg = Math.max(p.status.dmg || 0, 0.15);
+        p.status.spd = Math.max(p.status.spd || 0, 0.15);
+        p.status.regen = Math.max(p.status.regen || 0, 0.02);
+        p.status.dur = Math.max(p.status.dur || 0, 45);
+        this.blessingFx(p, '#ffe66d', 20);
+        this.ring(p.x, p.y, 110, 0.8, '#ffe66d', 6);
         this.sfx.heal();
-        this.banner('Missa celebrada: vida +30 (permanente)', '#ffe66d', 3);
-        this.openBuilding(npc);
-      } else if (act === 'chrism' && sub.exorcistLevel >= 2) {
-        // Bispo: Crisma
+        this.showDialog('⛪ Missa', `"${frase}"<div class="confessTag">Vida plena · dano e velocidade +15% · regeneração por 45s</div>`, '<button class="btn" id="dlgOkMass">Amém</button>');
+        byId('dlgOkMass').onclick = () => this.closeOverlay();
+        return;
+      } else if (act === 'chrism' && sub.exorcistLevel >= 2 && npc.rank === 'bispo') {
+        // Bispo: Crisma (exclusivo de sedes episcopais)
         p.maxHp += 40; p.int += 2;
         this.sparkleFx(p, '#7a6bd8', 16);
         this.sfx.upgrade();
         this.banner('Crisma administrado: vida +40, inteligência +2 (permanentes)', '#7a6bd8', 3);
         this.openBuilding(npc);
-      } else if (act === 'ordain' && sub.exorcistLevel >= 2) {
-        // Bispo: Ordenar (premiação única)
+      } else if (act === 'ordain' && sub.exorcistLevel >= 2 && npc.rank === 'bispo') {
+        // Bispo: Ordenar (premiação única) — exclusivo de sedes episcopais
         this.banner('Um novo ministro ungido surge em Eclésia.', '#c0392b', 3);
         this.sfx.buy();
         this.stats.powerups++;

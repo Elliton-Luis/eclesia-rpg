@@ -17,7 +17,6 @@ export const menu = {
         div.innerHTML = `
           <div class="cswatch" style="--c:${s.color}"></div>
           <div class="ct">${casta.name.toUpperCase()}</div>
-          <div class="crel">${casta.relation}</div>
           <div class="cn">${s.name}</div>
           <div class="cd">${s.desc}</div>
           <div class="csk">Vida ${s.hp} · Vel ${s.speed}<br>Força ${s.str} · Int ${s.int}<br><b>${sk}</b></div>`;

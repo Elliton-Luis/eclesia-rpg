@@ -388,7 +388,7 @@ html, body {
 
 .card .ct { font-weight: 800; font-size: 12px; letter-spacing: 2px; color: var(--c); }
 .card .cn { font-size: 18px; font-weight: 800; margin: 2px 0; }
-.card .cd { font-size: 12px; opacity: 0.75; line-height: 1.4; }
+.card .cd { font-size: 12px; opacity: 0.75; line-height: 1.4; min-height: 34px; }
 .card .csk { font-size: 11px; opacity: 0.85; margin-top: 8px; line-height: 1.5; }
 
 .help {
