@@ -173,6 +173,7 @@ const GAME = {
     this.texts = [];
     this.pickups = [];
     this.rings = [];
+    this.churchRing = false;
     this.delayed = [];
     this.shopN = {};
     this.boss = null;
@@ -357,37 +358,28 @@ churchAura() {
     const gx = Math.floor(p.x / TILE);
     const gy = Math.floor(p.y / TILE);
     // Aura da Igreja Central: barreira fixa ao redor da cidade
-    // A barreira é um círculo estático ao redor do centro da cidade (gx 118, gy 120)
     // O jogador pode entrar e sair livremente; monstros que entrarem são purificados
     // Raio de 20 tiles (640px) - área de proteção da igreja
-    // A barreira está ativa sempre que o jogador está na zona da cidade
     const inCity = gx >= 90 && gx <= 160 && gy >= 80 && gy <= 160;
+    // Círculo estático único (desenhado no render) marcando o domínio da igreja.
+    // Antes era criado um anel animado por frame, gerando dezenas de círculos
+    // sobrepostos e travando o jogo. O funcionamento (proteção) é o mesmo.
+    this.churchRing = inCity;
     if (inCity) {
       const cx = CITY_CENTER_GX * TILE;  // posição FIXA do centro da cidade (3776 pixels)
       const cy = CITY_CENTER_GY * TILE;
-      // Efeito visual: único círculo marcando o domínio da igreja no chão
-      // Apenas um círculo externo mostrando o alcance da barreira
-      this.ring(cx, cy, 640, 0.15, '#ffff00', 1);  // Círculo externo 20 tiles - amarelo claro
-      // Monstros que ENTRARAM na área da barreira (30 tiles raio) morrem silenciosamente
-      // A barreira é fixa ao redor da cidade - jogadores podem entrar e sair livremente
-      // Monstros são afetados quando tocam na barreira ao entrar na área da cidade
-this.monsters.forEach(m => {
-        const dx = m.x - cx;
-        const dy = m.y - cy;
-        const d = Math.hypot(dx, dy);
-        // Se monstro estiver dentro do raio da barreira (20 tiles = 640px) e não estiver morto
-        if (d <= 640 && !m.dead) {
-          // Monstros dentro da área da barreira são purificados (matam sem drop)
+      // Monstros dentro da barreira (20 tiles = 640px) morrem silenciosamente, sem drop
+      for (const m of this.monsters) {
+        if (m.dead) continue;
+        const d = Math.hypot(m.x - cx, m.y - cy);
+        if (d <= 640) {
           m.hp = 0;
           m.dying = true;
           m.dieT = 0.1;
           m.dead = true;
-          // Morte pela barreira da igreja - silenciosa, sem drop
           this.stats.churchProtected += 1;
         }
-      });
-// Verificar se há monstros vivos próximos da barreira para remover mortos
-      this.monsters = this.monsters.filter(m => !m.dead);
+      }
       this.monsters = this.monsters.filter(m => !m.dead);
     }
   },

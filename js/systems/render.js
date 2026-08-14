@@ -1,3 +1,5 @@
+import { TILE } from '../data/constants.js';
+
 export const render = {
   render() {
     const ctx = this.ctx;
@@ -47,6 +49,45 @@ export const render = {
     ctx.save();
     ctx.translate(-Math.round(this.cam.x), -Math.round(this.cam.y));
     this.world.draw(ctx, this.cam, t);
+
+    // Aura da Igreja Central: círculo estático único ao redor da cidade,
+    // desenhado uma vez por frame (sem os anéis animados que travavam o jogo).
+    if (this.churchRing) {
+      const cx = 118 * TILE, cy = 120 * TILE;
+      ctx.fillStyle = 'rgba(255,255,0,0.05)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 640, 0, 6.283);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,0,0.45)';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 640, 0, 6.283);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(255,255,0,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 660, 0, 6.283);
+      ctx.stroke();
+
+      // Cruz central da igreja — o motivo da proteção, ao lado do Bispo Cedric (119,119)
+      const bx = 120 * TILE, by = 120 * TILE;
+      const glow = ctx.createRadialGradient(bx, by, 4, bx, by, 48);
+      glow.addColorStop(0, 'rgba(255,230,120,0.35)');
+      glow.addColorStop(1, 'rgba(255,230,120,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(bx, by, 48, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,236,160,0.92)';
+      ctx.strokeStyle = 'rgba(120,90,20,0.6)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(bx - 4, by - 26, 8, 52);
+      ctx.strokeRect(bx - 4, by - 26, 8, 52);
+      ctx.fillRect(bx - 18, by - 12, 36, 8);
+      ctx.strokeRect(bx - 18, by - 12, 36, 8);
+    }
 
     const inCave = this.indoorNames[this.zoneTitle];
     if (inCave) {
