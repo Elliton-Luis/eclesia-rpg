@@ -19,6 +19,7 @@ export class Projectile {
     this.trail = !!o.trail;
     this.explode = !!o.explode;
     this.solid = o.solid !== false;
+    this.bounce = o.bounce === true;
     this.clearTree = !!o.clearTree;
     this.gravity = o.gravity || 0;
     this.groundExplode = !!o.groundExplode;
@@ -30,7 +31,9 @@ export class Projectile {
   update(dt, g) {
     this.t += dt;
     this.life -= dt;
-    
+
+    const priorX = this.x, priorY = this.y;
+
     if (this.gravity) {
       this.vy += this.gravity * dt;
     }
@@ -53,6 +56,20 @@ export class Projectile {
     }
 
     if (this.solid && g.world.solidPixel(this.x, this.y)) {
+      if (this.bounce) {
+        // Ricochete: detecta em qual(is) eixo(s) a parede foi cruzada e inverte
+        // apenas esse(s) componente(s). Volta um passo para não ficar preso.
+        const vert = g.world.solidPixel(priorX, this.y);   // colisão vinda do eixo Y
+        const horiz = g.world.solidPixel(this.x, priorY);  // colisão vinda do eixo X
+        if (vert) this.vy = -this.vy;
+        if (horiz) this.vx = -this.vx;
+        if (!vert && !horiz) this.vx = -this.vx;
+        this.x = priorX;
+        this.y = priorY;
+        g.burst(this.x, this.y, '#ffb0b0', 6, 150, 2.5, 400);
+        g.ring(this.x, this.y, 14, 0.25, this.color, 3);
+        return;
+      }
       this.dead = true;
       if (this.aoe || this.explode) g.explode(this.x, this.y, this);
       return;
@@ -81,7 +98,9 @@ export class Projectile {
         g.damagePlayer(this.dmg);
         this.hit.add(p);
         if (this.aoe) { g.explode(this.x, this.y, this); this.dead = true; return; }
-        if (!this.pierce) this.dead = true;
+        // Projéteis ricocheteantes (Demônio) atravessam o jogador e seguem
+        // ricocheteando pela arena até expirarem, podendo atingi-lo de novo.
+        if (!this.bounce && !this.pierce) this.dead = true;
       }
     }
 

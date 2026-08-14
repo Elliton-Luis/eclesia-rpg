@@ -59,13 +59,48 @@ export const enemyCombat = {
     const a = Math.atan2(uy, ux) + off;
     const vx = Math.cos(a) * speed, vy = Math.sin(a) * speed;
     const dmg = Math.round(m.def.dmg * (big ? 1.2 : 0.8));
+    const color = opts.color || (opts.bone ? '#d9d0c0' : big ? '#7a5a4b' : '#c76bd8');
     this.projectiles.push(new Projectile({
       x: m.x + Math.cos(a) * 14, y: m.y + Math.sin(a) * 14,
       vx, vy,
-      dmg, type: T.MAGIC, color: opts.bone ? '#d9d0c0' : big ? '#7a5a4b' : '#c76bd8',
-      size: opts.bone ? 7 : big ? 12 : 8, life: 3, pierce: false, owner: 'enemy',
-      aoe: big ? 36 : opts.bone ? 0 : 0, trail: big || opts.bone
+      dmg, type: T.MAGIC, color,
+      size: opts.bone ? 7 : big ? 12 : 8,
+      life: opts.life || 3,
+      bounce: opts.bounce === true,
+      pierce: false, owner: 'enemy',
+      aoe: big ? 36 : opts.bone ? 0 : 0, trail: big || opts.bone || opts.bounce === true
     }));
+  },
+
+  // Arcano — "divisão": escolhe pontos próximo ao jogador (raio mínimo garante
+  // que nenhuma aparição nasça exatamente sobre ele), marca cada um com um
+  // anel de aviso e, após o telegraph, materializa os espectros agressivos.
+  arcaneSplit(m, count) {
+    const p = this.player;
+    const def = MONSTERS['espectro_arcano'];
+    if (!def) return;
+    const spots = [];
+    for (let i = 0; i < count && spots.length < count; i++) {
+      for (let tries = 0; tries < 12; tries++) {
+        const a = Math.random() * 6.283;
+        const r = 90 + Math.random() * 60;
+        const tx = p.x + Math.cos(a) * r;
+        const ty = p.y + Math.sin(a) * r;
+        const probe = new Monster(def, tx, ty, this);
+        if (!this.world.solidBox(probe.box())) { spots.push({ x: tx, y: ty }); break; }
+      }
+    }
+    for (const s of spots) this.ring(s.x, s.y, 26, 0.7, '#a08ad8', 3);
+    this.burst(m.x, m.y, '#c0b4ff', 10, 170);
+    this.delayed.push({ t: 0.7, fn: () => {
+      for (const s of spots) {
+        const mm = new Monster(def, s.x, s.y, this);
+        mm.aggro = 1;
+        this.monsters.push(mm);
+      }
+      this.ring(m.x, m.y, 120, 0.5, '#a08ad8', 4);
+      this.sfx.boss();
+    } });
   },
 
   explode(x, y, proj) {

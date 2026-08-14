@@ -135,8 +135,41 @@ export const bosses = {
 
   krolPattern(m, dt, dx, dy, d2) {
     m.bossCd -= dt;
+    m.dashCd = (m.dashCd == null) ? 10 : m.dashCd - dt;
     const p = this.player;
     const d = m.def;
+
+    // DASH PREDITIVO (a cada 10s): o Krol grava a posição exata do jogador,
+    // prepara por ~1s e dispara até lá — sem rastreá-lo. Se o jogador sair do
+    // lugar durante a preparação, o dash segue para o ponto registrado.
+    if (m.dashCd <= 0 && m.bossCd <= 0) {
+      m.dashCd = 10;
+      m.bossCd = 2.8;
+      m.vx = 0; m.vy = 0;
+      const tx = p.x, ty = p.y;
+      this.banner('KROL MARCA SEU ALVO!', '#ff8a5c', 1);
+      this.ring(tx, ty, 26, 0.9, '#ff5c5c', 3);   // onde o jogador ESTAVA
+      this.ring(m.x, m.y, 70, 0.9, '#a14b3c', 4); // preparo no próprio Krol
+      this.delayed.push({ t: 1.0, fn: () => {
+        const dist = Math.hypot(tx - m.x, ty - m.y) || 1;
+        const flight = Math.max(0.22, Math.min(0.5, dist / 1000));
+        const a = Math.atan2(ty - m.y, tx - m.x);
+        m.vx = Math.cos(a) * 850;
+        m.vy = Math.sin(a) * 850;
+        this.ring(m.x, m.y, 120, 0.5, '#ff8a5c', 4);
+        // Frenagem ao chegar ao ponto: não vira perseguição.
+        this.delayed.push({ t: flight, fn: () => {
+          m.vx = 0; m.vy = 0;
+          this.burst(m.x, m.y, '#a14b3c', 16, 240);
+          this.ring(m.x, m.y, 60, 0.4, '#ff5c5c', 4);
+          this.shake += 6;
+          this.sfx.explosion();
+          if (Math.hypot(p.x - m.x, p.y - m.y) < 62 + p.w / 2) this.damagePlayer(Math.round(d.dmg * 0.9));
+        } });
+      } });
+      return 1.0;
+    }
+
     if (m.bossCd > 0) return 0;
     m.bossCd = 0;
     // fase 2 (HP < 55%) adiciona investida
@@ -179,18 +212,20 @@ export const bosses = {
     m.bossCd = 0;
     const phase2 = m.hp < m.maxHp * 0.5;
     const r = Math.random();
-    if (r < 0.4) {
+    // Rajada mais agressiva: mais frequente (cd menor) e dispara mesmo quando o
+    // jogador tenta se manter longe — ficar só na distância deixou de ser seguro.
+    if (r < 0.4 || (d2 > 380 && r < 0.8)) {
       // rajada de ossos
-      m.bossCd = 2.2;
+      m.bossCd = 1.7;
       this.banner('RAJADA DE OSSOS!', '#d9d0c0', 1.2);
       const a = Math.atan2(dy, dx);
       this.ring(m.x, m.y, 90, 0.6, '#d9d0c0', 3);
       const base = Math.atan2(dy, dx);
-      const nsh = phase2 ? 9 : 6;
+      const nsh = phase2 ? 9 : 7;
       for (let i = 0; i < nsh; i++) {
-        const off = (i - (nsh - 1) / 2) * 0.18;
-        const ang = base + off + (Math.random() - 0.5) * 0.12;
-        this.delayed.push({ t: 0.3 + i * 0.04, fn: () => this.shootEnemy(m, Math.cos(ang) * 100, Math.sin(ang) * 100, { speed: 330, bone: true }) });
+        const off = (i - (nsh - 1) / 2) * 0.16;
+        const ang = base + off + (Math.random() - 0.5) * 0.1;
+        this.delayed.push({ t: 0.3 + i * 0.035, fn: () => this.shootEnemy(m, Math.cos(ang) * 100, Math.sin(ang) * 100, { speed: 400, bone: true }) });
       }
       return 0.5;
     } else if (r < 0.7) {
@@ -276,7 +311,7 @@ export const bosses = {
     m.bossCd = 0;
     const phase2 = m.hp < m.maxHp * 0.5;
     const r = Math.random();
-    if (r < 0.3) {
+    if (r < 0.2) {
       // Infernal Breath: cone of fire
       m.bossCd = 2.5;
       this.banner('SOPRO INFERNAL!', '#ff6b6b', 1.2);
@@ -286,7 +321,45 @@ export const bosses = {
         this.shootEnemy(m, Math.cos(ang) * 80, Math.sin(ang) * 80, { speed: 350, big: true, fromBoss: true });
       }
       return 0.5;
-    } else if (r < 0.6 && phase2) {
+    } else if (r < 0.38) {
+      // RAIO DIRECIONADO: captura a posição atual do jogador, prepara e dispara
+      // uma linha contínua do Demônio até a parede nessa direção fixa. Depois de
+      // capturada, o raio não segue o jogador — saia do caminho na preparação.
+      m.bossCd = 3;
+      m.vx = 0; m.vy = 0;
+      const sx = p.x, sy = p.y;
+      this.banner('RAIO DA CONDENAÇÃO!', '#ff5c5c', 1);
+      this.ring(m.x, m.y, 60, 0.7, '#ff5c5c', 4);
+      this.ring(sx, sy, 20, 0.7, '#ff9d5c', 2);   // marca onde o jogador estava
+      this.delayed.push({ t: 0.7, fn: () => {
+        const a = Math.atan2(sy - m.y, sx - m.x);
+        const ux = Math.cos(a), uy = Math.sin(a);
+        const len = this.beamToWall(m.x, m.y, ux, uy, 900);
+        this.beamEffect(m.x, m.y, ux, uy, len, '#ff5c5c');
+        const relX = p.x - m.x, relY = p.y - m.y;
+        const proj = relX * ux + relY * uy;
+        if (proj > 0 && proj < len) {
+          const perp = Math.abs(relX * uy - relY * ux);
+          if (perp < 28) this.damagePlayer(Math.round(m.def.dmg * 0.9));
+        }
+      } });
+      return 0.6;
+    } else if (r < 0.62) {
+      // ESFERA CONDENADA: um projétil que ricocheteia nas paredes da arena por
+      // 10s, transformando o espaço em ameaça. Ele não some ao tocar a parede.
+      m.bossCd = 3;
+      m.vx = 0; m.vy = 0;
+      this.banner('ESFERA CONDENADA!', '#ff9d5c', 1);
+      this.ring(m.x, m.y, 70, 0.6, '#ff9d5c', 4);
+      this.delayed.push({ t: 0.6, fn: () => {
+        const a = Math.atan2(dy, dx);
+        this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, {
+          speed: 340, life: 10, bounce: true, color: '#ff6b6b'
+        });
+        this.ring(m.x, m.y, 90, 0.4, '#ff5c5c', 4);
+      } });
+      return 0.6;
+    } else if (r < 0.82 && phase2) {
       // Summon Demoninhos
       m.bossCd = 3.5;
       this.banner('FILHOS DO CAOS!', '#ff5c5c', 1.5);
@@ -307,6 +380,17 @@ export const bosses = {
       this.delayed.push({ t: 0.6, fn: () => this.bossSlam(m) });
       return 0.7;
     }
+  },
+
+  // Comprimento do feixe do Demônio até a primeira parede na direção dada.
+  beamToWall(x, y, ux, uy, maxLen) {
+    const step = 10;
+    let len = step;
+    while (len <= maxLen) {
+      if (this.world.solidPixel(x + ux * len, y + uy * len)) return len;
+      len += step;
+    }
+    return maxLen;
   },
 
   generalPattern(m, dt, dx, dy, d2) {
@@ -360,7 +444,21 @@ export const bosses = {
     const phase2 = m.hp < m.maxHp * 0.4;
     const phase3 = m.hp < m.maxHp * 0.2;
     const r = Math.random();
-    if (r < 0.3) {
+    if (r < 0.22) {
+      // EXPLOSÃO RADIAL: 8 projéteis a 45°, todos partindo do centro do Arcano.
+      // Há espaço entre eles — o jogador precisa se posicionar nos intervalos.
+      m.bossCd = 2.6;
+      this.banner('EXPLOSÃO ARCANO!', '#ff9d5c', 1.2);
+      this.ring(m.x, m.y, 64, 0.7, '#a08ad8', 4);
+      this.delayed.push({ t: 0.7, fn: () => {
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * 6.283 + 0.3927; // 45° com leve giro
+          this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 380, big: true, fromBoss: true });
+        }
+        this.ring(m.x, m.y, 100, 0.5, '#ff9d5c', 5);
+      } });
+      return 0.5;
+    } else if (r < 0.42) {
       // Chaos Burst: radial projectiles
       m.bossCd = 2;
       this.banner('CAOS ARCANO!', '#a08ad8', 1);
@@ -370,7 +468,14 @@ export const bosses = {
       }
       this.ring(m.x, m.y, 120, 0.6, '#a08ad8', 4);
       return 0.4;
-    } else if (r < 0.6) {
+    } else if (r < 0.62) {
+      // DIVISÃO: o Arcano materializa aparições próximas ao jogador — nunca
+      // exatamente sobre ele — com anel de aviso antes de nascerem.
+      m.bossCd = 2.6;
+      this.banner('O ARCANO SE DIVIDE!', '#a08ad8', 1.2);
+      this.arcaneSplit(m, phase2 ? 3 : 2);
+      return 0.5;
+    } else if (r < 0.8) {
       // Teleport + Devour (pull)
       m.bossCd = 2.5;
       this.banner('DEVORAR!', '#8e44ad', 1.2);
