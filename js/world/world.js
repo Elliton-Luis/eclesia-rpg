@@ -1,44 +1,11 @@
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
+import { TILE, CHUNK, WORLD_W, WORLD_H } from '../data/constants.js';
+import { REGIONS } from '../data/regions.js';
+import { MONSTERS, BOSS_LEVEL_REQ } from '../data/monsters.js';
+import { Monster } from '../entities/monster.js';
+import { mulberry32, hash2, weightedPick } from './noise.js';
+import { SOLIDS, SHRINK, SHRINK_INSET, WALK_SPAWN, WILD_MONSTERS } from './tiles.js';
 
-// Sólidos: blocos que impedem passagem
-const SOLIDS = new Set(['t', 'r', 'w', 'h', 'v', 'q', 'l', 'k', 'o', 'T']);
-
-// Sólidos com hitbox reduzida (árvores e rochas do cenário): o jogador pode
-// aproximar-se visualmente antes de colidir, dando margem para "espremer" entre elas.
-const SHRINK = new Set(['t', 'r']);
-const SHRINK_INSET = 9; // px de margem interna em cada lado do tile
-
-// Chars sobre os quais pode nascer spawn (permitem andar)
-const WALK_SPAWN = new Set(['g', 'p', 'y', 'c', 'f', 'z', 'b', 'x', 's', 'd']);
-
-const WILD_MONSTERS = [['slime', 3], ['rato', 2], ['wolf', 1], ['bat', 1]];
-
-const hash2 = (a, b) => {
-  let v = (a * 928371 + b * 123457 + WORLD_SEED * 7919) >>> 0;
-  v ^= v >>> 13;
-  v = (v * 1274126177) | 0;
-  return v ^ (v >>> 16);
-};
-
-function weightedPick(tbl, h) {
-  let sum = 0;
-  for (const e of tbl) sum += e[1];
-  let r = (h >>> 0) % sum;
-  for (const e of tbl) {
-    if (r < e[1]) return e[0];
-    r -= e[1];
-  }
-  return tbl[0][0];
-}
-
-class World {
+export class World {
   constructor() {
     this.cols = WORLD_W;
     this.rows = WORLD_H;

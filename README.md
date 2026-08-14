@@ -49,7 +49,7 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 ## Estrutura de dados
 
 ### Subclasses
-Definidas em `js/data.js` (`SUBCLASSES`). Cada uma contém:
+Definidas em `js/data/classes.js` (`SUBCLASSES`). Cada uma contém:
 - `casta` (clero/templarios/mago), `hp`, `speed`, `str`, `int`, `jump`
 - `weapon`: nome, dano base, cor, tipo (`melee`/`ranged`/`aura`)
 - `attack`: tipo, multiplicador, alcance/cadência, cor, propriedades extras (pierce, combo, etc.)
@@ -57,7 +57,7 @@ Definidas em `js/data.js` (`SUBCLASSES`). Cada uma contém:
 - `skills`: 2 habilidades com tecla, cooldown, descrição e efeitos
 
 ### Monstros
-Definidos em `js/data.js` (`MONSTERS`). Cada um tem:
+Definidos em `js/data/monsters.js` (`MONSTERS`). Cada um tem:
 - `hp`, `dmg`, `speed`, `behavior` (`hop`, `swoop`, `chase`, `range`, `slowChase`, `wraith`, `boss`)
 - `resist` / `weak`: arrays de tipos de dano
 - `gold`: range de recompensa
@@ -116,13 +116,17 @@ Acesse a versão publicada: https://eclesia-rpg.vercel.app (ou a URL do seu depl
 ```bash
 git clone https://github.com/seu-usuario/my_rpg.git
 cd my_rpg
-# Sirva os arquivos estáticos (qualquer servidor HTTP)
+# Sirva os arquivos estáticos (qualquer servidor HTTP).
+# IMPORTANTE: o código usa ES Modules (`js/main.js`) — abrir o `index.html`
+# diretamente via `file://` não funciona; é preciso servir por HTTP.
 npx serve .
 # ou
 python3 -m http.server 8000
 # depois abra http://localhost:3000 (serve) ou http://localhost:8000 (python)
 ```
 Não há dependências, build ou instalação — apenas arquivos estáticos.
+
+O código é organizado em ES Modules: `js/main.js` (bootstrap), `js/dom.js`, `js/game.js` (núcleo do `GAME` + composição dos mixins), `js/data/` (constantes, classes, skills, bênçãos, monstros, regiões, NPCs, lore, loja), `js/world/` (noise, tiles, mundo), `js/entities/` (jogador, monstros, projéteis, efeitos), `js/systems/` (combate, bosses, progressão, render, áudio, cheats, ...), `js/ui/` (menu, HUD, diálogos, lojas, edifícios, recordes).
 
 ## Deploy
 
