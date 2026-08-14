@@ -105,6 +105,8 @@ const GAME = {
     window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyJ' || e.code === 'KeyX') this.attackHeld = false; if (e.code === 'KeyP' || e.code === 'KeyM') {} });
     this.canvas.addEventListener('mousemove', e => this.mousemove(e));
     this.canvas.addEventListener('mousedown', e => this.mousedown(e));
+    // Rodinha do mouse: percorre a hotbar ciclicamente (estilo Minecraft).
+    this.canvas.addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? -1 : 1); } });
 
     byId('btnRespawn').onclick = () => this.respawn();
     byId('btnRecords').onclick = () => this.showRecords();
@@ -173,6 +175,7 @@ const GAME = {
     this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
     this.newRecords = [];
     this.zoneId = '';
+    this.hotSel = 0;
     this.npcs = this.npcs.filter(n => n.id !== 'papa');
     this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; });
     // Aparição rara do Papa: 10% de chance por partida.
@@ -227,7 +230,7 @@ const GAME = {
     p.update(dt, this);
     this.contactHit(dt);
 
-    if (this.attackHeld && p.mw && p.mw.kind === 'auto' && p.attackCd <= 0) this.doAttack();
+    if (this.attackHeld && this.hotKind() === 'attack' && p.mw && p.mw.kind === 'auto' && p.attackCd <= 0) this.doAttack();
 
     if (this.cheats.gold) p.gold = Math.max(p.gold, 999999);
     if (this.cheats.hp) p.hp = p.maxHp;
@@ -437,18 +440,20 @@ this.monsters.forEach(m => {
       return; // ignore qualquer outra tecla de jogo durante overlays
     }
 
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyQ', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyF', 'KeyP', 'KeyX', 'KeyG', 'KeyU', 'KeyB', 'KeyV', 'KeyN', 'KeyH'].includes(e.code)) e.preventDefault();
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyF', 'KeyP', 'KeyX', 'KeyM', 'KeyH', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'].includes(e.code)) e.preventDefault();
     this.keys[e.code] = true;
     this.sfx.unlock();
 
     if (this.state === 'play') {
-      if (e.code === 'KeyJ' || e.code === 'KeyX') { this.attackHeld = true; this.doAttack(); }
+      if (e.code === 'KeyJ' || e.code === 'KeyX') { this.attackHeld = true; this.useHot(); }
       if (e.code === 'KeyF') this.tryInteract();
       if (e.code === 'KeyP') this.pause(true);
       if (e.code === 'KeyM') this.toggleMute();
       if (e.code === 'KeyH') this.useSupreme();
-      const sk = this.player.allSkills();
-      sk.forEach((s, i) => { if (e.code === 'Key' + s.key) this.castSkill(i); });
+      if (e.code.indexOf('Digit') === 0) {
+        const n = parseInt(e.code.slice(5), 10);
+        if (n >= 1 && n <= this.HOTBAR_SLOTS) this.selectHotByNumber(n);
+      }
     } else if (this.state === 'paused') {
       if (e.code === 'KeyP' || e.code === 'Escape') this.pause(false);
     } else if (this.state === 'death') {
@@ -480,7 +485,7 @@ this.monsters.forEach(m => {
     this.aim.y = this.mouse.y + this.cam.y;
     this.sfx.unlock();
     this.attackHeld = true;
-    if (this.state === 'play') this.doAttack();
+    if (this.state === 'play') this.useHot();
   },
 
   pause(v) {
