@@ -629,6 +629,17 @@ export class World {
     }
   }
 
+  // Converte hex para RGB
+  hexToRgb(hex) {
+    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [90, 143, 74];
+  }
+
+  // Converte RGB para hex
+  rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  }
+
   // Cor de chão por bioma — usada no piso e como fundo dos elementos do cenário
   // (árvores, pedras, lápides), para que se integrem ao terreno do entorno.
   // Cada bioma tem identidade própria: pântano é roxo-sombrio, ruínas/templo são
@@ -647,6 +658,48 @@ export class World {
       case 'catacumbas': case 'gruta': case 'cova': case 'torre': return '#343a44';
       default: return '#5a8f4a';
     }
+  }
+
+  // Cor de chão com blending suave entre biomas (transição de 3 tiles)
+  // Verifica vizinhos num raio de 3 tiles e interpola as cores baseado na distância
+  blendedGroundColor(tx, ty) {
+    const centerRegion = this.regionGrid[ty * WORLD_W + tx];
+    const centerColor = this.hexToRgb(this.groundColor(centerRegion));
+    
+    let r = centerColor[0], g = centerColor[1], b = centerColor[2];
+    let totalWeight = 1;
+    
+    // Raio de blending: 3 tiles (usa 3.5 para garantir peso no tile 3)
+    const blendRadius = 3.5;
+    
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        
+        const nx = tx + dx;
+        const ny = ty + dy;
+        
+        if (nx < 0 || nx >= WORLD_W || ny < 0 || ny >= WORLD_H) continue;
+        
+        const neighborRegion = this.regionGrid[ny * WORLD_W + nx];
+        if (neighborRegion === centerRegion || neighborRegion === '') continue;
+        
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > blendRadius) continue;
+        
+        // Peso inversamente proporcional à distância - garante transição suave de 3 tiles
+        // No tile adjacente (dist=1): peso ~0.36, no tile 2: ~0.21, no tile 3: ~0.07
+        const weight = Math.max(0, (blendRadius - dist) / blendRadius) * 0.5;
+        
+        const neighborColor = this.hexToRgb(this.groundColor(neighborRegion));
+        r += neighborColor[0] * weight;
+        g += neighborColor[1] * weight;
+        b += neighborColor[2] * weight;
+        totalWeight += weight;
+      }
+    }
+    
+    return this.rgbToHex(r / totalWeight, g / totalWeight, b / totalWeight);
   }
 
   // Paleta de árvores por bioma: copas com contraste claro contra o chão do
@@ -668,6 +721,38 @@ export class World {
         return { trunk: '#5a4024', leaf: '#8a7a46', leaf2: '#9c8c54', leaf3: '#6c6138', sil: '#3b341f', cones: true };
       default:
         return { trunk: '#6b4a2a', leaf: '#337c3c', leaf2: '#42914a', leaf3: '#245c2c', sil: '#17331b', cones: false };
+    }
+  }
+
+  // Paleta de trilhas por bioma: cores derivadas do chão do bioma para transição suave
+  pathPalette(region) {
+    const base = this.hexToRgb(this.groundColor(region));
+    const r = base[0], g = base[1], b = base[2];
+    // Escurece e marromiza a cor base para criar a trilha
+    const darken = (dr, dg, db, a) => `rgba(${Math.max(0, r + dr)}, ${Math.max(0, g + dg)}, ${Math.max(0, b + db)}, ${a})`;
+    const hex = (dr, dg, db) => this.rgbToHex(Math.max(0, r + dr), Math.max(0, g + dg), Math.max(0, b + db));
+    
+    switch (region) {
+      case 'pantano':
+        return { halo: darken(-10, -20, 10, 0.25), mid: darken(-20, -30, 0, 0.5), core: hex(-30, -40, -10), pebble: hex(-40, -50, -20) };
+      case 'cemiterio':
+        return { halo: darken(-15, -10, -15, 0.25), mid: darken(-25, -20, -25, 0.5), core: hex(-35, -30, -35), pebble: hex(-45, -40, -45) };
+      case 'colinas':
+        return { halo: darken(-10, -10, -15, 0.25), mid: darken(-20, -20, -25, 0.5), core: hex(-30, -30, -35), pebble: hex(-40, -40, -45) };
+      case 'ruinas':
+      case 'templo':
+        return { halo: darken(-10, -20, -15, 0.25), mid: darken(-20, -30, -25, 0.5), core: hex(-30, -40, -35), pebble: hex(-40, -50, -45) };
+      case 'forte':
+        return { halo: darken(-10, -10, -10, 0.25), mid: darken(-20, -20, -20, 0.5), core: hex(-30, -30, -30), pebble: hex(-40, -40, -40) };
+      case 'floresta':
+      case 'lobos':
+      case 'sagrado':
+        return { halo: darken(-15, -5, -15, 0.28), mid: darken(-25, -10, -25, 0.55), core: hex(-35, -15, -35), pebble: hex(-45, -20, -45) };
+      case 'campos':
+        return { halo: darken(-10, -15, -20, 0.28), mid: darken(-20, -25, -30, 0.55), core: hex(-30, -35, -40), pebble: hex(-40, -45, -50) };
+      default:
+        // prado, norte, varzea, vila, etc.
+        return { halo: darken(-10, -10, -10, 0.30), mid: darken(-20, -20, -20, 0.55), core: hex(-30, -30, -30), pebble: hex(-40, -40, -40) };
     }
   }
 
@@ -817,11 +902,13 @@ export class World {
   drawTile(ctx, tx, ty, c, t) {
     const x = tx * TILE, y = ty * TILE;
     const region = this.regionGrid[ty * WORLD_W + tx];
+    // Cor do chão com blending suave entre biomas (transição de 3 tiles)
+    const blendedColor = this.blendedGroundColor(tx, ty);
     // Fundo base: só importa onde o elemento não cobre o tile inteiro (árvores,
     // pedras, lápides). Fora usa o chão do bioma; dentro das masmorras usa o piso
     // escuro — corrigindo as pedras com fundo verde nos subterrâneos.
     if (c === 't' || c === 'r' || c === 'b') {
-      ctx.fillStyle = this.groundColor(region);
+      ctx.fillStyle = blendedColor;
       ctx.fillRect(x, y, TILE, TILE);
     } else {
       ctx.fillStyle = '#5a8f4a';
@@ -829,8 +916,7 @@ export class World {
     }
     switch (c) {
       case 'g': {
-        const gc = this.groundColor(region);
-        ctx.fillStyle = gc;
+        ctx.fillStyle = blendedColor;
         ctx.fillRect(x, y, TILE, TILE);
         const gd = (hash2(tx, ty) >>> 0) % 10;
         // mancha sutil que quebra a repetição
@@ -953,28 +1039,33 @@ export class World {
           }
         }
         break;
-      case 'n':
-        // trilha de terra batida: bordas difusas que se mesclam com a grama do
-        // bioma (sobreposição de elipses com alfa decrescente, sem contorno duro)
-        ctx.fillStyle = this.groundColor(region);
+      case 'n': {
+        // trilha de terra batida: cores adaptativas ao bioma + bordas difusas
+        // que se mesclam com o chão ao redor (sem contorno duro)
+        ctx.fillStyle = blendedColor;
         ctx.fillRect(x, y, TILE, TILE);
+        
+        // Paleta de trilha por bioma - derivada da cor do chão do bioma
+        const pathPalette = this.pathPalette(region);
+        
         // halo externo desbotado -> transição suave para o chão ao redor
-        ctx.fillStyle = 'rgba(120,96,68,0.30)';
+        ctx.fillStyle = pathPalette.halo;
         ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 17, 12, 0, 0, 6.283); ctx.fill();
         // meio-batido
-        ctx.fillStyle = 'rgba(150,120,84,0.55)';
+        ctx.fillStyle = pathPalette.mid;
         ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 13, 9, 0, 0, 6.283); ctx.fill();
         // núcleo desgastado (tráfego constante)
-        ctx.fillStyle = '#9a7c58';
+        ctx.fillStyle = pathPalette.core;
         ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 9, 6, 0, 0, 6.283); ctx.fill();
         // pedrinhas soltas determinísticas
         const np = (hash2(tx, ty) >>> 0) % 6;
         if (np === 0) {
-          ctx.fillStyle = '#7a5f42';
+          ctx.fillStyle = pathPalette.pebble;
           ctx.fillRect(x + 6, y + 8, 3, 3);
           ctx.fillRect(x + 22, y + 20, 3, 3);
         }
         break;
+      }
       case 't':
         this.drawTree(ctx, x, y, region, tx, ty, t);
         break;
