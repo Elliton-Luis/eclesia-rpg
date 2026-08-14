@@ -2,6 +2,20 @@ import { T, RUN } from '../data/constants.js';
 import { rand, clamp } from '../data/utils.js';
 import { Particle } from './effects.js';
 
+// Paleta visual de cada subclasse (somente aparência; não afeta atributos,
+// habilidades ou efeitos de combate). Aplicada ao sprite desenhado no canvas.
+const LOOKS = {
+  diacono:    { robe: '#d6ece5', robeDark: '#a9d6cb', robeShade: '#d6ece5', trim: '#2f8a8a', trim2: '#ffffff', belt: '#2f8a8a', skin: '#e9c29b', hair: '#3a4a44' },
+  padre:      { robe: '#2a2e35', robeDark: '#1b1e24', robeShade: '#3a3f4a', trim: '#cfaa5a', trim2: '#f6f2e6', belt: '#1b1e24', skin: '#e9c29b', hair: '#3a3a44' },
+  bispo:      { robe: '#b2002e', robeDark: '#7e0020', robeShade: '#d22a4e', trim: '#e6c64a', trim2: '#fdf6ec', belt: '#e6c64a', skin: '#e9c29b', hair: '#e8e8ee' },
+  guerreiro:  { tabard: '#f1eee2', trim: '#c0392b', steel: '#bcc2cc', steelDark: '#949aa6', helm: '#cfd3da', helmDark: '#9aa0ac', skin: '#e9c29b' },
+  arqueiro:   { hood: '#7a7f52', hoodDark: '#5c6140', trim: '#c0392b', tabard: '#efece0', leather: '#7a5a37', skin: '#e9c29b' },
+  inventor:   { apron: '#9a6b3b', apronDark: '#7a5230', trim: '#c0392b', tabard: '#efece0', leather: '#6b4a2e', steel: '#bcc2cc', skin: '#e9c29b', hair: '#7a5a3a' },
+  elemental:  { robe: '#3d5fd6', robeDark: '#2b43a0', robeShade: '#6a87e8', trim: '#f2c14e', trim2: '#eaf2ff', belt: '#2b43a0', skin: '#e9c29b', hair: '#34344a' },
+  psiquico:   { robe: '#c0392b', robeDark: '#8e241a', robeShade: '#e0604a', trim: '#f2cf54', trim2: '#ffe9e6', belt: '#8e241a', skin: '#e9c29b', hair: '#3a3030' },
+  abencoador: { robe: '#2f9e63', robeDark: '#21784a', robeShade: '#52c68d', trim: '#eef3e6', trim2: '#d8f2e4', belt: '#21784a', skin: '#e9c29b', hair: '#6a5232' }
+};
+
 export class Player {
   constructor(sub, x, y, game) {
     this.sub = sub;
@@ -181,11 +195,16 @@ export class Player {
 
     ctx.scale(this.facing, 1);
 
-    ctx.fillStyle = '#2b2b33';
+    const L = this.look(s);
+    const boot = s.casta === 'templarios' ? '#4a4438' : '#3a3a44';
     const legA = moving ? Math.sin(this.walkT * 14) * 4 : 0;
     const legB = moving ? -Math.sin(this.walkT * 14) * 4 : 0;
-    ctx.fillRect(-9 + legA * 0.3, fy - 8, 5, 8);
-    ctx.fillRect(4 + legB * 0.3, fy - 8, 5, 8);
+    ctx.fillStyle = '#2b2b33';
+    ctx.fillRect(-9 + legA * 0.3, fy - 8, 5, 5);
+    ctx.fillRect(4 + legB * 0.3, fy - 8, 5, 5);
+    ctx.fillStyle = boot;
+    ctx.fillRect(-9 + legA * 0.3, fy - 3, 5, 3);
+    ctx.fillRect(4 + legB * 0.3, fy - 3, 5, 3);
 
     this.drawBody(ctx, s, fy);
     this.drawHead(ctx, s, fy);
@@ -205,162 +224,397 @@ export class Player {
     ctx.restore();
   }
 
+  look(s) {
+    const l = LOOKS[s.id];
+    if (l) return l;
+    return {
+      robe: s.color, robeDark: s.color, robeShade: s.accent, trim: s.accent, trim2: '#ffffff',
+      belt: s.accent, skin: '#e9c29b', hair: '#3a3a44',
+      helm: s.accent, helmDark: s.accent, steel: s.accent, steelDark: s.accent,
+      tabard: s.color, hood: s.color, hoodDark: s.color, leather: s.accent,
+      apron: s.color, apronDark: s.color
+    };
+  }
+
   drawBody(ctx, s, fy) {
-    ctx.fillStyle = s.color;
-    const r = s.id === 'bispo' ? 13 : s.id === 'guerreiro' ? 10.5 : s.casta === 'mago' ? 9.5 : 11;
+    const L = this.look(s);
+    if (s.casta === 'clero') this.drawClergyBody(ctx, s, L, fy);
+    else if (s.casta === 'templarios') this.drawTemplarBody(ctx, s, L, fy);
+    else this.drawMageBody(ctx, s, L, fy);
+  }
+
+  drawClergyBody(ctx, s, L, fy) {
+    const wTop = 8, wBot = 11;
+    // veste em trapézio (alb/batina)
+    ctx.fillStyle = L.robe;
     ctx.beginPath();
-    ctx.ellipse(0, fy - 16, r, 12, 0, 0, 6.283);
+    ctx.moveTo(-wTop, fy - 19);
+    ctx.lineTo(-wBot, fy - 2);
+    ctx.quadraticCurveTo(0, fy, wBot, fy - 2);
+    ctx.lineTo(wTop, fy - 19);
+    ctx.closePath();
     ctx.fill();
+    // sombreamento lateral
+    ctx.fillStyle = L.robeDark;
+    ctx.beginPath();
+    ctx.moveTo(-wTop, fy - 19);
+    ctx.lineTo(-wBot, fy - 2);
+    ctx.quadraticCurveTo(0, fy, 0, fy - 1);
+    ctx.lineTo(0, fy - 19);
+    ctx.closePath();
+    ctx.fill();
+    // cíngulo
+    ctx.fillStyle = L.belt;
+    ctx.fillRect(-wBot + 1, fy - 10, (wBot - 1) * 2, 1.6);
 
-    ctx.fillStyle = s.accent;
-    if (s.casta === 'clero') {
-      ctx.fillRect(-r, fy - 21, r * 2, 3);
-    } else if (s.casta === 'templarios') {
-      // cruz do Templo sobre o manto branco
-      ctx.fillRect(-1.5, fy - 23, 3, 11);
-      ctx.fillRect(-5.5, fy - 19.5, 11, 3);
+    if (s.id === 'diacono') {
+      // estola diagonal de diácono
+      ctx.save();
+      ctx.translate(0, fy - 10);
+      ctx.rotate(-0.5);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-1.1, -9, 2.2, 18);
+      ctx.restore();
+    } else if (s.id === 'padre') {
+      // colarinho romano na gola
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-2.4, fy - 20.4, 4.8, 2.4);
+      // estola + botões da batina
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-3.4, fy - 17, 1.7, 15);
+      ctx.fillRect(1.7, fy - 17, 1.7, 15);
+      ctx.fillStyle = L.trim2;
+      ctx.fillRect(-0.8, fy - 13, 1.6, 1.6);
+      ctx.fillRect(-0.8, fy - 8, 1.6, 1.6);
+      ctx.fillRect(-0.8, fy - 3, 1.6, 1.6);
     } else {
-      ctx.fillRect(-r, fy - 18, r * 2, 2);
+      // bispo: roquete branco + palio dourado + cruz peitoral
+      ctx.fillStyle = 'rgba(253,246,236,0.92)';
+      ctx.fillRect(-4.2, fy - 19, 8.4, 17);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-1.2, fy - 19, 2.4, 10);
+      ctx.fillRect(-4.5, fy - 12, 9, 1.8);
+      ctx.fillRect(-1.2, fy - 9, 2.4, 4);
+      ctx.fillStyle = '#e8f0e4';
+      ctx.fillRect(-0.9, fy - 14.5, 1.8, 4);
+      ctx.fillRect(-2.5, fy - 13.2, 5, 1.6);
+      // mozeta escarlate nos ombros
+      ctx.fillStyle = L.robe;
+      ctx.beginPath(); ctx.arc(-9.5, fy - 18, 3.2, Math.PI * 0.55, Math.PI * 1.45); ctx.fill();
+      ctx.beginPath(); ctx.arc(9.5, fy - 18, 3.2, Math.PI * -0.45, Math.PI * 0.45); ctx.fill();
+      // galão dourado na barra
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-wBot + 1, fy - 4, (wBot - 1) * 2, 1.6);
     }
+  }
 
-    // detalhes por subclasse
-    if (s.id === 'bispo') { // capa episcopal
-      ctx.fillStyle = s.accent;
-      ctx.fillRect(-r - 1, fy - 26, 2.5, 8);
-      ctx.fillRect(r - 1.5, fy - 26, 2.5, 8);
-    } else if (s.casta === 'clero' && s.id !== 'padre') { // crucifixo
-      ctx.fillStyle = s.accent;
-      ctx.fillRect(-1, fy - 14, 2, 5);
-      ctx.fillRect(-2.5, fy - 12, 5, 2);
-    } else if (s.id === 'guerreiro') { // ombreiras de aço
-      ctx.fillStyle = '#c9c9d2';
+  drawTemplarBody(ctx, s, L, fy) {
+    const w = s.id === 'arqueiro' ? 8 : 10;
+    ctx.fillStyle = L.steel || L.leather;
+    ctx.fillRect(-w, fy - 18, w * 2, 15);
+
+    if (s.id === 'guerreiro') {
+      // peitoral de placas + ombreiras largas
+      ctx.fillStyle = L.steelDark;
+      ctx.beginPath(); ctx.arc(-w - 2.5, fy - 17, 4.2, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(w + 2.5, fy - 17, 4.2, 0, 6.283); ctx.fill();
+      ctx.fillStyle = L.helm;
+      ctx.beginPath(); ctx.arc(-w - 2.5, fy - 18.4, 2.2, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(w + 2.5, fy - 18.4, 2.2, 0, 6.283); ctx.fill();
+      // gorjal
+      ctx.fillStyle = L.steelDark;
+      ctx.fillRect(-w, fy - 20.2, w * 2, 2.4);
+      // sobreveste branca do Templo com cruz vermelha
+      ctx.fillStyle = L.tabard;
+      ctx.fillRect(-7, fy - 15, 14, 12);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-1, fy - 14, 2, 9);
+      ctx.fillRect(-4.5, fy - 11.4, 9, 2);
+      // cinto
+      ctx.fillStyle = L.steelDark;
+      ctx.fillRect(-w, fy - 5, w * 2, 2);
+    } else if (s.id === 'arqueiro') {
+      // gibão de couro sobre túnica; aljava nas costas
+      ctx.fillStyle = L.leather;
+      ctx.fillRect(-8.5, fy - 18, 17, 15);
+      ctx.fillStyle = L.tabard;
+      ctx.fillRect(-5, fy - 16, 10, 10);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-0.8, fy - 14, 1.6, 6);
+      ctx.fillRect(-3, fy - 12.2, 6, 1.6);
+      // aljava
+      ctx.fillStyle = L.leather;
+      ctx.fillRect(-10.5, fy - 17, 3, 9);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-10.5, fy - 11, 3, 1.5);
+      // cinto
+      ctx.fillStyle = '#5a4630';
+      ctx.fillRect(-8.5, fy - 5, 17, 1.6);
+    } else {
+      // inventor: túnica + avental de ferreiro + bolsas
+      ctx.fillStyle = '#6b4a2e';
+      ctx.fillRect(-9, fy - 18, 18, 16);
+      ctx.fillStyle = L.apron;
       ctx.beginPath();
-      ctx.arc(-r, fy - 26, 3.5, 0, 6.283);
-      ctx.arc(r, fy - 26, 3.5, 0, 6.283);
+      ctx.moveTo(-6, fy - 17);
+      ctx.lineTo(6, fy - 17);
+      ctx.lineTo(7, fy - 3);
+      ctx.lineTo(-7, fy - 3);
+      ctx.closePath();
       ctx.fill();
-    } else if (s.id === 'arqueiro') { // aljava
-      ctx.fillStyle = s.accent;
-      ctx.fillRect(-r - 3, fy - 24, 4, 9);
-    } else if (s.id === 'inventor') { // avental de couro do engenho
-      ctx.fillStyle = '#8a6a3a';
-      ctx.fillRect(-6, fy - 17, 12, 9);
-      ctx.fillStyle = s.accent;
-      ctx.fillRect(-6, fy - 17, 3, 9);
+      ctx.fillStyle = L.apronDark;
+      ctx.fillRect(-7, fy - 3, 14, 1.8);
+      // tiras do avental
+      ctx.fillStyle = '#4a3018';
+      ctx.fillRect(-7, fy - 15, 2.4, 9);
+      ctx.fillRect(4.6, fy - 15, 2.4, 9);
+      // cruz do Templo no peito
+      ctx.fillStyle = L.tabard;
+      ctx.fillRect(-3.2, fy - 14.5, 6.4, 5.4);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-0.9, fy - 13.4, 1.8, 4.2);
+      ctx.fillRect(-2.8, fy - 11.9, 5.6, 1.5);
+      // cinto de ferramentas com bolsas
+      ctx.fillStyle = '#4a3018';
+      ctx.fillRect(-8.5, fy - 7.5, 17, 2.2);
+      ctx.fillStyle = L.apronDark;
+      ctx.fillRect(-6.5, fy - 7, 2.8, 4.4);
+      ctx.fillRect(4, fy - 7, 2.8, 4.4);
+    }
+  }
+
+  drawMageBody(ctx, s, L, fy) {
+    // manto com saia esvoaçante
+    ctx.fillStyle = L.robe;
+    ctx.beginPath();
+    ctx.moveTo(-7, fy - 19);
+    ctx.lineTo(-11, fy - 2);
+    ctx.quadraticCurveTo(0, fy + 1, 11, fy - 2);
+    ctx.lineTo(7, fy - 19);
+    ctx.closePath();
+    ctx.fill();
+    // sombreamento
+    ctx.fillStyle = L.robeDark;
+    ctx.beginPath();
+    ctx.moveTo(-7, fy - 19);
+    ctx.lineTo(-11, fy - 2);
+    ctx.quadraticCurveTo(0, fy + 1, 0, fy);
+    ctx.lineTo(0, fy - 19);
+    ctx.closePath();
+    ctx.fill();
+    // abertura central + cinto
+    ctx.fillStyle = L.robeDark;
+    ctx.fillRect(-0.8, fy - 19, 1.6, 15);
+    ctx.fillStyle = L.belt;
+    ctx.fillRect(-6.5, fy - 10, 13, 1.8);
+    ctx.fillStyle = L.trim;
+    ctx.fillRect(-6.5, fy - 10, 2, 1.8);
+    // barra da bainha
+    ctx.fillStyle = L.trim;
+    ctx.fillRect(-10.5, fy - 3, 21, 1.8);
+    // gola
+    ctx.fillStyle = L.trim2;
+    ctx.fillRect(-3, fy - 20, 6, 1.7);
+
+    // emblema de peito por classe
+    if (s.id === 'elemental') {
+      ctx.fillStyle = '#ff8c2e';
+      ctx.fillRect(-1.1, fy - 8.2, 2.2, 3);
+      ctx.fillRect(-0.55, fy - 10, 1.1, 1.8);
+    } else if (s.id === 'psiquico') {
+      ctx.fillStyle = L.trim2;
+      ctx.fillRect(-1.4, fy - 8.4, 2.8, 1.2);
+      ctx.fillStyle = L.trim;
+      ctx.fillRect(-0.6, fy - 9, 1.2, 3.2);
+      ctx.fillStyle = L.trim2;
+      ctx.fillRect(-0.4, fy - 4, 0.8, 3);
+      ctx.fillRect(-2, fy - 5, 4, 0.8);
+    } else {
+      ctx.fillStyle = L.trim2;
+      ctx.fillRect(-2.4, fy - 9.2, 4.8, 2.6);
+      ctx.fillStyle = L.robeDark;
+      ctx.fillRect(-1.6, fy - 8.6, 1.2, 1.4);
+      ctx.fillRect(0.4, fy - 8.6, 1.2, 1.4);
     }
   }
 
   drawHead(ctx, s, fy) {
-    ctx.fillStyle = s.color;
-    ctx.beginPath();
-    ctx.arc(0, fy - 31, 8, 0, 6.283);
-    ctx.fill();
+    const L = this.look(s);
 
     // rosto
-    ctx.fillStyle = '#e9c29b';
+    ctx.fillStyle = L.skin;
     ctx.beginPath();
-    ctx.arc(0, fy - 30, 5, 0, 6.283);
+    ctx.arc(0, fy - 30, 5.2, 0, 6.283);
     ctx.fill();
-    ctx.fillStyle = s.accent;
-    if (s.id === 'padre') { // cabelo tonsurado
+
+    if (s.casta === 'clero') {
+      if (s.id === 'diacono') {
+        // cabelo curto + capuz recolhido nas costas
+        ctx.fillStyle = L.hair;
+        ctx.beginPath();
+        ctx.arc(0, fy - 30.5, 4.6, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.fill();
+        ctx.fillStyle = L.robeDark;
+        ctx.beginPath();
+        ctx.arc(0, fy - 34.5, 6.6, Math.PI * 1.02, Math.PI * 1.98);
+        ctx.fill();
+        ctx.fillRect(-6.4, fy - 34, 12.8, 1.8);
+      } else if (s.id === 'padre') {
+        // cabelo curto + tonsura discreta + auréola
+        ctx.fillStyle = L.hair;
+        ctx.beginPath();
+        ctx.arc(0, fy - 31, 4.6, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,215,106,0.9)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, fy - 38.5, 4.6, 0, 6.283);
+        ctx.stroke();
+      } else {
+        // bispo: cabelos brancos + zucchetto + mitra alta
+        ctx.fillStyle = L.hair;
+        ctx.beginPath();
+        ctx.arc(0, fy - 30.5, 4.8, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = L.robe;
+        ctx.beginPath();
+        ctx.arc(0, fy - 35.5, 4.4, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = L.trim2;
+        ctx.beginPath();
+        ctx.moveTo(-5, fy - 40);
+        ctx.lineTo(-3, fy - 54);
+        ctx.lineTo(0, fy - 46);
+        ctx.lineTo(3, fy - 54);
+        ctx.lineTo(5, fy - 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-3.6, fy - 43, 7.2, 1.6);
+        ctx.fillRect(-0.8, fy - 51.5, 1.6, 5.5);
+        ctx.fillRect(-2.4, fy - 49.8, 4.8, 1.4);
+      }
+    } else if (s.casta === 'templarios') {
+      if (s.id === 'guerreiro') {
+        // elmo de aço fechado com fenda de visão e cruz vermelha
+        ctx.fillStyle = L.helm;
+        ctx.beginPath();
+        ctx.arc(0, fy - 31, 6.6, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-6.6, fy - 35.5, 13.2, 6.8);
+        ctx.fillStyle = '#23262b';
+        ctx.fillRect(-4, fy - 32.6, 8, 1.5);
+        ctx.fillRect(-4.6, fy - 33.4, 1.4, 2.6);
+        ctx.fillRect(3.2, fy - 33.4, 1.4, 2.6);
+        ctx.fillStyle = L.helmDark;
+        ctx.fillRect(-6.6, fy - 36.2, 13.2, 1);
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-1, fy - 42.6, 2, 6);
+        ctx.fillRect(-3.4, fy - 40.2, 6.8, 2);
+        // pluma
+        ctx.fillStyle = L.trim;
+        ctx.beginPath();
+        ctx.moveTo(-1.2, fy - 42.6);
+        ctx.quadraticCurveTo(-5, fy - 49, -2, fy - 51);
+        ctx.quadraticCurveTo(0, fy - 49, 0, fy - 42.6);
+        ctx.fill();
+      } else if (s.id === 'arqueiro') {
+        // capuz de caçador
+        ctx.fillStyle = L.hoodDark;
+        ctx.beginPath();
+        ctx.arc(0, fy - 34, 7.2, Math.PI * 0.92, Math.PI * 2.08);
+        ctx.fill();
+        ctx.fillRect(-7, fy - 33.4, 14, 1.6);
+        ctx.fillStyle = L.hood;
+        ctx.beginPath();
+        ctx.arc(0, fy - 31.2, 4.4, Math.PI, 0);
+        ctx.fill();
+        // pena vermelha
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-1, fy - 41.5, 1.6, 6.5);
+        ctx.fillRect(-2.5, fy - 41.5, 1.6, 2.6);
+        ctx.fillRect(-2.5, fy - 36.6, 1.6, 2.6);
+      } else {
+        // inventor: cabelo curto + boné de couro + óculos erguidos
+        ctx.fillStyle = L.hair;
+        ctx.beginPath();
+        ctx.arc(0, fy - 31, 4.6, Math.PI * 0.95, Math.PI * 2.05);
+        ctx.fill();
+        ctx.fillRect(-4.9, fy - 29.6, 9.8, 1.2);
+        ctx.fillStyle = '#6b4a2e';
+        ctx.beginPath();
+        ctx.arc(0, fy - 36.4, 4.6, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-5.6, fy - 35.8, 11.2, 1.8);
+        ctx.fillStyle = '#3a3f46';
+        ctx.fillRect(-5.2, fy - 37.8, 10.4, 2.4);
+        ctx.fillStyle = '#bfe4ff';
+        ctx.beginPath(); ctx.arc(-2.7, fy - 35.4, 1.9, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.7, fy - 35.4, 1.9, 0, 6.283); ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(-2.2, fy - 35.9, 0.7, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(3.2, fy - 35.9, 0.7, 0, 6.283); ctx.fill();
+      }
+    } else {
+      // magos: cabelo simples + ornamento por classe
+      ctx.fillStyle = L.hair;
       ctx.beginPath();
-      ctx.arc(0, fy - 34, 4, Math.PI, 0);
+      ctx.arc(0, fy - 31, 4.6, Math.PI * 0.9, Math.PI * 2.1);
       ctx.fill();
-    } else if (s.id === 'bispo') { // cabelo raspado no topo (tonsura)
-      ctx.beginPath();
-      ctx.arc(0, fy - 34, 3, Math.PI, 0);
-      ctx.fill();
-    } else if (s.id === 'guerreiro') { // elmo de aço
-      ctx.fillStyle = '#c9c9d2';
-      ctx.beginPath();
-      ctx.arc(0, fy - 35, 7, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(-7, fy - 36, 14, 3);
-    } else if (s.id === 'inventor') { // barbo e óculos
-      ctx.fillStyle = s.color;
-      ctx.beginPath();
-      ctx.arc(0, fy - 34, 6, Math.PI, 0);
-      ctx.fill();
-      ctx.fillStyle = '#c9d4e0';
-      ctx.fillRect(-5, fy - 31, 4, 2);
-      ctx.fillRect(1, fy - 31, 4, 2);
+      if (s.id === 'elemental') {
+        // chama azul flutuando sobre a cabeça
+        ctx.fillStyle = L.robeShade;
+        ctx.beginPath();
+        ctx.moveTo(0, fy - 37);
+        ctx.quadraticCurveTo(-6, fy - 46, 0, fy - 52);
+        ctx.quadraticCurveTo(6, fy - 46, 0, fy - 37);
+        ctx.fill();
+        ctx.fillStyle = L.trim2;
+        ctx.beginPath();
+        ctx.moveTo(0, fy - 39);
+        ctx.quadraticCurveTo(-3, fy - 45, 0, fy - 48);
+        ctx.quadraticCurveTo(3, fy - 45, 0, fy - 39);
+        ctx.fill();
+      } else if (s.id === 'psiquico') {
+        // faixa vermelha com terceiro olho dourado
+        ctx.fillStyle = L.robeDark;
+        ctx.fillRect(-5.2, fy - 33.6, 10.4, 1.8);
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-0.7, fy - 35, 1.4, 3.6);
+      } else {
+        // abençoador: chapéu de abas largas verdes
+        ctx.fillStyle = L.robeDark;
+        ctx.beginPath();
+        ctx.ellipse(0, fy - 36.5, 9, 2.4, 0, 0, 6.283);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-5, fy - 36.5);
+        ctx.lineTo(5, fy - 36.5);
+        ctx.lineTo(3, fy - 45);
+        ctx.lineTo(-3, fy - 45);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-5, fy - 38.4, 10, 1.2);
+      }
     }
 
-    ctx.fillStyle = '#2b2b33';
-    ctx.beginPath();
-    ctx.arc(2.5, fy - 30, 1.5, 0, 6.283);
-    ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(1.8, fy - 30.6, 0.5, 0, 6.283);
-    ctx.fill();
-
-    // chapéu/ornamento específico da subclasse
-    if (s.id === 'padre') { // auréola
-      ctx.strokeStyle = '#ffd76a';
-      ctx.lineWidth = 1.8;
+    // olho (elmo fechado não mostra rosto)
+    if (s.casta !== 'templarios' || s.id !== 'guerreiro') {
+      ctx.fillStyle = '#2b2b33';
       ctx.beginPath();
-      ctx.arc(0, fy - 43, 5, 0, 6.283);
-      ctx.stroke();
-    } else if (s.id === 'bispo') { // mitra
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(-1, fy - 48, 2, 5);
-      ctx.fillStyle = s.accent;
-      ctx.beginPath();
-      ctx.moveTo(-6, fy - 42);
-      ctx.lineTo(-1, fy - 54);
-      ctx.lineTo(2, fy - 45);
-      ctx.lineTo(4, fy - 54);
-      ctx.lineTo(7, fy - 42);
-      ctx.closePath();
+      ctx.arc(2.4, fy - 30, 1.3, 0, 6.283);
       ctx.fill();
       ctx.fillStyle = '#fff';
-      ctx.fillRect(-4, fy - 44, 9, 1.5);
-    } else if (s.id === 'diacono') { // capuz
       ctx.beginPath();
-      ctx.arc(0, fy - 38, 6.5, Math.PI * 1.05, Math.PI * 1.95);
-      ctx.fill();
-    } else if (s.id === 'guerreiro') { // cruz do Templo no elmo
-      ctx.fillStyle = '#c0392b';
-      ctx.fillRect(-1, fy - 46, 2, 7);
-      ctx.fillRect(-3.5, fy - 43.5, 7, 2);
-    } else if (s.id === 'arqueiro') { // capuz de caçador
-      ctx.beginPath();
-      ctx.arc(0, fy - 38, 7, Math.PI * 0.9, Math.PI * 2.1);
-      ctx.fill();
-    } else if (s.id === 'inventor') { // chapéu
-      ctx.beginPath();
-      ctx.moveTo(-8, fy - 38);
-      ctx.lineTo(8, fy - 38);
-      ctx.lineTo(5, fy - 47);
-      ctx.lineTo(-4, fy - 47);
-      ctx.closePath();
-      ctx.fill();
-    } else if (s.id === 'elemental') { // chama dançante
-      ctx.fillStyle = s.accent;
-      ctx.beginPath();
-      ctx.moveTo(0, fy - 38);
-      ctx.quadraticCurveTo(-6, fy - 48, 0, fy - 55);
-      ctx.quadraticCurveTo(6, fy - 48, 0, fy - 38);
-      ctx.fill();
-    } else if (s.id === 'psiquico') { // faixa psíquica
-      ctx.fillRect(-6, fy - 36, 12, 2);
-    } else if (s.id === 'abencoador') { // chapéu de abas largas
-      ctx.fillStyle = s.color;
-      ctx.beginPath();
-      ctx.ellipse(0, fy - 39, 9, 2.5, 0, 0, 6.283);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-4, fy - 39);
-      ctx.lineTo(4, fy - 39);
-      ctx.lineTo(1, fy - 47);
-      ctx.lineTo(-1, fy - 47);
-      ctx.closePath();
+      ctx.arc(1.9, fy - 30.5, 0.45, 0, 6.283);
       ctx.fill();
     }
   }
 
   drawWeapon(ctx, fy) {
     const s = this.sub;
+    const L = this.look(s);
     if (s.weapon.kind === 'melee') {
       const dur = this.attackDur || 0.4;
       const k = dur > 0 ? 1 - Math.max(0, this.attackAnim) / dur : 1;
@@ -371,49 +625,75 @@ export class Player {
       ctx.translate(6, fy - 16);
       ctx.rotate(this.aimAng + off);
       if (s.id === 'inventor') {
-        // Martelo do Templo: cabo curto e cabeça maciça de metal.
-        ctx.fillStyle = '#7a5a2b';
-        ctx.fillRect(6, -2, s.attack.range * 0.55, 4);
+        // Martelo do Templo: cabo, cabeça maciça e anel de metal
+        ctx.fillStyle = '#6b4a2e';
+        ctx.fillRect(4, -2, 8, 4);
         ctx.fillStyle = this.weapon.color;
-        ctx.fillRect(s.attack.range - 9, -8, 13, 14);
-        ctx.fillStyle = '#d9a441';
-        ctx.fillRect(s.attack.range - 9, -2, 13, 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillRect(s.attack.range - 7, -6, 3, 10);
-      } else {
-        ctx.fillStyle = this.weapon.color;
-        ctx.fillRect(8, -2, s.attack.range - 12, 4);
-        ctx.fillStyle = '#d9a441';
-        ctx.fillRect(4, -4, 7, 8);
+        ctx.fillRect(10, -8.5, 11, 15);
+        ctx.fillStyle = '#8a5a2b';
+        ctx.fillRect(10, -6, 11, 1.8);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(12, -6.5, 3, 11);
+      } else if (s.id === 'guerreiro') {
+        // Espada longa templária: lâmina, guarda dourada e contraguarda
+        ctx.fillStyle = '#e8ecf2';
+        ctx.fillRect(6, -1.6, s.attack.range - 12, 3.2);
+        ctx.fillStyle = 'rgba(120,130,145,0.8)';
+        ctx.fillRect(11, -0.8, s.attack.range - 20, 1);
+        ctx.fillStyle = '#c9a227';
+        ctx.fillRect(3, -4.5, 8, 3);
+        ctx.fillStyle = '#e8ecf2';
+        ctx.fillRect(1, -2.4, 3, 4.8);
+        ctx.fillStyle = '#c0392b';
+        ctx.fillRect(4, -1.2, 2.5, 2.4);
       }
       ctx.restore();
     } else if (s.weapon.kind === 'aura') {
-      // cajado sagrado
+      // báculo / cajado sagrado
       ctx.save();
       ctx.translate(6, fy - 18);
       ctx.rotate(this.aimAng * 0.35 + 0.6);
       ctx.fillStyle = '#6b4a2a';
-      ctx.fillRect(-2, 0, 3, 26);
-      ctx.fillStyle = '#c9a227';
-      ctx.fillRect(-3.5, -4, 6, 7);
-      // faíscas sagradas no topo
-      const sp = 6 + Math.sin(this.game.time * 10) * 2;
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = this.weapon.color;
-      ctx.beginPath();
-      ctx.arc(0, -5, sp, 0, 6.283);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(0, -5, 2.5, 0, 6.283);
-      ctx.fill();
+      ctx.fillRect(-1.5, 0, 3, 26);
+      if (s.id === 'bispo') {
+        // báculo episcopal: voluta dourada com cruz
+        ctx.strokeStyle = '#d9a441';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, -7, 4, Math.PI * 0.1, Math.PI * 1.9);
+        ctx.stroke();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(0, -10, 2, 0, 6.283);
+        ctx.stroke();
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = this.weapon.color;
+        ctx.beginPath();
+        ctx.arc(0, -9, 5 + Math.sin(this.game.time * 10) * 2, 0, 6.283);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else {
+        // cajado do pastor: curvatura de rebanho
+        ctx.strokeStyle = '#c9a227';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.arc(0, -8, 3.4, -0.2, Math.PI * 1.6);
+        ctx.stroke();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = this.weapon.color;
+        ctx.beginPath();
+        ctx.arc(0, -8, 4 + Math.sin(this.game.time * 10) * 1.5, 0, 6.283);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
       ctx.restore();
     } else {
       ctx.save();
       ctx.translate(6, fy - 18);
       ctx.rotate(this.aimAng);
       if (s.id === 'arqueiro') {
+        // arco longo templário com corda
         ctx.strokeStyle = this.weapon.color;
         ctx.lineWidth = 3;
         ctx.beginPath();
@@ -426,11 +706,35 @@ export class Player {
         ctx.lineTo(18, 0);
         ctx.stroke();
       } else if (s.id === 'abencoador') {
+        // grimório da luz com capa colorida da classe
+        ctx.fillStyle = L.robeDark;
+        ctx.fillRect(-9, -6, 17, 12);
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-9, -6, 17, 2);
+        ctx.fillRect(-1.6, -6, 2.4, 12);
+        ctx.fillStyle = L.trim2;
+        ctx.fillRect(-9, 3, 17, 1.6);
+        ctx.globalAlpha = 0.5 + Math.sin(this.game.time * 8) * 0.2;
         ctx.fillStyle = this.weapon.color;
-        ctx.fillRect(-8, -6, 16, 12);
-        ctx.fillStyle = '#f0f4ff';
-        ctx.fillRect(-5, -4, 10, 4);
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, 6.283);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (s.id === 'diacono') {
+        // diácono ergue o evangeliário
+        ctx.fillStyle = L.robeDark;
+        ctx.fillRect(-5, -4, 10, 8);
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-5, -4, 10, 1.6);
+        ctx.fillRect(-0.8, -4, 1.6, 8);
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = this.weapon.color;
+        ctx.beginPath();
+        ctx.arc(8, -2, 8 + Math.sin(this.game.time * 9) * 1.5, 0, 6.283);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       } else {
+        // orbe elemental/psíquico com núcleo tingido pela classe
         const pulse = 5 + Math.sin(this.game.time * 8) * 1.5;
         ctx.globalAlpha = 0.35;
         ctx.fillStyle = this.weapon.color;
@@ -438,7 +742,7 @@ export class Player {
         ctx.arc(8, 0, 10 + pulse * 0.3, 0, 6.283);
         ctx.fill();
         ctx.globalAlpha = 1;
-        ctx.fillStyle = this.weapon.color;
+        ctx.fillStyle = L.robeShade;
         ctx.beginPath();
         ctx.arc(8, 0, pulse, 0, 6.283);
         ctx.fill();
@@ -446,6 +750,11 @@ export class Player {
         ctx.beginPath();
         ctx.arc(8, 0, pulse * 0.45, 0, 6.283);
         ctx.fill();
+        ctx.strokeStyle = L.trim;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(8, 0, pulse + 1.6, 0, 6.283);
+        ctx.stroke();
       }
       ctx.restore();
     }
