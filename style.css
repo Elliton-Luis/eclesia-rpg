@@ -377,6 +377,9 @@ html, body {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.card.locked { opacity: 0.5; filter: grayscale(0.6); }
+.card.locked:hover { transform: none; border-color: rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); }
+
 .card .cswatch {
   width: 46px;
   height: 46px;
@@ -420,6 +423,7 @@ html, body {
   color: #eee;
 }
 .btn.disabled { opacity: 0.5; pointer-events: none; }
+.btn.danger { background: linear-gradient(90deg, #ff5c5c, #c0392b); color: #fff; }
 
 .goldline { margin: 4px 0 14px; font-size: 15px; color: #ffd23f; }
 

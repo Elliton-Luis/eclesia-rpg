@@ -1,6 +1,6 @@
 import { TILE } from './data/constants.js';
 import { clamp, lerp, rand } from './data/utils.js';
-import { SUBCLASSES } from './data/classes.js';
+import { SUBCLASSES, CLASS_TIER } from './data/classes.js';
 import { REGIONS, SEALS } from './data/regions.js';
 import { NPC_DEFS } from './data/npcs.js';
 import { LORE_ZONE } from './data/lore.js';
@@ -141,8 +141,25 @@ const GAME = {
     this.cam.h = this.ch;
   },
 
+  // Desbloqueio de classes — regra centralizada (fácil de trocar no futuro).
+  // Hoje: cada final concluído (qualquer classe) libera o próximo nível de
+  // todas as categorias (zeramentos >= tier). Amanhã: trocar por uma condição
+  // baseada em finais específicos sem mexer na interface.
+  isClassUnlocked(subId) {
+    const tier = CLASS_TIER[subId] || 0;
+    if (tier <= 0) return true;
+    const rec = this.loadRecords();
+    return (rec.wins || 0) >= tier;
+  },
+
   startGame(subId) {
     const sub = SUBCLASSES[subId];
+    if (!sub) return;
+    // Coerência: jamais iniciar uma classe bloqueada, mesmo chamando direto.
+    if (!this.isClassUnlocked(subId)) {
+      this.banner('Classe bloqueada: zere o jogo para desbloquear as demais.', '#ffd23f', 2.2);
+      return;
+    }
     this.sfx.unlock();
     this.state = 'play';
     this.monsters = [];

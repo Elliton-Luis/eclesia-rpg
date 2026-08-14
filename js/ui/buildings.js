@@ -212,6 +212,12 @@ export const buildings = {
         this.sfx.heal();
         this.banner('Mente clara: vida e habilidades restauradas', '#c0b4ff', 2);
       } else if (act === 'grim') {
+        // O Grimório é saber pagão dos Magos. O Erudito barra Clero e
+        // Templários na hora — a interação não acontece para quem está fora.
+        if (this.player.sub.casta !== 'mago') {
+          this.eruditoRefusal();
+          return;
+        }
         this.discoverLore('mago', 'veo');
       } else if (act === 'consult') {
         if (!ok(150)) { this.openBuilding(npc); return; }
@@ -223,6 +229,18 @@ export const buildings = {
     }
     this.openBuilding(npc);
     this.hud();
+  },
+
+  // Reação do Erudito ao ver alguém de fora tentar ler o Grimório: recusa
+  // imediata e curta, coerente com a lore — saber pagão não pertence a
+  // clérigos (transgressão à vocação) nem a templários (fora da missão).
+  eruditoRefusal() {
+    const casta = this.player.sub.casta;
+    const msg = casta === 'clero'
+      ? '"Você não deveria estar aqui. Buscar saber pagão mancha a vossa vocação — vossa luz vem do Senhor, não do véu."'
+      : '"Você não deveria estar aqui. Esta arte não pertence à vossa missão."';
+    this.showDialog('🔮 Erudito Tior', msg, '<button class="btn" id="dlgOk">Sair</button>');
+    byId('dlgOk').onclick = () => this.closeOverlay();
   },
 
   learnBlessing(id, npc) {

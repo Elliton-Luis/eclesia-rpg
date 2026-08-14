@@ -163,10 +163,28 @@ export const records = {
         html += `</div>`;
       }
     }
-    html += `<button class="btn" id="btnCloseRecords">Fechar</button>`;
+    html += `<div class="recreset" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.12);padding-top:12px;text-align:left;">`;
+    html += `<b>Zerar todos os dados</b><div class="desc" style="opacity:.8;margin:2px 0 0;">Apaga permanentemente os recordes e os desbloqueios de classes. Ação <b>irreversível</b>.</div>`;
+    html += `<button class="btn danger" id="btnWipe">Zerar todos os dados</button></div>`;
+    html += `<button class="btn ghost" id="btnCloseRecords">Fechar</button>`;
     el.innerHTML = html;
     byId('btnCloseRecords').onclick = () => this.closeOverlay();
+    // Confirmação em duas etapas: um clique acidental não apaga nada.
+    byId('btnWipe').onclick = () => {
+      byId('recordsPanel').innerHTML = `<h2>ZERAR TODOS OS DADOS?</h2><p>Isto apagará <b>permanentemente</b> todos os recordes locais e voltará os desbloqueios de classes ao estado inicial.<br><b>A ação é irreversível.</b></p><div class="cheatrow"><button class="btn danger" id="btnWipeYes">Sim, apagar tudo</button><button class="btn ghost" id="btnWipeNo">Cancelar</button></div>`;
+      byId('btnWipeYes').onclick = () => this.resetLocalData();
+      byId('btnWipeNo').onclick = () => this.showRecords();
+    };
     byId('records').classList.remove('hidden');
+  },
+
+  resetLocalData() {
+    // Apenas os dados de progresso vivem em 'eclesia_v1' (recordes, zeramentos,
+    // melhores por classe, última jornada). Nenhuma configuração é apagada.
+    try { localStorage.removeItem('eclesia_v1'); } catch (e) {}
+    this.buildMenu();
+    this.showRecords();
+    this.banner('Todos os dados foram zerados.', '#ffd23f', 2.2);
   },
 
   toMenu() {
@@ -176,6 +194,8 @@ export const records = {
     byId('death').classList.add('hidden');
     byId('hud').classList.add('hidden');
     byId('menu').classList.remove('hidden');
+    // Re-renderiza o menu para refletir desbloqueios após um final (ou reset).
+    this.buildMenu();
   },
 
 };

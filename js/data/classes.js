@@ -125,3 +125,14 @@ export const SUBCLASSES = {
 
 export const SUB_ORDER = ['diacono', 'padre', 'bispo', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
 export const CASTA_ORDER = ['clero', 'templarios', 'mago'];
+
+// Nível de desbloqueio de cada subclasse dentro da sua casta:
+// tier 0 = disponível de início; tier 1 = exige 1 final concluído; tier 2 = exige 2.
+// Regra atual: qualquer final concluído libera o próximo nível de todas as castas.
+// Para exigir finais específicos no futuro, basta trocar a resolução em
+// GAME.isClassUnlocked (js/game.js) por uma condição baseada em finais.
+export const CLASS_TIER = {
+  diacono: 0, padre: 1, bispo: 2,
+  guerreiro: 0, arqueiro: 1, inventor: 2,
+  elemental: 0, psiquico: 1, abencoador: 2
+};
