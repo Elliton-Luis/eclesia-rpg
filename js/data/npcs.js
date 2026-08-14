@@ -10,7 +10,7 @@ export const NPC_DEFS = [
     hints: [
       { need: 0, text: 'Fiquei sabendo de um monstro ao norte. Talvez isso lhe ajude...' },
       { need: 1, text: 'Vencestes o Chefe Tribal? As Catacumbas se abrem aos fortes — e nelas dorme o Rei da Noite.' },
-      { need: 3, text: 'As barreiras finais ruem para os que alcançam o auge. Mastema ronca a leste, o General no sul-leste, o Devorador no oeste.' }
+      { need: 3, text: 'As barreiras finais ruem para os que alcançam o auge. Mastema ronca a leste, o General no sul-leste, o Devorador no oeste. E nos rochedos do sul dorme o Titã do Execra, guardião da Coroa.' }
     ] },
   { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0', rank: 'padre',
     teaches: ['bencao_luz', 'bencao_cura'] },

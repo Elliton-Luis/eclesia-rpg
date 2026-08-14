@@ -513,32 +513,83 @@ export class Monster {
     } else if (d.id === 'gere_osso') {
       const pulse = 1 + Math.sin(t * 3) * 0.04;
       ctx.scale(pulse, pulse);
+      // aura espectral
+      ctx.strokeStyle = 'rgba(154,107,255,' + (0.25 + Math.sin(t * 3.5) * 0.12).toFixed(2) + ')';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, -2, 26, 0, 6.283);
+      ctx.stroke();
+      // manto arruinado (dobras)
+      ctx.fillStyle = '#7a6a4b';
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-16, 10); ctx.lineTo(-14, 22); ctx.lineTo(-8, 16); ctx.lineTo(-4, 24); ctx.lineTo(0, 16);
+      ctx.lineTo(6, 24); ctx.lineTo(14, 16); ctx.lineTo(18, 12); ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      // corpo principal
       ctx.fillStyle = dark;
       ctx.beginPath();
       ctx.moveTo(-22, 10); ctx.lineTo(-18, -8); ctx.lineTo(-8, -16); ctx.lineTo(0, -20);
       ctx.lineTo(8, -16); ctx.lineTo(18, -8); ctx.lineTo(22, 10); ctx.lineTo(14, 4);
       ctx.lineTo(6, 14); ctx.lineTo(-6, 14); ctx.lineTo(-14, 4); ctx.closePath();
       ctx.fill();
+      // cabeça (crânio)
       ctx.fillStyle = col;
       ctx.beginPath();
       ctx.arc(0, -10, 10, 0, 6.283);
       ctx.fill();
+      // costelas
       ctx.fillStyle = dark;
       ctx.fillRect(-8, -2, 16, 16);
       for (let i = -1; i <= 1; i++) {
         ctx.fillStyle = col;
         ctx.fillRect(i * 5 - 1.5, -2, 3, 16);
       }
-      ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.arc(-3, -12, 2, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(3, -12, 2, 0, 6.283); ctx.fill();
+      // coluna espinhosa
+      ctx.fillStyle = col;
+      for (let i = -1; i <= 2; i++) {
+        ctx.fillRect(i * 2 - 1, -2 + i * 6, 2, 6);
+      }
+      // olhos flamejantes (fogo do Rei da Noite)
+      ctx.fillStyle = '#7ad0ff';
+      ctx.globalAlpha = 0.7 + Math.sin(t * 5) * 0.3;
+      ctx.beginPath(); ctx.arc(-3, -12, 2.6, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(3, -12, 2.6, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-3, -12, 1.2, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(3, -12, 1.2, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 1;
+      // fenda óssea da boca
+      ctx.strokeStyle = '#5f4a35';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-4, -7); ctx.lineTo(4, -7);
+      ctx.stroke();
+      // coroa real (espinhos de osso)
+      ctx.fillStyle = '#e6ddcc';
+      ctx.beginPath();
+      ctx.moveTo(-10, -18); ctx.lineTo(-13, -26); ctx.lineTo(-6, -20); ctx.lineTo(0, -29); ctx.lineTo(6, -20); ctx.lineTo(13, -26); ctx.lineTo(10, -18); ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = '#c0392b';
       ctx.beginPath();
-      ctx.moveTo(-5, -21); ctx.lineTo(0, -30); ctx.lineTo(5, -21); ctx.closePath();
-      ctx.fill();
+      ctx.arc(0, -28, 2.5, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#ffd23f';
       ctx.beginPath();
-      ctx.arc(0, -32, 2, 0, 6.283); ctx.fill();
+      ctx.arc(0, -28, 1.2, 0, 6.283); ctx.fill();
+      // cetro de osso com orbe
+      const sw2 = Math.sin(t * 4) * 1.5;
+      ctx.strokeStyle = '#d9d0c0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(20, 12); ctx.lineTo(26, -8);
+      ctx.stroke();
+      ctx.fillStyle = '#d9d0c0';
+      ctx.beginPath();
+      ctx.arc(27, -11, 4, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#9a6bff';
+      ctx.beginPath();
+      ctx.arc(27, -11 + sw2 * 0.4, 2, 0, 6.283); ctx.fill();
     } else if (d.id === 'titan') {
       const pulse = 1 + Math.sin(t * 2.5) * 0.03;
       ctx.scale(pulse, pulse);
@@ -1049,6 +1100,13 @@ export class Monster {
       const pulse = 1 + Math.sin(t * 3) * 0.04;
       const fl = Math.sin(t * 6) * 6;
       ctx.scale(pulse, pulse);
+      // aura de fogo infernal
+      ctx.strokeStyle = 'rgba(255,90,60,' + (0.35 + Math.sin(t * 4) * 0.15).toFixed(2) + ')';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, -6, 30, 0, 6.283);
+      ctx.stroke();
+      // asas
       ctx.fillStyle = dark;
       ctx.beginPath();
       ctx.moveTo(-4, -14);
@@ -1062,6 +1120,23 @@ export class Monster {
       ctx.lineTo(10, -4);
       ctx.closePath();
       ctx.fill();
+      // cauda com ponta flamejante
+      const tw = Math.sin(t * 5) * 0.3;
+      ctx.strokeStyle = '#8a2f2f';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 8);
+      ctx.quadraticCurveTo(18, 16, 26, 20 + tw * 8);
+      ctx.stroke();
+      ctx.fillStyle = '#ff6b3a';
+      ctx.beginPath();
+      ctx.arc(28, 22 + tw * 8, 5, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = '#ffd23f';
+      ctx.beginPath();
+      ctx.arc(28, 22 + tw * 8, 2.5, 0, 6.283);
+      ctx.fill();
+      // corpo
       ctx.fillStyle = col;
       ctx.beginPath();
       ctx.moveTo(-22, 10); ctx.lineTo(-16, -14); ctx.lineTo(0, -22); ctx.lineTo(16, -14); ctx.lineTo(22, 10); ctx.closePath();
@@ -1070,24 +1145,52 @@ export class Monster {
       ctx.beginPath();
       ctx.moveTo(-12, 4); ctx.lineTo(-6, -12); ctx.lineTo(2, -14); ctx.lineTo(8, -6); ctx.lineTo(2, 8); ctx.closePath();
       ctx.fill();
+      // runa no peito (brilha)
+      ctx.fillStyle = '#ff9d4a';
+      ctx.globalAlpha = 0.5 + Math.sin(t * 6) * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(-2, -6); ctx.lineTo(-4, -2); ctx.lineTo(-2, 2); ctx.lineTo(2, 2); ctx.lineTo(4, -2); ctx.lineTo(2, -6); ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      // chifre superior
       ctx.fillStyle = '#ff9d4a';
       ctx.fillRect(-4, -18, 8, 4);
+      // olhos
       ctx.fillStyle = '#ff5c5c';
       ctx.beginPath(); ctx.arc(-6, -12, 3.4, 0, 6.283); ctx.fill();
       ctx.beginPath(); ctx.arc(6, -12, 3.4, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#111';
       ctx.beginPath(); ctx.arc(-6, -12, 1.5, 0, 6.283); ctx.fill();
       ctx.beginPath(); ctx.arc(6, -12, 1.5, 0, 6.283); ctx.fill();
+      // presas
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.moveTo(-7, -8); ctx.lineTo(-10, -2); ctx.lineTo(-4, -5); ctx.closePath();
       ctx.moveTo(7, -8); ctx.lineTo(10, -2); ctx.lineTo(4, -5); ctx.closePath();
       ctx.fill();
+      // chifres demoníacos (curvos)
       ctx.fillStyle = '#7a2f2f';
       ctx.beginPath();
       ctx.moveTo(-2, -20); ctx.lineTo(-6, -32); ctx.lineTo(1, -24); ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
       ctx.moveTo(2, -20); ctx.lineTo(6, -32); ctx.lineTo(-1, -24); ctx.closePath();
       ctx.fill();
+      // tridente flamejante na mão
+      const sw = Math.sin(t * 6 + 1) * 1.5;
+      ctx.strokeStyle = '#8a3a2f';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(20, 8);
+      ctx.lineTo(24, -14);
+      ctx.stroke();
+      ctx.fillStyle = '#ff9d4a';
+      ctx.beginPath();
+      ctx.moveTo(24, -14); ctx.lineTo(21, -26); ctx.lineTo(23, -18); ctx.closePath();
+      ctx.moveTo(24, -14); ctx.lineTo(24, -28 + sw); ctx.lineTo(27, -18); ctx.closePath();
+      ctx.moveTo(24, -14); ctx.lineTo(27, -26); ctx.lineTo(25, -18); ctx.closePath();
+      ctx.fill();
+      // partículas de fogo orbitando
       ctx.fillStyle = '#ff5c5c';
       ctx.globalAlpha = 0.6;
       for (let i = 0; i < 3; i++) {

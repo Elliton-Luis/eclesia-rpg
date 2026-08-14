@@ -124,7 +124,7 @@ export const MONSTERS = {
   // --- Chefes finais por casta ---
   demonio: {
     id: 'demonio', name: 'Mastema, o Demônio', color: '#c0504a', dark: '#5f1f1f', size: 88,
-    hp: 2800, dmg: 60, speed: 122, behavior: 'boss', gold: [1500, 1500],
+    hp: 2800, dmg: 60, speed: 150, behavior: 'boss', gold: [1500, 1500],
     resist: [T.PHYS], weak: [T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'clero', tier: 5
   },
   general: {

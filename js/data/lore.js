@@ -8,7 +8,7 @@ export const LORE = {
     { id: 'autoridade', title: 'Autoridade e Sacramento', text: 'O poder do Clero não vem do aço nem do saber: vem da vocação e da autoridade que a Igreja confere. Batizar, exorcizar, celebrar a Eucaristia, perdoar — o sacerdócio pertence aos ordenados. Nenhum leigo, por mais valoroso, administra os sacramentos.' },
     { id: 'heresia', title: 'O Saber Pagão é Heresia', text: 'Estudar um grimório pagão não é busca por conhecimento: é heresia. O clero que procura poder em fontes estranhas à fé trai a vocação e mancha a Igreja. O saber sobrenatural dos pagãos e a luz do Senhor não se misturam.' },
     { id: 'confissao', title: 'O Peso das Confissões', text: 'Cada confissão ouvida é uma alma que se deixa guiar. Vossa fé vos fortalece — e a elas traz paz.' },
-    { id: 'travessia', title: 'A Travessia', text: 'Três pilares guardam o caminho: o Chefe Tribal, o Rei da Noite e o Guardião do Execra. Derrotai-os e o altar do Demônio se abrirá.' },
+    { id: 'travessia', title: 'A Travessia', text: 'Três pilares guardam o caminho: o Chefe Tribal, o Rei da Noite e o Titã do Execra, que dorme na Gruta a oeste. Derrotai-os e o altar do Demônio se abrirá.' },
     { id: 'promessa', title: 'A Promessa', text: 'No leste, um selo profano esconde o altar de Mastema. Fechai-o para sempre e guiai as almas do Senhor a Ele.' },
     { id: 'servico', title: 'O Servo fiel', text: 'O Diácono que serve sem buscar glória é o coração da Igreja. Quem alimenta o pobre, visita o enfermo e batiza com humor guarda o tesouro do Céu.' }
   ],

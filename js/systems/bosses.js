@@ -312,20 +312,20 @@ export const bosses = {
     const phase2 = m.hp < m.maxHp * 0.5;
     const r = Math.random();
     if (r < 0.2) {
-      // Infernal Breath: cone of fire
-      m.bossCd = 2.5;
+      // Infernal Breath: cone of fire (mais largo e mais frequente)
+      m.bossCd = 1.8;
       this.banner('SOPRO INFERNAL!', '#ff6b6b', 1.2);
       const a = Math.atan2(dy, dx);
-      for (let i = -2; i <= 2; i++) {
-        const ang = a + i * 0.25;
-        this.shootEnemy(m, Math.cos(ang) * 80, Math.sin(ang) * 80, { speed: 350, big: true, fromBoss: true });
+      for (let i = -3; i <= 3; i++) {
+        const ang = a + i * 0.22;
+        this.shootEnemy(m, Math.cos(ang) * 80, Math.sin(ang) * 80, { speed: 380, big: true, fromBoss: true });
       }
       return 0.5;
     } else if (r < 0.38) {
       // RAIO DIRECIONADO: captura a posição atual do jogador, prepara e dispara
       // uma linha contínua do Demônio até a parede nessa direção fixa. Depois de
       // capturada, o raio não segue o jogador — saia do caminho na preparação.
-      m.bossCd = 3;
+      m.bossCd = 2.2;
       m.vx = 0; m.vy = 0;
       const sx = p.x, sy = p.y;
       this.banner('RAIO DA CONDENAÇÃO!', '#ff5c5c', 1);
@@ -347,21 +347,21 @@ export const bosses = {
     } else if (r < 0.62) {
       // ESFERA CONDENADA: um projétil que ricocheteia nas paredes da arena por
       // 10s, transformando o espaço em ameaça. Ele não some ao tocar a parede.
-      m.bossCd = 3;
+      m.bossCd = 2.4;
       m.vx = 0; m.vy = 0;
       this.banner('ESFERA CONDENADA!', '#ff9d5c', 1);
       this.ring(m.x, m.y, 70, 0.6, '#ff9d5c', 4);
       this.delayed.push({ t: 0.6, fn: () => {
         const a = Math.atan2(dy, dx);
         this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, {
-          speed: 340, life: 10, bounce: true, color: '#ff6b6b'
+          speed: 380, life: 10, bounce: true, color: '#ff6b6b'
         });
         this.ring(m.x, m.y, 90, 0.4, '#ff5c5c', 4);
       } });
       return 0.6;
     } else if (r < 0.82 && phase2) {
       // Summon Demoninhos
-      m.bossCd = 3.5;
+      m.bossCd = 2.8;
       this.banner('FILHOS DO CAOS!', '#ff5c5c', 1.5);
       for (let i = 0; i < 3; i++) this.summonMinion(m.x, m.y, 'demoninho');
       this.ring(m.x, m.y, 120, 0.6, '#c0504a', 4);
@@ -369,7 +369,7 @@ export const bosses = {
       return 0.6;
     } else {
       // Charge + Slam
-      m.bossCd = 2.2;
+      m.bossCd = 1.6;
       this.banner('INVESTIDA DO DEMÔNIO!', '#c0392b', 1);
       const a = Math.atan2(dy, dx);
       this.ring(m.x + Math.cos(a) * 60, m.y + Math.sin(a) * 60, 60, 0.5, '#ff5c5c', 3);
@@ -447,37 +447,37 @@ export const bosses = {
     if (r < 0.22) {
       // EXPLOSÃO RADIAL: 8 projéteis a 45°, todos partindo do centro do Arcano.
       // Há espaço entre eles — o jogador precisa se posicionar nos intervalos.
-      m.bossCd = 2.6;
+      m.bossCd = 2.1;
       this.banner('EXPLOSÃO ARCANO!', '#ff9d5c', 1.2);
       this.ring(m.x, m.y, 64, 0.7, '#a08ad8', 4);
       this.delayed.push({ t: 0.7, fn: () => {
         for (let i = 0; i < 8; i++) {
           const a = (i / 8) * 6.283 + 0.3927; // 45° com leve giro
-          this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 380, big: true, fromBoss: true });
+          this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 430, big: true, fromBoss: true });
         }
         this.ring(m.x, m.y, 100, 0.5, '#ff9d5c', 5);
       } });
       return 0.5;
     } else if (r < 0.42) {
       // Chaos Burst: radial projectiles
-      m.bossCd = 2;
+      m.bossCd = 1.7;
       this.banner('CAOS ARCANO!', '#a08ad8', 1);
       for (let i = 0; i < (phase2 ? 16 : 12); i++) {
         const a = (i / (phase2 ? 16 : 12)) * 6.283;
-        this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 300, big: true, fromBoss: true });
+        this.shootEnemy(m, Math.cos(a) * 80, Math.sin(a) * 80, { speed: 340, big: true, fromBoss: true });
       }
       this.ring(m.x, m.y, 120, 0.6, '#a08ad8', 4);
       return 0.4;
     } else if (r < 0.62) {
       // DIVISÃO: o Arcano materializa aparições próximas ao jogador — nunca
       // exatamente sobre ele — com anel de aviso antes de nascerem.
-      m.bossCd = 2.6;
+      m.bossCd = 2.1;
       this.banner('O ARCANO SE DIVIDE!', '#a08ad8', 1.2);
       this.arcaneSplit(m, phase2 ? 3 : 2);
       return 0.5;
     } else if (r < 0.8) {
       // Teleport + Devour (pull)
-      m.bossCd = 2.5;
+      m.bossCd = 2;
       this.banner('DEVORAR!', '#8e44ad', 1.2);
       const tx = p.x + rand(-100, 100), ty = p.y + rand(-100, 100);
       if (!this.world.solidBox({ x: tx - m.w/2, y: ty - m.h/2, w: m.w, h: m.h })) {
@@ -499,7 +499,7 @@ export const bosses = {
       return 0.5;
     } else if (phase3) {
       // Summon Homúnculos
-      m.bossCd = 5;
+      m.bossCd = 3.8;
       this.banner('HOMÚNCULOS, DESPERTAI!', '#d8a0b0', 1.5);
       for (let i = 0; i < 3; i++) this.summonMinion(m.x, m.y, 'homunculo');
       this.ring(m.x, m.y, 180, 0.7, '#ff5c5c', 5);
@@ -507,7 +507,7 @@ export const bosses = {
       return 0.6;
     } else {
       // Arcane Beam
-      m.bossCd = 3;
+      m.bossCd = 2.3;
       this.banner('RAIO ARCANO!', '#7a6bd8', 1);
       const a = Math.atan2(dy, dx);
       this.ring(m.x, m.y, 80, 0.5, '#c0b4ff', 3);

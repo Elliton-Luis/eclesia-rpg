@@ -4,6 +4,7 @@ export const playerDamage = {
   damagePlayer(amount) {
     const p = this.player;
     if (this.cheats.hp) return;
+    if (this.cheats.ghost) return; // modo fantasma: imortal por completo
     if (p.invuln > 0 || p.dashT > 0) return;
     let dmg = amount;
     this.stats.dmgTaken += dmg;

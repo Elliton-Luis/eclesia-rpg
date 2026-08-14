@@ -1,6 +1,7 @@
 import { MAX_BLESSINGS, BLESSING_KEYS } from '../data/constants.js';
 import { weaponDamage } from '../data/utils.js';
 import { BLESSINGS } from '../data/blessings.js';
+import { SUBCLASSES } from '../data/classes.js';
 import { byId } from '../dom.js';
 
 export const cheats = {
@@ -14,14 +15,39 @@ export const cheats = {
   },
 
   runCheat(raw) {
-    if (!this.player) { this.banner('Inicie o jogo primeiro', '#ffd23f', 1.5); return; }
-    const p = this.player;
     let cmd = String(raw || '').trim().toLowerCase();
     if (!cmd) return;
     if (cmd[0] === '/') cmd = cmd.slice(1);
     const parts = cmd.split(/\s+/);
     const key = parts[0];
     const num = parts[1] !== undefined ? parseInt(parts[1], 10) : NaN;
+
+    // Cheats de desenvolvimento que não exigem partida em andamento (podem ser
+    // ativados no menu). São válidos apenas na sessão atual — nada é salvo.
+    if (key === 'libera_tudo' || key === 'fantasma') {
+      const defs = {
+        'libera_tudo': { flag: 'libera_tudo', on: 'Todas as classes liberadas (sessão)', off: 'Desbloqueio de volta ao estado salvo' },
+        'fantasma':    { flag: 'ghost', on: 'Modo fantasma ATIVADO', off: 'Modo fantasma desativado' }
+      };
+      const d = defs[key];
+      this.cheats[d.flag] = !this.cheats[d.flag];
+      if (key === 'fantasma' && this.player) this.player.ghost = this.cheats.ghost;
+      this.banner(this.cheats[d.flag] ? d.on : d.off, this.cheats[d.flag] ? '#7cff8a' : '#ff9d5c', 1.8);
+      if (key === 'libera_tudo') this.buildMenu();
+      return;
+    }
+
+    // Troca direta de classe pelo nome (ex.: /bispo, /arqueiro, /psiquico).
+    // Reinicia a sessão como se a classe tivesse sido escolhida na tela de
+    // seleção, burlando apenas o bloqueio de desbloqueio. Não grava nada.
+    if (SUBCLASSES[key]) {
+      this.startGame(key, true);
+      this.banner('Classe: ' + SUBCLASSES[key].name, SUBCLASSES[key].accent, 2);
+      return;
+    }
+
+    if (!this.player) { this.banner('Inicie o jogo primeiro', '#ffd23f', 1.5); return; }
+    const p = this.player;
 
     const cheats = {
       'ouroinfinito': ['gold', 'Ouro infinito'],
@@ -75,7 +101,8 @@ export const cheats = {
       'dano 200 · tier 10',
       'Bênçãos por comando: get bencao_luz · bencao_cura · bencao_coragem · bencao_escudo · bencao_passo · bencao_cadencia · bencao_precisao · bencao_furia · bencao_julgamento · bencao_suprema',
       'As bênçãos também são ensinadas por Padres e Bispos espalhados pelo mundo.',
-      'curar · matar · ajuda'
+      'curar · matar · ajuda',
+      'Dev (sessão, some ao recarregar): libera_tudo · fantasma · /bispo · /padre · /diacono · /guerreiro · /arqueiro · /inventor · /elemental · /psiquico · /abencoador'
     ];
     this.banner(list.join('  |  '), '#ffe9b0', 4);
   },

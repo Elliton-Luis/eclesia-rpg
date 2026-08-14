@@ -9,6 +9,17 @@ Protótipo de RPG de ação 2D top-down com progressão de personagem, chefes e 
 - JavaScript (ES6+)
 - Vercel
 
+### Imagens
+
+![alt text](image.png)
+
+![alt text](image-1.png)
+sad
+![alt text](image-2.png)
+
+![alt text](image-3.png)
+
+![alt text](image-4.png)
 ## Funcionalidades
 
 - **3 castas / 9 subclasses**: Clero (Diácono, Padre, Bispo), Templários (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E). As subclasses de cada casta seguem uma progressão de poder da mais fraca para a mais forte.
@@ -102,10 +113,6 @@ Definidos em `js/data/monsters.js` (`MONSTERS`). Cada um tem:
 - Opção de continuar pós-jogo (New Game+ ou exploração livre)
 - Acessibilidade: suporte a toque/mobile, legendas para áudio
 - Otimização de renderização para mapas maiores
-
-### Imagens
-
-![alt text](image.png)
 
 ## Como executar
 

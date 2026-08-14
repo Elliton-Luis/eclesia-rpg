@@ -61,7 +61,7 @@ const GAME = {
   skillEls: [],
   shopN: {},
   startPos: { x: 116.5 * TILE, y: 123.5 * TILE },
-  cheats: { gold: false, hp: false, ghost: false },
+  cheats: { gold: false, hp: false, ghost: false, libera_tudo: false },
   auraT: 0,
   attackHeld: false,
   flags: {},
@@ -146,17 +146,22 @@ const GAME = {
   // todas as categorias (zeramentos >= tier). Amanhã: trocar por uma condição
   // baseada em finais específicos sem mexer na interface.
   isClassUnlocked(subId) {
+    // Cheat de desenvolvimento: libera todas as classes só nesta sessão.
+    if (this.cheats.libera_tudo) return true;
     const tier = CLASS_TIER[subId] || 0;
     if (tier <= 0) return true;
     const rec = this.loadRecords();
     return (rec.wins || 0) >= tier;
   },
 
-  startGame(subId) {
+  // force=true (usado por cheats de desenvolvimento): inicia a classe ignorando
+  // o bloqueio de seleção. Não desbloqueia nada permanentemente — o jogador só
+  // joga aquela classe na sessão atual.
+  startGame(subId, force) {
     const sub = SUBCLASSES[subId];
     if (!sub) return;
     // Coerência: jamais iniciar uma classe bloqueada, mesmo chamando direto.
-    if (!this.isClassUnlocked(subId)) {
+    if (!force && !this.isClassUnlocked(subId)) {
       this.banner('Classe bloqueada: zere o jogo para desbloquear as demais.', '#ffd23f', 2.2);
       return;
     }
@@ -251,6 +256,9 @@ const GAME = {
 
     if (this.cheats.gold) p.gold = Math.max(p.gold, 999999);
     if (this.cheats.hp) p.hp = p.maxHp;
+    // Modo fantasma: atravessa paredes/obstáculos (world.move) e reaplica o
+    // flag a cada frame (cobre nova partida/respawn dentro da sessão).
+    p.ghost = this.cheats.ghost;
 
     this.stats.time += dt;
 
@@ -262,7 +270,8 @@ const GAME = {
 
     // veneno: dano contínuo que só dispara em intervalos fixos (1 tick por segundo),
     // para nunca aplicar múltiplos golpes em sequência no mesmo frame.
-    if (p.status.venom > 0) {
+    // Imortalidade (modo fantasma) também blinda contra o veneno.
+    if (p.status.venom > 0 && !this.cheats.ghost) {
       p.status.venom -= dt;
       p.status.venomCd = (p.status.venomCd || 0) - dt;
       if (p.status.venomCd <= 0) {
