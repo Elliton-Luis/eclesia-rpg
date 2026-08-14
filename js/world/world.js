@@ -20,7 +20,28 @@ export class World {
     this.access = new Map();
     this.buildAccess();
     this.buildPaths();
+    this.buildTownWear();
     this.buildRegionGrid();
+  }
+
+  // Desgaste natural dentro da vila: grama ao redor das portas fica "pisada",
+  // gerando trilhas de terra que ligam as casas à praça, como se o tráfego
+  // constante de NPCs/jogadores tivesse matado a grama nas rotas mais usadas.
+  buildTownWear() {
+    this.wornTiles = new Set();
+    for (let gy = 104; gy <= 148; gy++) {
+      for (let gx = 100; gx <= 138; gx++) {
+        if (this.townChar(gx, gy) !== 'd') continue;
+        // trilha de até 2 tiles ao redor da porta, só sobre grama
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            if (Math.abs(dx) + Math.abs(dy) > 2) continue;
+            const nx = gx + dx, ny = gy + dy;
+            if (this.townChar(nx, ny) === 'g') this.wornTiles.add(nx + ',' + ny);
+          }
+        }
+      }
+    }
   }
 
   // Grid determinístico do bioma de cada tile. Como os chunks podem cruzar
@@ -193,6 +214,8 @@ export class World {
     else c = this.regionChar(gx, gy, r);
     // caminhos naturais atravessam o campo (nunca dentro da vila nem masmorras)
     if (this.pathTiles.has(gx + ',' + gy) && r && r.decor !== 'town' && this.canBePath(c)) return 'n';
+    // trilhas pisadas dentro da vila (ligam portas à praça)
+    if (r && r.decor === 'town' && c === 'g' && this.wornTiles.has(gx + ',' + gy)) return 'n';
     return c;
   }
 
@@ -217,10 +240,14 @@ export class World {
       return 'c';
     }
     if (d === 'fort') {
+      // cidade amuralhada tomada pelos invasores: muralhas de pedra, escombros
+      // das construções civis destruídas, pátio de pedra e grama queimada.
       if (edgy) return 'v';
       if (p < 0.2) return 'h';
-      if (p < 0.42) return 'z';
-      if (p < 0.5) return 'g';
+      if (p < 0.33) return 'x';
+      if (p < 0.56) return 'z';
+      if (p < 0.68) return 'g';
+      if (p < 0.74) return 'r';
       return 'g';
     }
     if (d === 'swamp') {
@@ -655,17 +682,22 @@ export class World {
     else shape = hv < 34 ? 0 : hv < 58 ? 1 : hv < 82 ? 3 : 4;
     const sway = Math.sin(t * 1.5 + tx * 0.13 + ty * 0.09) * 1.3;
     const cx = x + 16, cy = y + 16;
+    const groundY = y + 31; // linha de base do tile: a árvore "toca" o chão
     const lean = (hv % 3 === 0) ? 1 : 0;
     const trunkW = shape === 4 ? 4 : shape === 1 ? 5 : 6;
-    const trunkH = shape === 1 ? 14 : shape === 3 ? 10 : 11;
-    // sombra no chão
-    ctx.fillStyle = 'rgba(0,0,0,0.14)';
-    ctx.beginPath(); ctx.ellipse(cx, cy + 15, 9, 2.6, 0, 0, 6.283); ctx.fill();
-    // tronco
+    // o tronco vai da base da copa até o chão do tile (nunca fica flutuando)
+    const trunkTop = shape === 1 ? cy - 7 : shape === 3 ? cy - 3 : cy - 5;
+    // sombra no chão, alinhada à base do tile
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.beginPath(); ctx.ellipse(cx, groundY, 10, 2.8, 0, 0, 6.283); ctx.fill();
+    // tronco ancorado no chão + raízes aparentes
     ctx.fillStyle = pal.trunk;
-    ctx.fillRect(cx - trunkW / 2 + lean, cy - trunkH + 1, trunkW, trunkH);
+    ctx.fillRect(cx - trunkW / 2 + lean, trunkTop, trunkW, groundY - trunkTop);
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.fillRect(cx - trunkW / 2 + lean + trunkW - 2, cy - trunkH + 1, 2, trunkH);
+    ctx.fillRect(cx - trunkW / 2 + lean + trunkW - 2, trunkTop, 2, groundY - trunkTop);
+    ctx.fillStyle = pal.trunk;
+    ctx.fillRect(cx - 6 + lean, groundY - 2, 4, 2);
+    ctx.fillRect(cx + 3 + lean, groundY - 2, 4, 2);
 
     ctx.save();
     ctx.translate(sway, 0);
@@ -856,23 +888,92 @@ export class World {
         }
         break;
       case 'z':
+        // piso de pedra; no pátio do forte, marcado pela ocupação dos invasores
         ctx.fillStyle = ((tx + ty) & 1) ? '#8f939b' : '#84888f';
         ctx.fillRect(x, y, TILE, TILE);
+        if (region === 'forte') {
+          const fv = (hash2(tx * 7, ty * 13) >>> 0) % 100;
+          if (fv < 8) {
+            // fogueira de acampamento (cinzas + brasas)
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath(); ctx.arc(x + 16, y + 20, 8, 0, 6.283); ctx.fill();
+            for (let i = 0; i < 4; i++) {
+              ctx.save();
+              ctx.translate(x + 16, y + 20);
+              ctx.rotate(i * Math.PI / 2 + 0.4);
+              ctx.fillStyle = '#5a4a38';
+              ctx.fillRect(-5, -1.5, 10, 3);
+              ctx.restore();
+            }
+            ctx.fillStyle = 'rgba(255,120,40,0.8)';
+            ctx.beginPath(); ctx.arc(x + 16, y + 19, 2.4, 0, 6.283); ctx.fill();
+            ctx.fillStyle = 'rgba(255,220,120,0.7)';
+            ctx.beginPath(); ctx.arc(x + 16, y + 19, 1.2, 0, 6.283); ctx.fill();
+          } else if (fv < 14) {
+            // escombros de construções civis destruídas
+            ctx.fillStyle = '#6a625e';
+            ctx.fillRect(x + 6, y + 20, 12, 3);
+            ctx.fillRect(x + 10, y + 24, 8, 3);
+            ctx.fillStyle = '#7a7268';
+            ctx.fillRect(x + 20, y + 16, 5, 5);
+            ctx.fillStyle = '#554d48';
+            ctx.fillRect(x + 12, y + 13, 4, 4);
+          } else if (fv < 19) {
+            // estandarte derrubado dos antigos donos (mastro caído)
+            ctx.strokeStyle = '#4a443e';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + 8, y + 30); ctx.lineTo(x + 20, y + 10); ctx.stroke();
+            ctx.globalAlpha = 0.55;
+            ctx.fillStyle = '#9a8a5a';
+            ctx.fillRect(x + 18, y + 11, 6, 4);
+            ctx.globalAlpha = 1;
+          } else if (fv < 24) {
+            // brasão antigo desgastado gravado no piso
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = '#b8a24a';
+            ctx.beginPath();
+            ctx.moveTo(x + 16, y + 10);
+            ctx.lineTo(x + 23, y + 13);
+            ctx.lineTo(x + 20, y + 21);
+            ctx.lineTo(x + 16, y + 23);
+            ctx.lineTo(x + 12, y + 21);
+            ctx.lineTo(x + 9, y + 13);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#5a4a2a';
+            ctx.beginPath();
+            ctx.moveTo(x + 16, y + 10); ctx.lineTo(x + 16, y + 23); ctx.stroke();
+            ctx.globalAlpha = 1;
+          } else if (fv < 28) {
+            // cinzas e marcas de batalha no piso
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 10, 7, 0, 0, 6.283); ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.28)';
+            ctx.fillRect(x + 8, y + 14, 4, 2);
+            ctx.fillRect(x + 22, y + 18, 3, 2);
+          }
+        }
         break;
       case 'n':
-        // trilha de terra batida com pedrinhas desgastadas
-        ctx.fillStyle = '#8a7355';
+        // trilha de terra batida: bordas difusas que se mesclam com a grama do
+        // bioma (sobreposição de elipses com alfa decrescente, sem contorno duro)
+        ctx.fillStyle = this.groundColor(region);
         ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = '#7a6447';
-        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 11, 7, 0, 0, 6.283); ctx.fill();
+        // halo externo desbotado -> transição suave para o chão ao redor
+        ctx.fillStyle = 'rgba(120,96,68,0.30)';
+        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 17, 12, 0, 0, 6.283); ctx.fill();
+        // meio-batido
+        ctx.fillStyle = 'rgba(150,120,84,0.55)';
+        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 13, 9, 0, 0, 6.283); ctx.fill();
+        // núcleo desgastado (tráfego constante)
+        ctx.fillStyle = '#9a7c58';
+        ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 9, 6, 0, 0, 6.283); ctx.fill();
+        // pedrinhas soltas determinísticas
         const np = (hash2(tx, ty) >>> 0) % 6;
         if (np === 0) {
-          ctx.fillStyle = '#6f5a3e';
+          ctx.fillStyle = '#7a5f42';
           ctx.fillRect(x + 6, y + 8, 3, 3);
           ctx.fillRect(x + 22, y + 20, 3, 3);
         }
-        ctx.fillStyle = 'rgba(255,236,190,0.10)';
-        ctx.beginPath(); ctx.ellipse(x + 18 - np, y + 13, 7, 3, 0.2, 0, 6.283); ctx.fill();
         break;
       case 't':
         this.drawTree(ctx, x, y, region, tx, ty, t);
@@ -1021,70 +1122,163 @@ export class World {
         break;
       case 'h':
         if (region === 'forte') {
-          // muro de pedra do forte: blocos, juntas e topo de ameias
-          const wv = (hash2(tx, ty) >>> 0) % 4;
+          // muralha de pedra do forte, tomada pelos invasores: blocos, ameias e
+          // sinais de batalha (bandeiras rasgadas, fogo, brechas, brasões quebrados)
+          const wv = (hash2(tx, ty) >>> 0) % 5;
           ctx.fillStyle = wv % 2 ? '#8f8780' : '#84828a';
           ctx.fillRect(x, y, TILE, TILE);
-          ctx.fillStyle = 'rgba(60,58,64,0.6)';
-          ctx.fillRect(x, y, TILE, 4);
-          ctx.fillRect(x + 2 + (wv * 7) % 26, y + 6, 8, 3);
+          // juntas de pedra
           ctx.fillStyle = 'rgba(30,30,34,0.4)';
           for (let j = 0; j < 3; j++) {
             ctx.fillRect(x + 4, y + 12 + j * 7, 24, 1);
             ctx.fillRect(x + 12 + (j % 2) * 8, y + 8 + j * 7, 1, 5);
           }
-          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          // ameias no topo
+          ctx.fillStyle = 'rgba(60,58,64,0.6)';
+          ctx.fillRect(x, y, TILE, 4);
+          ctx.fillRect(x + 2 + (wv * 7) % 26, y + 6, 8, 3);
+          ctx.fillStyle = 'rgba(0,0,0,0.28)';
           ctx.fillRect(x, y + 2, TILE, 2);
-          if (wv === 3) {
+          if (wv === 0) {
+            // bandeira rasgada dos invasores hasteada no muro
+            ctx.strokeStyle = '#3a2f2a';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + 24, y + 30); ctx.lineTo(x + 24, y + 5); ctx.stroke();
+            ctx.fillStyle = '#7a2a2a';
+            ctx.beginPath();
+            ctx.moveTo(x + 24, y + 6);
+            ctx.lineTo(x + 33, y + 9);
+            ctx.lineTo(x + 31, y + 22);
+            ctx.lineTo(x + 24, y + 18);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#3a1a1a';
+            ctx.fillRect(x + 30, y + 10, 3, 3);
+          } else if (wv === 1) {
+            // marca de fogo de batalha + lança travada
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath(); ctx.arc(x + 12, y + 18, 7, 0, 6.283); ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.beginPath(); ctx.arc(x + 22, y + 14, 5, 0, 6.283); ctx.fill();
+            ctx.strokeStyle = '#5a4a3a';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + 4, y + 4); ctx.lineTo(x + 20, y + 26); ctx.stroke();
+          } else if (wv === 2) {
+            // brecha: bloco arrancado, pedra exposta
+            ctx.fillStyle = '#6f665f';
+            ctx.fillRect(x + 8, y + 14, 9, 6);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(x + 8, y + 14, 9, 6);
+            ctx.fillRect(x + 11, y + 16, 3, 2);
+          } else if (wv === 3) {
+            // brasão antigo dos antigos donos, apagado e rachado
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#b8a24a';
+            ctx.beginPath();
+            ctx.moveTo(x + 16, y + 8);
+            ctx.lineTo(x + 24, y + 11);
+            ctx.lineTo(x + 21, y + 20);
+            ctx.lineTo(x + 16, y + 23);
+            ctx.lineTo(x + 11, y + 20);
+            ctx.lineTo(x + 8, y + 11);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#5a4a2a';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 16, y + 8); ctx.lineTo(x + 16, y + 23); ctx.stroke();
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(x + 14, y + 6); ctx.lineTo(x + 17, y + 12); ctx.lineTo(x + 14, y + 18); ctx.stroke();
+            ctx.globalAlpha = 1;
+          } else {
+            // vegetação rasteira cobrindo o muro surrado
             ctx.fillStyle = 'rgba(90,120,70,0.5)';
             ctx.fillRect(x + 4, y + 16, 8, 2);
             ctx.fillRect(x + 20, y + 24, 6, 2);
           }
         } else {
-          // casa: parede de enxaimel sob telhado de telhas
+          // casa civil: parede rebocada sob telhado de telhas.
+          // A vizinhança define qual parte da casa este tile representa
+          // (telhado com cumeeira no topo, fachada com janelas nas laterais).
+          const above = this.tileAt(tx, ty - 1);
+          const left = this.tileAt(tx - 1, ty);
+          const right = this.tileAt(tx + 1, ty);
+          const isRoofTop = above !== 'h' && above !== 'd' && above !== 'f';
+          const hasLeft = left === 'h', hasRight = right === 'h';
           const cv = (hash2(tx, ty) >>> 0) % 6;
-          ctx.fillStyle = '#b09a72';
-          ctx.fillRect(x, y, TILE, TILE);
-          ctx.fillStyle = '#5a4430';
-          ctx.fillRect(x, y + 6, TILE, 2);
-          ctx.fillRect(x + 4, y + 8, 3, 20);
-          ctx.fillRect(x + 25, y + 8, 3, 20);
-          ctx.fillStyle = 'rgba(0,0,0,0.18)';
-          ctx.fillRect(x, y + 18, TILE, 1);
-          // janela (nem toda parede tem — variação entre construções)
-          if (cv === 0 || cv === 3) {
-            const wg = 0.85 + Math.sin(t * 3 + tx * 0.5 + ty * 0.3) * 0.15;
-            const jx = cv === 0 ? 7 : 19;
-            ctx.fillStyle = 'rgba(255,224,150,' + wg.toFixed(2) + ')';
-            ctx.fillRect(x + jx, y + 10, 6, 6);
-            ctx.strokeStyle = '#4a3624';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x + jx, y + 10, 6, 6);
-            ctx.fillStyle = '#4a3624';
-            ctx.fillRect(x + jx + 2.5, y + 10, 1, 6);
-          }
-          // telhado inclinado com cumeeira — silhueta mais viva
-          ctx.fillStyle = '#5a3f24';
-          ctx.beginPath();
-          ctx.moveTo(x, y + 8);
-          ctx.lineTo(x + 8, y);
-          ctx.lineTo(x + 24, y);
-          ctx.lineTo(x + 32, y + 8);
-          ctx.closePath(); ctx.fill();
-          ctx.fillStyle = cv % 2 ? '#7d5a36' : '#6b4a2a';
-          ctx.beginPath();
-          ctx.moveTo(x + 8, y);
-          ctx.lineTo(x + 24, y);
-          ctx.lineTo(x + 25, y + 3);
-          ctx.lineTo(x + 7, y + 3);
-          ctx.closePath(); ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.fillRect(x + 9, y + 1, 14, 2);
-          // fumaça de chaminé em algumas casas (animada, determinística)
-          if (cv === 5) {
-            const sy = (Math.floor(t * 10) + tx + ty) % 4;
-            ctx.fillStyle = 'rgba(210,210,210,0.45)';
-            ctx.beginPath(); ctx.arc(x + 4, y - 3 - sy, 2.2, 0, 6.283); ctx.fill();
+          if (isRoofTop) {
+            // --- telhado de telhas com cumeeira, beirais e chaminé ---
+            ctx.fillStyle = '#96492e';
+            ctx.fillRect(x, y, TILE, TILE);
+            // cumeeira no alto (mais clara) e sombra do beiral na base
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            ctx.fillRect(x, y, TILE, 3);
+            ctx.fillStyle = 'rgba(0,0,0,0.22)';
+            ctx.fillRect(x, y + TILE - 4, TILE, 4);
+            // linhas de telhas
+            ctx.fillStyle = 'rgba(0,0,0,0.10)';
+            for (let k = 1; k < 4; k++) ctx.fillRect(x, y + k * 8, TILE, 1);
+            // beirais nas extremidades do telhado
+            if (!hasLeft && hasRight) {
+              ctx.fillStyle = '#7a3827';
+              ctx.fillRect(x, y, 5, TILE);
+              ctx.fillStyle = 'rgba(255,255,255,0.10)';
+              ctx.beginPath(); ctx.moveTo(x - 1, y + TILE); ctx.lineTo(x + 4, y); ctx.lineTo(x + 6, y + TILE); ctx.closePath(); ctx.fill();
+            } else if (hasLeft && !hasRight) {
+              ctx.fillStyle = '#7a3827';
+              ctx.fillRect(x + TILE - 5, y, 5, TILE);
+              ctx.fillStyle = 'rgba(255,255,255,0.10)';
+              ctx.beginPath(); ctx.moveTo(x + TILE + 1, y + TILE); ctx.lineTo(x + TILE - 4, y); ctx.lineTo(x + TILE - 6, y + TILE); ctx.closePath(); ctx.fill();
+            } else if (!hasLeft && !hasRight) {
+              // casinha estreita: empena triangular no meio
+              ctx.fillStyle = '#7a3827';
+              ctx.beginPath();
+              ctx.moveTo(x + 2, y + TILE); ctx.lineTo(x + 16, y + 2); ctx.lineTo(x + 30, y + TILE);
+              ctx.closePath(); ctx.fill();
+              ctx.fillStyle = '#b06a48';
+              ctx.fillRect(x + 13, y + 6, 6, TILE - 6);
+            }
+            // chaminé em algumas casas
+            if (cv === 1 || cv === 4) {
+              ctx.fillStyle = '#8a8078';
+              ctx.fillRect(x + 6, y - 4, 5, 8);
+              ctx.fillStyle = '#6f665f';
+              ctx.fillRect(x + 6, y - 4, 5, 2);
+              const sy = (Math.floor(t * 10) + tx + ty) % 4;
+              ctx.fillStyle = 'rgba(210,210,210,0.45)';
+              ctx.beginPath(); ctx.arc(x + 8, y - 6 - sy, 2.2, 0, 6.283); ctx.fill();
+            }
+          } else {
+            // --- fachada de enxaimel rebocada com cornija ---
+            ctx.fillStyle = '#c4ac82';
+            ctx.fillRect(x, y, TILE, TILE);
+            // cornija/calha sob o telhado
+            ctx.fillStyle = 'rgba(0,0,0,0.16)';
+            ctx.fillRect(x, y, TILE, 3);
+            // vigas de madeira (esqueleto do enxaimel)
+            ctx.fillStyle = '#5a4430';
+            ctx.fillRect(x + 1, y + 3, 3, TILE - 8);
+            ctx.fillRect(x + TILE - 4, y + 3, 3, TILE - 8);
+            ctx.fillStyle = 'rgba(58,42,26,0.85)';
+            ctx.fillRect(x + 2, y + 13, TILE - 4, 2);
+            ctx.fillRect(x + 15, y + 13, 2, TILE - 14);
+            // janelas em paredes superiores (variam por construção)
+            if (cv === 0 || cv === 3) {
+              const wg = 0.85 + Math.sin(t * 3 + tx * 0.5 + ty * 0.3) * 0.15;
+              const jy = y + 15;
+              const jx = cv === 0 ? x + 8 : x + 17;
+              ctx.fillStyle = 'rgba(255,224,150,' + wg.toFixed(2) + ')';
+              ctx.fillRect(jx, jy, 6, 7);
+              ctx.strokeStyle = '#4a3624';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(jx, jy, 6, 7);
+              ctx.fillStyle = '#4a3624';
+              ctx.fillRect(jx + 2, jy, 1, 7);
+              ctx.fillRect(jx, jy + 3, 6, 1);
+            } else if (cv === 1) {
+              // arbusto baixo ao lado da porta
+              ctx.fillStyle = '#4a6b32';
+              ctx.beginPath(); ctx.ellipse(x + 14, y + TILE - 4, 9, 4, 0, 0, 6.283); ctx.fill();
+            }
           }
         }
         break;
