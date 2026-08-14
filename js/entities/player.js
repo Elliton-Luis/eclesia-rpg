@@ -41,6 +41,11 @@ export class Player {
     this.attackCd = 0;
     this.attackAnim = 0;
     this.attackDur = 1;
+    this.charging = false;
+    this.chargeT = 0;
+    this.chargeMax = 1;
+    this.spinT = 0;
+    this.spinDur = 1;
     this.combo = 0;
     this.comboT = 0;
     this.invuln = 0;
@@ -51,7 +56,7 @@ export class Player {
     this.dashDmg = 0;
     this.dashType = T.PHYS;
     this.dashHit = new Set();
-    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0, venomCd: 0, fatigue: 0 };
+    this.status = { shield: 0, shieldT: 0, dmg: 0, spd: 0, regen: 0, dur: 0, venom: 0, venomCd: 0, fatigue: 0, immune: 0, uncaoT: 0 };
     this.cd = {};
     this.extraSkills = [];
     this.mw = null;
@@ -76,6 +81,7 @@ export class Player {
 
     this.attackCd = Math.max(0, this.attackCd - dt);
     this.attackAnim = Math.max(0, this.attackAnim - dt);
+    this.spinT = Math.max(0, this.spinT - dt);
     this.comboT -= dt;
     if (this.comboT <= 0) this.combo = 0;
     for (const id in this.cd) this.cd[id] = Math.max(0, this.cd[id] - dt);
@@ -84,6 +90,17 @@ export class Player {
 
     st.dur -= dt;
     if (st.dur <= 0) { st.dmg = 0; st.spd = 0; st.regen = 0; }
+    st.immune = Math.max(0, st.immune - dt);
+    if (st.uncaoT > 0) {
+      st.uncaoT -= dt;
+      if (Math.random() < 0.25) {
+        g.particles.push(new Particle({
+          x: this.x + rand(-12, 12), y: this.y + rand(-4, 10),
+          vx: rand(-8, 8), vy: -28 - Math.random() * 22, life: 0.7,
+          color: '#ffcf8a', size: rand(2, 4), grav: 0
+        }));
+      }
+    }
     if (st.shieldT > 0) st.shieldT -= dt; else st.shield = 0;
     // Fadiga espiritual (de exorcismo): lentidão visível e leve enfraquecimento.
     if (st.fatigue > 0) {
@@ -210,6 +227,71 @@ export class Player {
     this.drawHead(ctx, s, fy);
 
     this.drawWeapon(ctx, fy);
+
+    // Giro do Guerreiro: arcos de lâmina girando ao redor do corpo.
+    if (this.spinT > 0 && this.spinDur > 0) {
+      const prog = 1 - this.spinT / this.spinDur;
+      const ang = prog * Math.PI * 2 * 1.8;
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = '#ff9d5c';
+      ctx.lineWidth = 4;
+      for (let i = 0; i < 3; i++) {
+        const a = ang + i * 2.09;
+        ctx.beginPath();
+        ctx.arc(0, fy - 16, 24 + i * 9, a, a + 0.85);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.55 * (1 - prog * 0.45);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 9; i++) {
+        const a = ang + i * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * 20, fy - 16 + Math.sin(a) * 20);
+        ctx.lineTo(Math.cos(a) * 34, fy - 16 + Math.sin(a) * 34);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Confissão: halo dourado discreto de proteção (imunidade).
+    if (this.status.immune > 0) {
+      const pulse = 0.5 + Math.sin(t * 5) * 0.2;
+      ctx.globalAlpha = 0.3 + pulse * 0.2;
+      ctx.strokeStyle = '#ffe66d';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, fy - 16, 25, 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 0.16 + pulse * 0.14;
+      ctx.fillStyle = '#ffe66d';
+      ctx.beginPath();
+      ctx.arc(0, fy - 16, 30, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = '#fff6d8';
+      ctx.beginPath();
+      ctx.arc(0, fy - 16, 2 + Math.sin(t * 9) * 1.5, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Unção dos Enfermos: aura quente e pulsante de fortalecimento.
+    if (this.status.uncaoT > 0) {
+      const pulse = 0.5 + Math.sin(t * 7) * 0.3;
+      ctx.globalAlpha = 0.35 + pulse * 0.3;
+      ctx.strokeStyle = '#ffb35c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, fy - 16, 17 + pulse * 3, 0, 6.283);
+      ctx.stroke();
+      ctx.globalAlpha = 0.15 + pulse * 0.2;
+      ctx.fillStyle = '#ff9d5c';
+      ctx.beginPath();
+      ctx.arc(0, fy - 16, 25 + pulse * 5, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
 
     if (this.status.shieldT > 0) {
       ctx.strokeStyle = '#ffe9a0';
@@ -625,15 +707,35 @@ export class Player {
       ctx.translate(6, fy - 16);
       ctx.rotate(this.aimAng + off);
       if (s.id === 'inventor') {
-        // Martelo do Templo: cabo, cabeça maciça e anel de metal
+        // Martelo do Templo: cabo longo e cabeça maciça de forja
         ctx.fillStyle = '#6b4a2e';
-        ctx.fillRect(4, -2, 8, 4);
+        ctx.fillRect(3, -3, 14, 6);
+        ctx.fillStyle = '#4a3018';
+        ctx.fillRect(3, -2, 14, 1.8);
+        // cabeça do martelo — grande, pesada
+        ctx.fillStyle = '#3a3a42';
+        ctx.beginPath();
+        ctx.rect(15, -13, 4, 26);
+        ctx.fill();
         ctx.fillStyle = this.weapon.color;
-        ctx.fillRect(10, -8.5, 11, 15);
-        ctx.fillStyle = '#8a5a2b';
-        ctx.fillRect(10, -6, 11, 1.8);
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(12, -6.5, 3, 11);
+        ctx.beginPath();
+        ctx.rect(11, -11, 24, 22);
+        ctx.fill();
+        // facetas de forja (brilho metálico)
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.fillRect(12.5, -9, 5, 18);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(30, -9, 3, 18);
+        // filetes dourados na lateral
+        ctx.fillStyle = '#c9a227';
+        ctx.fillRect(11, -11, 24, 2.4);
+        ctx.fillRect(11, 8.6, 24, 2.4);
+        // variações de rebite
+        ctx.fillStyle = '#6a6a72';
+        ctx.fillRect(13, -9, 2, 2);
+        ctx.fillRect(31, -9, 2, 2);
+        ctx.fillRect(13, 8, 2, 2);
+        ctx.fillRect(31, 8, 2, 2);
       } else if (s.id === 'guerreiro') {
         // Espada longa templária: lâmina, guarda dourada e contraguarda
         ctx.fillStyle = '#e8ecf2';
@@ -705,6 +807,22 @@ export class Player {
         ctx.moveTo(10, -8);
         ctx.lineTo(18, 0);
         ctx.stroke();
+        // brilho do tiro carregado crescendo na corda
+        if (this.charging) {
+          const prog = this.chargeMax > 0 ? 1 - Math.max(0, this.chargeT) / this.chargeMax : 1;
+          const pulse = 0.5 + Math.sin(this.game.time * 22) * 0.25;
+          ctx.globalAlpha = 0.35 + prog * 0.55;
+          ctx.fillStyle = '#fff3b0';
+          ctx.beginPath();
+          ctx.arc(15, 0, 3 + prog * 9 + pulse * 2, 0, 6.283);
+          ctx.fill();
+          ctx.globalAlpha = 0.5 + prog * 0.4;
+          ctx.fillStyle = '#fffbe0';
+          ctx.beginPath();
+          ctx.arc(15, 0, 1.5 + prog * 4, 0, 6.283);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
       } else if (s.id === 'abencoador') {
         // grimório da luz com capa colorida da classe
         ctx.fillStyle = L.robeDark;

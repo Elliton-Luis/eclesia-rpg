@@ -17,11 +17,11 @@ export const SUBCLASSES = {
     aura: { radius: 95, dmg: 0.4, tick: 0.6 },
     skills: [
       { id: 'confession', name: 'Confissão', key: 'Q', cd: 9, color: '#ffe66d',
-        desc: 'Permite ouvir confissões e cura 35% da vida própria. Reforça a alma (+dano temporário).',
-        heal: 0.35, dmgBuff: 0.25, dmgDur: 10 },
+        desc: 'O Padre se recolhe espiritualmente: imune a qualquer dano por 10s.',
+        immune: 10 },
       { id: 'uncao', name: 'Unção dos Enfermos', key: 'E', cd: 22, color: '#ffd27f',
-        desc: 'Cura massiva (70%) se a vida estiver baixa; caso contrário, cura 35%. Purga veneno.',
-        healLow: 0.70, healHigh: 0.35, lowThreshold: 0.30, purge: true }
+        desc: 'Cura 100% da vida e aumenta o dano em 30% por 15s.',
+        heal: 1.0, dmg: 0.30, dur: 15 }
     ]
   },
   bispo: {
@@ -35,8 +35,8 @@ export const SUBCLASSES = {
     skills: [
       { id: 'shield', name: 'Escudo Divino', key: 'Q', cd: 12, color: '#ffd27f', desc: 'Absorve 90 de dano por 7s.', shield: 90, dur: 7 },
       { id: 'grande_exorcismo', name: 'Grande Exorcismo', key: 'E', cd: 30, color: '#fff3b0',
-        desc: 'Purga todos os inimigos visíveis com luz sagrada. Após usar, fica exausto por 20s (lento e enfraquecido).',
-        dmg: 9999, type: T.HOLY, fatigue: 20 }
+        desc: 'Purga todos os inimigos visíveis, causando 140 de dano de luz sagrada.',
+        dmg: 140, type: T.HOLY }
     ]
   },
   diacono: {
@@ -47,12 +47,12 @@ export const SUBCLASSES = {
     weapon: { name: 'Cajado da Devoção', base: 12, color: '#2f8a8a', kind: 'ranged' },
     attack: { kind: 'ranged', dmg: 1.0, type: T.HOLY, speed: 620, cd: 0.32, color: '#d8fff0', size: 8, pierce: true },
     skills: [
-      { id: 'batismo', name: 'Batismo', key: 'Q', cd: 7, color: '#bfe8ff',
-        desc: 'Acolhe um fiel próximo: cura o jogador e cria uma onda de luz que empurra e fere os inimigos ao redor.',
-        heal: 0.20, dmg: 1.0, type: T.HOLY, radius: 110 },
-      { id: 'caridade', name: 'Bênção da Caridade', key: 'E', cd: 14, color: '#ffe66d',
-        desc: 'Bênção generosa: +45% de dano e +20% de velocidade por 10s.',
-        dmg: 0.45, spd: 0.20, dur: 10 }
+      { id: 'batismo', name: 'Batismo', key: 'Q', cd: 8, color: '#bfe8ff',
+        desc: 'Águas do batismo: congela todos os inimigos na tela por 3 segundos.',
+        freeze: 3 },
+      { id: 'caridade', name: 'Bênção da Caridade', key: 'E', cd: 10, color: '#ffe66d',
+        desc: 'Bênção derramada: causa pouco dano a todos os inimigos da tela ao mesmo tempo.',
+        dmg: 0.5, type: T.HOLY }
     ]
   },
   guerreiro: {
@@ -71,7 +71,7 @@ export const SUBCLASSES = {
     desc: 'Arqueiro do Templo: flechas rápidas e chuva de projéteis.',
     hp: 100, speed: 265, str: 13, int: 9, jump: 820,
     weapon: { name: 'Arco do Templo', base: 13, color: '#7a5a2b', kind: 'ranged' },
-    attack: { kind: 'ranged', dmg: 1.0, type: T.PHYS, speed: 660, cd: 0.42, color: '#f0e6c8', size: 8 },
+    attack: { kind: 'ranged', dmg: 1.0, type: T.PHYS, speed: 660, cd: 0.42, color: '#f0e6c8', size: 8, charge: 1.0, chargedDmg: 3.0, chargedSpeed: 1800 },
     skills: [
       { id: 'spread', name: 'Rajada', key: 'Q', cd: 3.5, color: '#7ec8e3', desc: '3 flechas em leque.', dmg: 0.85, type: T.PHYS, speed: 660, n: 3, spread: 0.32 },
       { id: 'rain', name: 'Chuva de Flechas', key: 'E', cd: 10, color: '#9be7ff', desc: 'Flechas caem na área do cursor.', dmg: 1.15, type: T.PHYS, n: 8, radius: 80, delay: 0.8 }
@@ -82,7 +82,7 @@ export const SUBCLASSES = {
     desc: 'Engenho do Templo: artilharia explosiva e fervor de batalha.',
     hp: 125, speed: 245, str: 15, int: 10, jump: 770,
     weapon: { name: 'Martelo do Templo', base: 14, color: '#c98a2e', kind: 'melee' },
-    attack: { kind: 'melee', dmg: 1.1, type: T.PHYS, range: 70, cd: 0.36, combo: 2, color: '#ffc2a0' },
+    attack: { kind: 'melee', dmg: 1.8, type: T.PHYS, range: 80, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
       { id: 'grenade', name: 'Bombarda', key: 'Q', cd: 5, color: '#ffb020', desc: 'Bombarda incendiária que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
       { id: 'overclock', name: 'Fervor da Cruzada', key: 'E', cd: 15, color: '#7cffb0', desc: 'Fervor sagrado: muito dano e velocidade por 6s.', dmg: 0.6, spd: 0.35, dur: 6 }

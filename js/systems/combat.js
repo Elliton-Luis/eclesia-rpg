@@ -1,6 +1,7 @@
 import { T } from '../data/constants.js';
 import { rand, dist, rectOverlap } from '../data/utils.js';
 import { BLESSINGS } from '../data/blessings.js';
+import { Particle } from '../entities/effects.js';
 import { Projectile } from '../entities/projectile.js';
 
 export const combat = {
@@ -48,6 +49,14 @@ export const combat = {
     const p = this.player;
     if (p.attackCd > 0) return;
     const atk = p.mw || p.sub.attack;
+    // Arqueiro: ataque principal prepara o tiro carregado antes de disparar.
+    if (atk.charge && atk.kind === 'ranged' && !p.charging) {
+      p.charging = true;
+      p.chargeT = atk.charge;
+      p.attackCd = 0.06;
+      this.sfx.buff();
+      return;
+    }
     // Treino de reflexos: reduz o cooldown de ataque/disparo (até 2x mais rápido).
     const cd = atk.cd / (1 + (p.atkSpd || 0) * 0.1);
     p.attackCd = cd;
@@ -68,6 +77,47 @@ export const combat = {
       this.shootPlayer(atk.dmg, atk);
       this.sfx.shoot();
     }
+  },
+
+  // Progressão do tiro carregado do Arqueiro: partículas de brilho e disparo
+  // quando a preparação completa.
+  chargeTick(dt) {
+    const p = this.player;
+    if (!p || !p.charging) return;
+    const atk = p.sub.attack;
+    p.chargeT -= dt;
+    if (Math.random() < 0.6) {
+      const a = p.aimAng;
+      const px = p.x + Math.cos(a) * 20;
+      const py = p.y + Math.sin(a) * 18;
+      this.particles.push(new Particle({
+        x: px + rand(-4, 4), y: py + rand(-4, 4),
+        vx: Math.cos(a) * rand(20, 50) + rand(-12, 12),
+        vy: Math.sin(a) * rand(20, 50) + rand(-12, 12),
+        life: 0.3, color: '#fff3b0', size: rand(2, 4), grav: 0
+      }));
+    }
+    if (p.chargeT <= 0) {
+      p.charging = false;
+      this.fireChargedArrow();
+    }
+  },
+
+  fireChargedArrow() {
+    const p = this.player;
+    const atk = p.sub.attack;
+    const dmg = this.calcStatDmg(atk.type, atk.chargedDmg || 2.5);
+    const speed = atk.chargedSpeed || 1600;
+    this.projectiles.push(new Projectile({
+      x: p.x + Math.cos(p.aimAng) * 18, y: p.y + Math.sin(p.aimAng) * 18,
+      vx: Math.cos(p.aimAng) * speed, vy: Math.sin(p.aimAng) * speed,
+      dmg, type: atk.type, color: '#fff6d8', size: (atk.size || 6) + 2, life: 1.6,
+      pierce: !!atk.pierce, owner: 'player', trail: true
+    }));
+    this.burst(p.x + Math.cos(p.aimAng) * 22, p.y + Math.sin(p.aimAng) * 22, '#fff3b0', 8, 160);
+    this.ring(p.x, p.y, 26, 0.35, '#fff3b0', 4);
+    this.shake += 8;
+    this.sfx.shoot();
   },
 
   shootModern(atk) {
@@ -271,7 +321,99 @@ export const combat = {
         this.sfx.heal();
         break;
       case 'passo_luz': this.passoLuz(s); break;
+      case 'batismo': this.batismo(s); break;
+      case 'caridade': this.caridade(s); break;
+      case 'confession': this.confession(s); break;
+      case 'uncao': this.uncao(s); break;
+      case 'grande_exorcismo': this.grandeExorcismo(s); break;
     }
+  },
+
+  // Batismo: águas sagradas congelam todos os inimigos presentes na tela.
+  batismo(s) {
+    const p = this.player;
+    const dur = s.freeze || 3;
+    let n = 0;
+    for (const m of this.monsters) {
+      if (m.dying || m.dead) continue;
+      m.frozenT = Math.max(m.frozenT || 0, dur);
+      this.burst(m.x, m.y - 6, '#bfe8ff', 10, 150);
+      this.ring(m.x, m.y, m.w * 0.8, 0.4, '#d6f2ff', 3);
+      n++;
+    }
+    this.ring(p.x, p.y, 100, 0.65, '#bfe8ff', 4);
+    this.burst(p.x, p.y, '#bfe8ff', 20, 240);
+    this.sfx.holy();
+    if (n > 0) this.text(p.x, p.y - 34, 'Batismo: ' + n + ' inimigo(s) congelado(s)!', '#d6f2ff', 16);
+  },
+
+  // Bênção da Caridade: luz derramada fere todos os inimigos da tela de uma vez.
+  caridade(s) {
+    const p = this.player;
+    const dmg = this.calcStatDmg(s.type, s.dmg);
+    let n = 0;
+    for (const m of this.monsters) {
+      if (m.dying || m.dead) continue;
+      this.damageMonster(m, dmg, s.type);
+      this.burst(m.x, m.y - 6, '#ffe66d', 8, 130);
+      n++;
+    }
+    this.ring(p.x, p.y, 220, 0.65, '#ffe66d', 5);
+    this.burst(p.x, p.y, '#ffe66d', 22, 260);
+    this.pillarFx(p.x, p.y, 90);
+    if (n > 0) this.shake += 4;
+    this.sfx.holy();
+    if (n === 0) this.banner('Nenhum inimigo para abençoar.', '#ffe66d', 1.2);
+  },
+
+  // Confissão: o Padre se recolhe espiritualmente e fica imune a qualquer dano.
+  confession(s) {
+    const p = this.player;
+    p.status.immune = s.immune || 10;
+    this.ring(p.x, p.y, 60, 0.8, '#ffe66d', 3);
+    this.burst(p.x, p.y, '#ffe66d', 14, 140);
+    this.sfx.buff();
+    this.text(p.x, p.y - 34, 'Confissão: imune por ' + Math.round(p.status.immune) + 's', '#ffe66d', 15);
+  },
+
+  // Unção dos Enfermos: cura toda a vida e fortalece o dano por 15s.
+  uncao(s) {
+    const p = this.player;
+    p.hp = p.maxHp;
+    p.status.dmg = s.dmg || 0.30;
+    p.status.dur = s.dur || 15;
+    p.status.uncaoT = s.dur || 15;
+    this.text(p.x, p.y - 26, 'Vida cheia!', '#7cff8a', 17);
+    this.healEffect(p);
+    this.ring(p.x, p.y, 70, 0.8, '#ffd27f', 4);
+    this.burst(p.x, p.y, '#ffd27f', 18, 200);
+    this.sfx.heal();
+    this.sfx.buff();
+    this.text(p.x, p.y - 42, '+30% de dano por 15s', '#ffd27f', 14);
+  },
+
+  // Grande Exorcismo: luz sagrada varre a tela, ferindo todos os inimigos visíveis.
+  grandeExorcismo(s) {
+    const p = this.player;
+    const dmg = s.dmg || 140;
+    let n = 0;
+    for (const m of this.monsters) {
+      if (m.dying || m.dead) continue;
+      this.damageMonster(m, dmg, s.type || T.HOLY);
+      this.burst(m.x, m.y - 8, '#fff3b0', 10, 170);
+      n++;
+    }
+    this.pillarFx(p.x, p.y, 150);
+    this.ring(p.x, p.y, 90, 0.9, '#fff3b0', 8);
+    this.ring(p.x, p.y, 170, 0.9, '#fff3b0', 6);
+    this.ring(p.x, p.y, 250, 0.9, '#ffe9b0', 5);
+    this.burst(p.x, p.y, '#ffffff', 36, 400);
+    this.burst(p.x, p.y, '#fff3b0', 26, 300);
+    this.shake += 18;
+    this.sfx.explosion();
+    this.sfx.holy();
+    if (n === 0) this.banner('Nenhum inimigo para exorcizar.', '#fff3b0', 1.2);
+    else this.text(p.x, p.y - 34, 'Grande Exorcismo: ' + n + ' inimigo(s) purgado(s)!', '#fff3b0', 16);
   },
 
   // Bênçãos: cada bênção aproveita os mesmos efeitos/ajudantes já usados pelas
@@ -401,6 +543,8 @@ export const combat = {
       if (m.dying || m.dead) continue;
       if (dist(m, p) < s.radius + m.w / 2) this.damageMonster(m, dmg, s.type);
     }
+    p.spinT = 0.5;
+    p.spinDur = 0.5;
     this.burst(p.x, p.y, s.color, 16, 220);
     this.ring(p.x, p.y, s.radius, 0.4, s.color, 5);
     this.shake += 5;

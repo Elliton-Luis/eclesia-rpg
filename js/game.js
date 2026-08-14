@@ -250,6 +250,7 @@ const GAME = {
   update(dt) {
     const p = this.player;
     p.update(dt, this);
+    this.chargeTick(dt);
     this.contactHit(dt);
 
     if (this.attackHeld && this.hotKind() === 'attack' && p.mw && p.mw.kind === 'auto' && p.attackCd <= 0) this.doAttack();
@@ -270,8 +271,8 @@ const GAME = {
 
     // veneno: dano contínuo que só dispara em intervalos fixos (1 tick por segundo),
     // para nunca aplicar múltiplos golpes em sequência no mesmo frame.
-    // Imortalidade (modo fantasma) também blinda contra o veneno.
-    if (p.status.venom > 0 && !this.cheats.ghost) {
+    // Imortalidade (modo fantasma) e a Confissão também blindam contra o veneno.
+    if (p.status.venom > 0 && !this.cheats.ghost && p.status.immune <= 0) {
       p.status.venom -= dt;
       p.status.venomCd = (p.status.venomCd || 0) - dt;
       if (p.status.venomCd <= 0) {

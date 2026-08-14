@@ -5,6 +5,7 @@ export const playerDamage = {
     const p = this.player;
     if (this.cheats.hp) return;
     if (this.cheats.ghost) return; // modo fantasma: imortal por completo
+    if (p.status.immune > 0) return; // Confissão: imune a qualquer dano
     if (p.invuln > 0 || p.dashT > 0) return;
     let dmg = amount;
     this.stats.dmgTaken += dmg;
@@ -50,6 +51,7 @@ export const playerDamage = {
     p.status.dmg = 0; p.status.spd = 0; p.status.regen = 0;
     p.status.dur = 0; p.status.shield = 0; p.status.shieldT = 0;
     p.status.venom = 0; p.status.venomCd = 0;
+    p.status.immune = 0; p.status.uncaoT = 0;
     this.monsters = [];
     this.projectiles = [];
     this.delayed = [];

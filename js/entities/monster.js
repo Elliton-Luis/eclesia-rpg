@@ -31,6 +31,7 @@ export class Monster {
     this.bossPattern = rand(0, 999);
     this.bossCd = 0;
     this.stunned = 0;
+    this.frozenT = 0;
     this.venomT = 0;
     this.venomHits = new Set();
   }
@@ -44,6 +45,7 @@ export class Monster {
   }
 
   weakMult(type) {
+    if (this.frozenT > 0) return 1.5;
     if (this.stunned > 0) return 1.5;
     return this.multiplier(type);
   }
@@ -54,6 +56,7 @@ export class Monster {
     this.touchCd -= dt;
     this.hitT -= dt;
     this.stunned = Math.max(0, this.stunned - dt);
+    this.frozenT = Math.max(0, this.frozenT - dt);
 
     if (this.dying) {
       this.dieT -= dt;
@@ -79,6 +82,13 @@ export class Monster {
       this.venomT -= dt;
       this.hp -= Math.round(this.maxHp * 0.015) + 1;
       if (this.hp <= 0) { this.game.killMonster(this); return; }
+    }
+
+    // Congelado (Batismo): imobilizado, sem mover, atacar ou perseguir.
+    if (this.frozenT > 0) {
+      this.vx = 0;
+      this.vy = 0;
+      return;
     }
 
     this.t -= dt;
@@ -204,49 +214,68 @@ export class Monster {
 
     if (d.id === 'slime') {
       const r = this.w / 2;
-      // corpo gelatinoso com base ondulante
+      // balanço gelatinoso
       const j = Math.sin(t * 4) * 1.5;
-      ctx.fillStyle = dark;
+      const sq = Math.sin(t * 2.5);
+      // sombra no chão
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
       ctx.beginPath();
-      ctx.moveTo(-r, r * 0.3);
-      ctx.bezierCurveTo(-r - 2, r * 0.9, -r * 0.6, r, -r * 0.3, r * 0.75 + j);
-      ctx.bezierCurveTo(-r * 0.1, r + j, r * 0.1, r - j, r * 0.3, r * 0.75 + j);
-      ctx.bezierCurveTo(r * 0.6, r, r + 2, r * 0.9, r, r * 0.3);
+      ctx.ellipse(0, r * 0.95, r * 0.72, r * 0.13, 0, 0, 6.283);
       ctx.fill();
-      // corpo principal translúcido
+      // corpo gelatinoso (gota derretida, convexa)
       ctx.fillStyle = col;
       ctx.beginPath();
-      ctx.moveTo(-r + 2, r * 0.3);
-      ctx.bezierCurveTo(-r + 1, r * 0.85, -r * 0.5, r * 0.92, 0, r * 0.7 + j);
-      ctx.bezierCurveTo(r * 0.5, r * 0.92, r - 1, r * 0.85, r - 2, r * 0.3);
-      ctx.bezierCurveTo(r * 0.6, -r * 0.55, -r * 0.6, -r * 0.55, -r + 2, r * 0.3);
+      ctx.moveTo(-r, r * 0.3);
+      ctx.bezierCurveTo(-r - 2, r * 0.85, -r * 0.55, r * 0.92 - sq * 3, 0, r * 0.72 + j);
+      ctx.bezierCurveTo(r * 0.55, r * 0.92 + sq * 3, r + 2, r * 0.85, r, r * 0.3);
+      ctx.bezierCurveTo(r * 0.7, -r * 0.55, -r * 0.7, -r * 0.55, -r, r * 0.3);
       ctx.fill();
+      // sombreamento interno (gelo mais denso embaixo)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(0, r * 0.42, r * 0.6, r * 0.3, 0, 0, Math.PI);
+      ctx.fill();
+      // reflexo de barriga
+      ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.42, r * 0.02);
+      ctx.quadraticCurveTo(-r * 0.5, r * 0.3, -r * 0.26, r * 0.42);
+      ctx.stroke();
       // brilho no topo
       ctx.fillStyle = 'rgba(255,255,255,0.35)';
       ctx.beginPath();
-      ctx.ellipse(-r * 0.28, -r * 0.28, r * 0.22, r * 0.12, -0.5, 0, 6.283);
+      ctx.ellipse(-r * 0.28, -r * 0.3, r * 0.2, r * 0.11, -0.5, 0, 6.283);
       ctx.fill();
-      // núcleo interno
-      ctx.strokeStyle = dark;
-      ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      ctx.arc(0, r * 0.15, r * 0.28, 0, 6.283);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      // olhos saltados
+      // olhos de gota: esferas brilhantes afundadas no gel
+      ctx.fillStyle = '#0e0e16';
+      ctx.beginPath(); ctx.arc(-r * 0.24, -r * 0.08, r * 0.17, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 0.24, -r * 0.08, r * 0.17, 0, 6.283); ctx.fill();
+      // contorno gelatinoso ao redor dos olhos
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(-r * 0.24, -r * 0.08, r * 0.2, 0, 6.283); ctx.stroke();
+      ctx.beginPath(); ctx.arc(r * 0.24, -r * 0.08, r * 0.2, 0, 6.283); ctx.stroke();
+      // brilho dos olhos
       ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-r * 0.28, -r * 0.15, 3.2, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.28, -r * 0.15, 3.2, 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#222';
-      ctx.beginPath(); ctx.arc(-r * 0.28 + this.facing * 0.8, -r * 0.15, 1.6, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(r * 0.28 + this.facing * 0.8, -r * 0.15, 1.6, 0, 6.283); ctx.fill();
-      // boca
-      ctx.strokeStyle = dark;
-      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(-r * 0.24 + this.facing * 0.4, -r * 0.12, r * 0.055, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(r * 0.24 + this.facing * 0.4, -r * 0.12, r * 0.055, 0, 6.283); ctx.fill();
+      // boca pequena discreta
+      ctx.strokeStyle = '#0e0e16';
+      ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.arc(0, r * 0.28, 4, 0.15, Math.PI - 0.15);
+      ctx.arc(0, r * 0.18, r * 0.1, 0.25, Math.PI - 0.25);
       ctx.stroke();
+      // gota escorrendo de vez em quando
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.7;
+      const drip = Math.sin(t * 2 + 1) > 0.6 ? Math.sin(t * 6) : 0;
+      if (drip > 0) {
+        ctx.beginPath();
+        ctx.arc(-r * 0.7, r * 0.55 + drip * r * 0.25, r * 0.08, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     } else if (d.id === 'bat') {
       const fl = Math.sin(t * 18) * 0.5;
       // asas membranosas com dedos
@@ -971,7 +1000,7 @@ export class Monster {
         ctx.fill();
       }
     } else if (d.id === 'rato') {
-      // corpo
+      // corpo de rato... quase
       ctx.fillStyle = dark;
       ctx.beginPath();
       ctx.ellipse(0, 4, 11, 8, 0, 0, 6.283);
@@ -980,50 +1009,109 @@ export class Monster {
       ctx.beginPath();
       ctx.ellipse(0, 3, 10, 7, 0, 0, 6.283);
       ctx.fill();
-      // cabeça
+      // manchas de pele lisa (sem pelo, como lesão)
+      ctx.fillStyle = '#e8b4c0';
+      ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(-3, 5, 2.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(4, 6, 1.8, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 1;
+      // costura no dorso
+      ctx.strokeStyle = '#6a4b5a';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(-8, 2); ctx.lineTo(6, 4);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // cabeça desproporcional
       ctx.fillStyle = col;
       ctx.beginPath();
       ctx.arc(11, -1, 7, 0, 6.283);
       ctx.fill();
-      // orelhas
+      // nariz estranhamente pontiagudo (agulha) em vez de focinho
+      ctx.fillStyle = '#8a3a4a';
+      ctx.beginPath();
+      ctx.moveTo(15, -2); ctx.lineTo(21, -1); ctx.lineTo(15, 1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ff5c6a';
+      ctx.beginPath();
+      ctx.arc(21, -1, 1.3, 0, 6.283);
+      ctx.fill();
+      // orelhas: uma normal, outra em posição errada e espremida
       ctx.fillStyle = '#e8b4c0';
       ctx.beginPath(); ctx.arc(8, -7, 3.4, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(13, -7, 3.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(13, -7, 1.8, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#c98a9a';
       ctx.beginPath(); ctx.arc(8, -7, 1.8, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(13, -7, 1.8, 0, 6.283); ctx.fill();
-      // focinho + nariz
-      ctx.fillStyle = '#ff8f9a';
-      ctx.beginPath();
-      ctx.arc(17, 0, 2.2, 0, 6.283);
-      ctx.fill();
-      // olhos
+      ctx.beginPath(); ctx.arc(13, -7, 0.8, 0, 6.283); ctx.fill();
+      // olhos bugados e assimétricos: um grande, outro minúsculo
+      ctx.fillStyle = '#f2f0ea';
+      ctx.beginPath(); ctx.arc(10, -2, 2.4, 0, 6.283); ctx.fill();
       ctx.fillStyle = '#222';
-      ctx.beginPath(); ctx.arc(10, -2, 1.5, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(14, -2, 1.5, 0, 6.283); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(10.4, -2.4, 0.5, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(14.4, -2.4, 0.5, 0, 6.283); ctx.fill();
-      // bigodes
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.arc(10.3, -2, 1.1, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#f2f0ea';
+      ctx.beginPath(); ctx.arc(14.2, -2.4, 1, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#222';
+      ctx.beginPath(); ctx.arc(14.4, -2.4, 0.4, 0, 6.283); ctx.fill();
+      // bigodes que ondulam sozinhos (não soprados por vento)
+      ctx.strokeStyle = 'rgba(220,220,235,0.8)';
       ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(16, 0); ctx.lineTo(21, -2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(16, 1); ctx.lineTo(21, 2);
-      ctx.stroke();
-      // cauda longa e fina
+      for (let i = -1; i <= 1; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(17, i * 0.5);
+        ctx.quadraticCurveTo(21, i * 2 + Math.sin(t * 3 + i) * 1.5, 24, Math.sin(t * 3 + i * 2) * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(17, i * 1.5);
+        ctx.quadraticCurveTo(21, i * 3 - Math.sin(t * 4 + i) * 1.5, 24, i * 4 + Math.sin(t * 4 + i * 3) * 2);
+        ctx.stroke();
+      }
+      // dentes de roedor supercrescidos
+      ctx.fillStyle = '#f5e9c8';
+      ctx.fillRect(15.4, 1, 1.4, 5);
+      ctx.fillRect(17.4, 1.4, 1.4, 4.2);
+      ctx.fillStyle = '#b89a5a';
+      ctx.fillRect(15.4, 5.4, 1.4, 0.8);
+      ctx.fillRect(17.4, 4.8, 1.4, 0.8);
+      // patas demais: muitas e finas, dedos longos
+      ctx.strokeStyle = '#d8a0b0';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 6; i++) {
+        const o = ((t * 3 + i * 40) % 80 + 20) / 100;
+        ctx.beginPath();
+        ctx.moveTo(-7 + i * 3, 8);
+        ctx.lineTo(-8 + i * 3, 13 + Math.sin(t * 4 + i) * 1.5);
+        ctx.stroke();
+      }
+      // mãozinha no lugar da pata dianteira (dedos demais)
+      ctx.fillStyle = '#d8a0b0';
+      ctx.fillRect(6, 8, 2.4, 3);
+      for (let i = 0; i < 5; i++) {
+        ctx.fillRect(5.6 + i * 0.5, 10.4, 0.7, 2.2);
+      }
+      // cauda longa demais, com ponta em gancho que se move sozinha
+      const tx = Math.sin(t * 5) * 2;
       ctx.strokeStyle = col;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(-9, 6);
-      ctx.quadraticCurveTo(-17, 12, -12, 16);
+      ctx.quadraticCurveTo(-20, 10, -17, 15 + tx * 0.5);
+      ctx.quadraticCurveTo(-14, 19, -18, 20 + tx);
       ctx.stroke();
-      // patas
+      // crista estranha de cabelo na nuca
       ctx.fillStyle = dark;
-      ctx.fillRect(-6, 9, 2.5, 3);
-      ctx.fillRect(4, 10, 2.5, 3);
+      ctx.beginPath();
+      ctx.moveTo(4, -7); ctx.lineTo(3, -12); ctx.lineTo(6, -8);
+      ctx.moveTo(6, -6); ctx.lineTo(7, -11); ctx.lineTo(9, -7);
+      ctx.fill();
+      // olhinho extra, meio escondido no corpo
+      ctx.fillStyle = '#3a3a4a';
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.arc(-2, 0, 1.2, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#e8b4c0';
+      ctx.beginPath(); ctx.arc(-2, 0, 0.5, 0, 6.283); ctx.fill();
+      ctx.globalAlpha = 1;
     } else if (d.id === 'espantalho') {
       // estaca de madeira
       ctx.strokeStyle = '#5f4020';
@@ -2250,6 +2338,40 @@ export class Monster {
       ctx.beginPath();
       ctx.arc(0, -4, this.w * 0.85, 0, 6.283);
       ctx.stroke();
+    }
+
+    // Congelado (Batismo): camada de gelo translúcida, brilho azulado e cristais.
+    if (this.frozenT > 0) {
+      ctx.globalAlpha = 0.4 + Math.sin(t * 6) * 0.06;
+      ctx.fillStyle = '#aee8ff';
+      ctx.beginPath();
+      ctx.arc(0, -2, this.w * 0.72, 0, 6.283);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#0f3b55';
+      ctx.strokeStyle = '#d8f4ff';
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 5; i++) {
+        const a = Math.floor(t * 8 + i * 1.25) * 0.9;
+        const cx = Math.cos(a) * this.w * 0.3;
+        const cy = Math.sin(a) * this.w * 0.3 - 2;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 4);
+        ctx.lineTo(cx + 1.8, cy - 1);
+        ctx.lineTo(cx, cy + 4);
+        ctx.lineTo(cx - 1.8, cy - 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = '#bfe8ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -2, this.w * 0.72 + 2, Math.PI * 0.9, Math.PI * 2.1);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
 
