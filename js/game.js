@@ -1,4 +1,4 @@
-import { TILE, HOTBAR_SLOTS } from './data/constants.js';
+import { TILE } from './data/constants.js';
 import { clamp, lerp, rand } from './data/utils.js';
 import { SUBCLASSES, castaLine } from './data/classes.js';
 import { REGIONS, SEALS } from './data/regions.js';
@@ -106,8 +106,11 @@ const GAME = {
     window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyJ' || e.code === 'KeyX') this.attackHeld = false; if (e.code === 'KeyP' || e.code === 'KeyM') {} });
     this.canvas.addEventListener('mousemove', e => this.mousemove(e));
     this.canvas.addEventListener('mousedown', e => this.mousedown(e));
-    // Rodinha do mouse: percorre a hotbar ciclicamente (estilo Minecraft).
-    this.canvas.addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? -1 : 1); } });
+    // Rodinha do mouse: seleciona os slots da Hotbar ciclicamente (scroll para
+    // cima avança 1→2→…→0→1; para baixo, 0→9→…→1→0). Nunca ativa a habilidade.
+    this.canvas.addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? 1 : -1); } });
+    // O scroll também funciona quando o cursor está sobre a própria Hotbar.
+    byId('skillbar').addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? 1 : -1); } });
 
     byId('btnRespawn').onclick = () => this.respawn();
     byId('btnRecords').onclick = () => this.showRecords();
@@ -496,10 +499,11 @@ churchAura() {
       if (e.code === 'KeyM') this.toggleMute();
       if (e.code === 'KeyI') this.openInventory();
       if (e.code === 'KeyH') this.useSupremeKey();
+      // Teclas 1–9 e 0 apenas SELECIONAM o slot correspondente (não ativam o
+      // efeito): a ativação é pelo clique esquerdo sobre o slot selecionado.
       if (e.code.indexOf('Digit') === 0) {
-        // Teclas 1–9 e 0 selecionam e ativam o slot correspondente da hotbar.
         const n = e.code === 'Digit0' ? 10 : parseInt(e.code.slice(5), 10);
-        if (n >= 1 && n <= HOTBAR_SLOTS) this.useSlot(n - 1);
+        if (n >= 1 && n <= this.HOTBAR_SLOTS) this.selectHot(n - 1);
       }
     } else if (this.state === 'paused') {
       if (e.code === 'KeyP' || e.code === 'Escape') this.pause(false);
@@ -531,8 +535,10 @@ churchAura() {
     this.aim.x = this.mouse.x + this.cam.x;
     this.aim.y = this.mouse.y + this.cam.y;
     this.sfx.unlock();
-    this.attackHeld = true;
-    if (this.state === 'play') this.doAttack();
+    // Botão esquerdo do mouse = ativar o slot atualmente selecionado na Hotbar
+    // (seleção feita pelo scroll). O ataque padrão tem controle próprio (J/X) e
+    // não participa dos slots 1–0 — portanto o clique não ataca diretamente.
+    if (this.state === 'play') this.useSlot(this.hotSel);
   },
 
   pause(v) {

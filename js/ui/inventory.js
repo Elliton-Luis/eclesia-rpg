@@ -50,7 +50,7 @@ export const inventory = {
     const equipped = this.hotbarCount(p);
     el.innerHTML = `
       <h2>INVENTÁRIO</h2>
-      <div class="sub">O aprendizado é livre — a <b>hotbar</b> comporta até ${HOTBAR_SLOTS} habilidades equipadas (teclas 1–0) para uso rápido em combate.</div>
+      <div class="sub">O aprendizado é livre — a <b>hotbar</b> comporta até ${HOTBAR_SLOTS} habilidades equipadas. Selecione com o <b>scroll</b> e use com o <b>clique esquerdo</b>; o ataque padrão (tecla J) fica à esquerda, fora da hotbar.</div>
       <div class="invbar-label">HOTBAR · ${equipped}/${HOTBAR_SLOTS} equipadas · clique num ocupado para remover · arraste para rearranjar</div>
       <div class="inv-hotbar">${this.hotbarHtml(p)}</div>
       ${this.assignBarHtml(p)}
@@ -117,11 +117,11 @@ export const inventory = {
       if (s.bless === 'supreme') {
         tag = slot === -1
           ? `<span class="tag ${p.supremeUses > 0 ? 'free' : 'spent'}">${p.supremeUses > 0 ? 'NÃO EQUIPADA' : 'CONSUMIDA'}</span>`
-          : `<span class="tag ${p.supremeUses > 0 ? 'eq' : 'spent'}">${p.supremeUses > 0 ? 'EQUIPADA · tecla ' + KEY_LABELS[slot] : 'CONSUMIDA'}</span>`;
+          : `<span class="tag ${p.supremeUses > 0 ? 'eq' : 'spent'}">${p.supremeUses > 0 ? 'EQUIPADA · slot ' + KEY_LABELS[slot] : 'CONSUMIDA'}</span>`;
       } else {
         tag = slot === -1
           ? '<span class="tag free">NÃO EQUIPADA</span>'
-          : `<span class="tag eq">EQUIPADA · tecla ${KEY_LABELS[slot]}</span>`;
+          : `<span class="tag eq">EQUIPADA · slot ${KEY_LABELS[slot]}</span>`;
       }
       return `<div class="invrow${this.invSel === s.id ? ' sel' : ''}" data-id="${s.id}" draggable="true" style="--c:${s.color}">
         <div class="sicon" style="background:${s.color}"></div>
@@ -194,10 +194,10 @@ export const inventory = {
     if (!s) return '';
     const slot = p.findSlot(s.id);
     const btns = KEY_LABELS.map((k, i) =>
-      `<button class="slotbtn" data-assign="${i}" title="Atribuir à tecla ${k}">${k}</button>`).join('');
+      `<button class="slotbtn" data-assign="${i}" title="Atribuir ao slot ${k}">${k}</button>`).join('');
     return `<div class="assignbar">
       <span class="lbl">Atribuir «${s.name}» ao slot:</span>${btns}
-      ${slot !== -1 ? `<button class="btn ghost min" data-remove="1">Remover (tecla ${KEY_LABELS[slot]})</button>` : ''}
+      ${slot !== -1 ? `<button class="btn ghost min" data-remove="1">Remover (slot ${KEY_LABELS[slot]})</button>` : ''}
       <button class="btn ghost min" data-cancel="1">Cancelar</button>
     </div>`;
   },

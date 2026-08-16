@@ -55,7 +55,7 @@ export const shops = {
           : cleroOnly && !isClero ? '<span class="owned">SOMENTE CLERO</span>'
           : `<button class="btn" data-skill="${sk.id}">${sk.cost} ●</button>`}</div>`;
     }
-    html += `<div class="hint">Aprenda todas as habilidades que quiser! A restrição fica na <b>hotbar</b>: você pode equipar até ${this.HOTBAR_SLOTS} para uso rápido (teclas 1–0, organize no inventário — tecla I).</div>`;
+    html += `<div class="hint">Aprenda todas as habilidades que quiser! A restrição fica na <b>hotbar</b>: selecione o slot com o <b>scroll</b> e use com o <b>clique esquerdo</b> — organize tudo no inventário (tecla I).</div>`;
     html += `</div><button class="btn ghost" id="closeSkills">Fechar (Esc)</button>`;
     el.innerHTML = html;
     el.querySelectorAll('[data-skill]').forEach(b => b.onclick = () => this.buySkill(b.dataset.skill));
