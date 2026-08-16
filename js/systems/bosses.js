@@ -77,13 +77,25 @@ export const bosses = {
       this.sfx.upgrade();
     }
 
-    if (d.finalBoss) {
-      this.flags.final = true;
-      this.endGame();
-    } else {
-      this.banner(d.name.toUpperCase() + ' DESTRUÍDO!', '#ffd23f', 3);
-      this.pickups.push(new Pickup(m.x, m.y - 20, 'chest', 1));
+    // Check if one of the three main bosses was defeated
+    const mainBossIds = ['krol_chefe', 'gere_osso', 'titan'];
+    if (mainBossIds.includes(d.id)) {
+      // Only increment if this boss hasn't been counted before
+      if (!this.game.progressionGranted[d.id]) { // Using progressionGranted as a flag
+        this.game.mainBossesDefeatedCount++;
+        this.game.progressionGranted[d.id] = true; // Mark as counted for ending
+      }
+
+      if (this.game.mainBossesDefeatedCount >= 3) {
+        this.flags.final = true;
+        this.endGame();
+        return; // End game, no need for other logic
+      }
     }
+
+    // Default boss defeated logic for any boss that doesn't trigger immediate ending
+    this.banner(d.name.toUpperCase() + ' DESTRUÍDO!', '#ffd23f', 3);
+    this.pickups.push(new Pickup(m.x, m.y - 20, 'chest', 1));
 
     // Progressão de nível de batalha: Krol (+1, leva ao nível 1) e o Rei da
     // Noite/Alvorada dos Mortos (+2, leva ao nível 3). Cada chefe concede o

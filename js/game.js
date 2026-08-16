@@ -79,6 +79,7 @@ const GAME = {
   visited: {},
   defeatedBosses: {},
   stats: { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 },
+  mainBossesDefeatedCount: 0,
 
   init() {
     this.canvas = byId('game');
@@ -188,6 +189,7 @@ const GAME = {
     this.sealsBroken = {};
     this.progressionGranted = {};
     this.ending = null;
+    this.mainBossesDefeatedCount = 0;
     this.loreDiscovered = { clero: [], templarios: [], mago: [] };
     this.comboStreak = 0;
     this.comboT = 0;
