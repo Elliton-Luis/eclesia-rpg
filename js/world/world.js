@@ -744,36 +744,58 @@ export class World {
     }
   }
 
-  // Paleta de trilhas por bioma: cores derivadas do chão do bioma para transição suave
+  // Paleta de trilhas por bioma: terra batida (core) sólida e pedrinhas (pebble),
+  // com tom afinado ao chão do bioma para a transição nas bordas parecer natural.
   pathPalette(region) {
-    const base = this.hexToRgb(this.groundColor(region));
-    const r = base[0], g = base[1], b = base[2];
-    // Escurece e marromiza a cor base para criar a trilha
-    const darken = (dr, dg, db, a) => `rgba(${Math.max(0, r + dr)}, ${Math.max(0, g + dg)}, ${Math.max(0, b + db)}, ${a})`;
-    const hex = (dr, dg, db) => this.rgbToHex(Math.max(0, r + dr), Math.max(0, g + dg), Math.max(0, b + db));
-    
+    const pick = (core, pebble) => ({ core, pebble });
     switch (region) {
-      case 'pantano':
-        return { halo: darken(-10, -20, 10, 0.25), mid: darken(-20, -30, 0, 0.5), core: hex(-30, -40, -10), pebble: hex(-40, -50, -20) };
-      case 'cemiterio':
-        return { halo: darken(-15, -10, -15, 0.25), mid: darken(-25, -20, -25, 0.5), core: hex(-35, -30, -35), pebble: hex(-45, -40, -45) };
-      case 'colinas':
-        return { halo: darken(-10, -10, -15, 0.25), mid: darken(-20, -20, -25, 0.5), core: hex(-30, -30, -35), pebble: hex(-40, -40, -45) };
-      case 'ruinas':
-      case 'templo':
-        return { halo: darken(-10, -20, -15, 0.25), mid: darken(-20, -30, -25, 0.5), core: hex(-30, -40, -35), pebble: hex(-40, -50, -45) };
-      case 'forte':
-        return { halo: darken(-10, -10, -10, 0.25), mid: darken(-20, -20, -20, 0.5), core: hex(-30, -30, -30), pebble: hex(-40, -40, -40) };
+      case 'prado': case 'varzea': case 'norte': case 'vila':
+        return pick('#7a5f3c', '#5a4630');
+      case 'campos':
+        return pick('#75692f', '#544b26');
       case 'floresta':
       case 'lobos':
       case 'sagrado':
-        return { halo: darken(-15, -5, -15, 0.28), mid: darken(-25, -10, -25, 0.55), core: hex(-35, -15, -35), pebble: hex(-45, -20, -45) };
-      case 'campos':
-        return { halo: darken(-10, -15, -20, 0.28), mid: darken(-20, -25, -30, 0.55), core: hex(-30, -35, -40), pebble: hex(-40, -45, -50) };
+        return pick('#5c5130', '#423c24');
+      case 'pantano':
+        return pick('#4d4252', '#3a3340');
+      case 'cemiterio':
+        return pick('#635a47', '#4c4636');
+      case 'colinas':
+        return pick('#7c6a44', '#5e523a');
+      case 'ruinas':
+      case 'templo':
+        return pick('#6d4a3a', '#534037');
+      case 'forte':
+        return pick('#5c5640', '#484432');
       default:
-        // prado, norte, varzea, vila, etc.
-        return { halo: darken(-10, -10, -10, 0.30), mid: darken(-20, -20, -20, 0.55), core: hex(-30, -30, -30), pebble: hex(-40, -40, -40) };
+        return pick('#6b5a3c', '#57472f');
     }
+  }
+
+  // Grau de "batimento" da trilha em (tx, ty), 0..1. Conta vizinhos de trilha
+  // no anel r=1 (68%) e no anel r=2 (32%), de modo que o centro de uma trilha
+  // larga fique completamente batido e as beiradas se dissolvam suavemente no
+  // chão ao redor em ~2 tiles — sem bordas duras pintadas.
+  pathish(tx, ty) {
+    const has = (dx, dy) => {
+      const k = tx + dx + ',' + (ty + dy);
+      return this.pathTiles.has(k) || this.wornTiles.has(k);
+    };
+    let n1 = 0, n2 = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        if (has(dx, dy)) n1++;
+      }
+    }
+    for (let dy = -2; dy <= 2; dy++) {
+      for (let dx = -2; dx <= 2; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== 2) continue;
+        if (has(dx, dy)) n2++;
+      }
+    }
+    return (n1 / 8) * 0.68 + (n2 / 16) * 0.32;
   }
 
   // Interpola entre duas cores hex (ratio 0-1)
@@ -786,14 +808,7 @@ export class World {
     );
   }
 
-  // Converte cor rgba string para hex com alfa aplicado sobre fundo
-  blendHexWithAlpha(rgba, alpha) {
-    const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-    if (!m) return '#9a7c58';
-    const r = parseInt(m[1]), g = parseInt(m[2]), b = parseInt(m[3]);
-    // Simula alpha sobre fundo médio (aproximação)
-    return this.rgbToHex(r * alpha + 128 * (1 - alpha), g * alpha + 128 * (1 - alpha), b * alpha + 128 * (1 - alpha));
-  }
+  
 
   // Árvore minimalista - 1 tile (32x32), 3 variações por bioma.
   // Sem contorno (sem silhueta nem traço), copa e tronco sempre mais escuros
@@ -1001,6 +1016,145 @@ export class World {
     ctx.beginPath(); ctx.ellipse(x + 16, y + 30, 12, 2.5, 0, 0, 6.283); ctx.fill();
   }
 
+  // Identidade determinística de um edifício civil: sobe pela fachada até a linha
+  // do telhado e anda até a extremidade esquerda. Todas as paredes/telhados do
+  // mesmo prédio compartilham o mesmo material e acabamento.
+  buildingId(tx, ty) {
+    let y = ty;
+    while (y > 0) {
+      const c = this.tileAt(tx, y);
+      if (c === 'h' || c === 'd' || c === 'f') { y--; continue; }
+      break;
+    }
+    const topY = y + 1;
+    let x = tx;
+    while (x > 0 && this.tileAt(x - 1, topY) === 'h') x--;
+    return ((x * 131 + topY * 199) >>> 0);
+  }
+
+  // Telhado de telhas com cumeeira, beirais, empena nas casinhas estreitas e
+  // chaminé. Textura igual para todo o vilarejo; apenas o tom varia por prédio.
+  drawHouseRoof(ctx, x, y, tx, ty, t, hasLeft, hasRight, bid) {
+    const tints = ['#96492e', '#8f442c', '#9c4c30', '#8a4a2e'];
+    ctx.fillStyle = tints[bid % 4];
+    ctx.fillRect(x, y, TILE, TILE);
+    // cumeeira no alto (mais clara) e sombra do beiral na base
+    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+    ctx.fillRect(x, y, TILE, 3);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x, y + TILE - 4, TILE, 4);
+    // linhas de telhas
+    ctx.fillStyle = 'rgba(0,0,0,0.10)';
+    for (let k = 1; k < 4; k++) ctx.fillRect(x, y + k * 8, TILE, 1);
+    // beirais nas extremidades do telhado
+    if (!hasLeft && hasRight) {
+      ctx.fillStyle = '#7a3827';
+      ctx.fillRect(x, y, 5, TILE);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.beginPath(); ctx.moveTo(x - 1, y + TILE); ctx.lineTo(x + 4, y); ctx.lineTo(x + 6, y + TILE); ctx.closePath(); ctx.fill();
+    } else if (hasLeft && !hasRight) {
+      ctx.fillStyle = '#7a3827';
+      ctx.fillRect(x + TILE - 5, y, 5, TILE);
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.beginPath(); ctx.moveTo(x + TILE + 1, y + TILE); ctx.lineTo(x + TILE - 4, y); ctx.lineTo(x + TILE - 6, y + TILE); ctx.closePath(); ctx.fill();
+    } else if (!hasLeft && !hasRight) {
+      // casinha estreita: empena triangular no meio
+      ctx.fillStyle = '#7a3827';
+      ctx.beginPath();
+      ctx.moveTo(x + 2, y + TILE); ctx.lineTo(x + 16, y + 2); ctx.lineTo(x + 30, y + TILE);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#b06a48';
+      ctx.fillRect(x + 13, y + 6, 6, TILE - 6);
+    }
+    // chaminé em algumas casas
+    if ((bid >> 8) % 4 < 2) {
+      ctx.fillStyle = '#8a8078';
+      ctx.fillRect(x + 6, y - 4, 5, 8);
+      ctx.fillStyle = '#6f665f';
+      ctx.fillRect(x + 6, y - 4, 5, 2);
+      const sy = (Math.floor(t * 10) + tx + ty) % 4;
+      ctx.fillStyle = 'rgba(210,210,210,0.45)';
+      ctx.beginPath(); ctx.arc(x + 8, y - 6 - sy, 2.2, 0, 6.283); ctx.fill();
+    }
+  }
+
+  // Parede da casa civil em 4 materiais (distribuídos por edifício), sempre com
+  // a cornija no topo apoiando o telhado e a fundação embaixo.
+  drawHouseWall(ctx, x, y, tx, ty, t, bv) {
+    const cv = (hash2(tx, ty) >>> 0) % 6;
+
+    if (bv === 0) {
+      // enxaimel rebocado: reboco claro com esqueleto de vigas de madeira
+      ctx.fillStyle = '#c4ac82';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = '#5a4430';
+      ctx.fillRect(x + 1, y + 3, 3, TILE - 8);
+      ctx.fillRect(x + TILE - 4, y + 3, 3, TILE - 8);
+      ctx.fillStyle = 'rgba(58,42,26,0.85)';
+      ctx.fillRect(x + 2, y + 13, TILE - 4, 2);
+      ctx.fillRect(x + 15, y + 13, 2, TILE - 14);
+    } else if (bv === 1) {
+      // pedra lavrada: blocos regulares com juntas de argamassa
+      ctx.fillStyle = '#9a959c';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = 'rgba(40,38,44,0.4)';
+      for (let j = 0; j < 3; j++) {
+        ctx.fillRect(x + 4, y + 10 + j * 7, 24, 1);
+        ctx.fillRect(x + 10 + (j % 2) * 12, y + 6 + j * 7, 1, 4);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.10)';
+      ctx.fillRect(x + 12, y + 2, 8, 2);
+    } else if (bv === 2) {
+      // pedra irregular: alvenaria rústica com tons quebrados
+      ctx.fillStyle = '#7d7468';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      ctx.fillRect(x + 6, y + 4, 12, 2);
+      ctx.fillRect(x + 16, y + 20, 10, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.fillRect(x + 4, y + 8, 6, 3);
+      ctx.fillRect(x + 20, y + 14, 6, 3);
+      ctx.fillRect(x + 8, y + 26, 9, 2);
+    } else {
+      // madeira: pranchas verticais com traves horizontais
+      ctx.fillStyle = '#9a7a4a';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      ctx.fillRect(x, y, 4, TILE);
+      ctx.fillRect(x + 8, y, 3, TILE);
+      ctx.fillRect(x + 18, y, 3, TILE);
+      ctx.fillRect(x + 27, y, 5, TILE);
+      ctx.fillStyle = '#5a4028';
+      ctx.fillRect(x - 1, y + 11, TILE + 2, 2);
+      ctx.fillRect(x - 1, y + TILE - 12, TILE + 2, 2);
+    }
+
+    // cornija sob o telhado (apoio) e fundação
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.fillRect(x, y, TILE, 3);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(x, y + TILE - 3, TILE, 3);
+
+    // detalhe de fachada: arbusto no enxaimel ou janela luminosa nas demais
+    if (bv === 0 && cv === 1) {
+      ctx.fillStyle = '#4a6b32';
+      ctx.beginPath(); ctx.ellipse(x + 14, y + TILE - 4, 9, 4, 0, 0, 6.283); ctx.fill();
+    } else if (cv === 0 || cv === 3) {
+      const wg = 0.85 + Math.sin(t * 3 + tx * 0.5 + ty * 0.3) * 0.15;
+      const jy = y + 15;
+      const jx = cv === 0 ? x + 8 : x + 17;
+      const frame = bv === 1 ? '#4a444c' : bv === 2 ? '#4c4438' : bv === 3 ? '#4a3620' : '#4a3624';
+      ctx.fillStyle = 'rgba(255,224,150,' + wg.toFixed(2) + ')';
+      ctx.fillRect(jx, jy, 6, 7);
+      ctx.strokeStyle = frame;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(jx, jy, 6, 7);
+      ctx.fillStyle = frame;
+      ctx.fillRect(jx + 2, jy, 1, 7);
+      ctx.fillRect(jx, jy + 3, 6, 1);
+    }
+  }
+
   drawTile(ctx, tx, ty, c, t) {
     const x = tx * TILE, y = ty * TILE;
     const region = this.regionGrid[ty * WORLD_W + tx];
@@ -1142,97 +1296,57 @@ export class World {
         }
         break;
       case 'n': {
-        // Trilha sólida contínua (bloco de chão batido) com bordas que se dissolvem
-        // no bioma ao redor (blending suave de 2 tiles nas bordas expostas)
-        
-        // Verifica vizinhos para saber quais bordas estão expostas (não são trilha)
-        const isPath = (dx, dy) => this.pathTiles.has((tx + dx) + ',' + (ty + dy));
-        const left = isPath(-1, 0), right = isPath(1, 0), up = isPath(0, -1), down = isPath(0, 1);
-        const exposed = { left: !left, right: !right, up: !up, down: !down };
-        const anyExposed = exposed.left || exposed.right || exposed.up || exposed.down;
-        
-        // Paleta de trilha por bioma
+        // Trilha de terra batida com desgaste natural: o tom do tile é calculado
+        // pelo grau de "batimento" (vizinhança de trilha em raio 1 e 2), então o
+        // centro da trilha fica totalmente batido e as beiradas se dissolvem no
+        // chão do bioma sem bordas pintadas (gradiente de ~2 tiles).
         const pathPalette = this.pathPalette(region);
-        
-        // Base: desenha o chão do bioma primeiro
-        ctx.fillStyle = blendedColor;
+        const k = this.pathish(tx, ty);
+        const hv = (hash2(tx * 7, ty * 13) >>> 0) % 1000;
+
+        // Tom principal: mistura o chão do bioma com a terra batida
+        ctx.fillStyle = this.blendColors(blendedColor, pathPalette.core, Math.min(1, k * 0.92));
         ctx.fillRect(x, y, TILE, TILE);
-        
-        // Núcleo sólido da trilha (retângulo central 24x24 = 75% do tile)
-        const coreInset = 4;
-        const coreW = TILE - coreInset * 2;
-        const coreH = TILE - coreInset * 2;
-        ctx.fillStyle = pathPalette.core;
-        ctx.fillRect(x + coreInset, y + coreInset, coreW, coreH);
-        
-        // Bordas que se dissolvem no bioma (apenas nas bordas expostas)
-        // Usa o blendedColor do bioma com alfa variável para transição suave
-        if (anyExposed) {
-          // Camada de transição média (inset 2)
-          const midInset = 2;
-          const midW = TILE - midInset * 2;
-          const midH = TILE - midInset * 2;
-          
-          // Desenha retângulo de transição nas bordas expostas
-          ctx.fillStyle = this.blendColors(pathPalette.core, pathPalette.mid, 0.5);
-          if (exposed.left) ctx.fillRect(x + midInset, y + midInset, coreInset - midInset, midH);
-          if (exposed.right) ctx.fillRect(x + TILE - coreInset, y + midInset, coreInset - midInset, midH);
-          if (exposed.up) ctx.fillRect(x + midInset, y + midInset, midW, coreInset - midInset);
-          if (exposed.down) ctx.fillRect(x + midInset, y + TILE - coreInset, midW, coreInset - midInset);
-          
-          // Camada de transição externa (borda do tile) - dissolve no bioma
-          ctx.fillStyle = this.blendColors(pathPalette.mid, pathPalette.halo.replace('rgba(', '').replace(')', '').split(',').map(v => parseFloat(v)).slice(0,3).join(','), 0.5);
-          // Melhor: usa o blendedColor com overlay da trilha
-          const outerColor = this.blendHexWithAlpha(pathPalette.halo, 0.4);
-          if (exposed.left) ctx.fillRect(x, y, midInset, TILE);
-          if (exposed.right) ctx.fillRect(x + TILE - midInset, y, midInset, TILE);
-          if (exposed.up) ctx.fillRect(x, y, TILE, midInset);
-          if (exposed.down) ctx.fillRect(x, y + TILE - midInset, TILE, midInset);
-          
-          // Cantos das bordas expostas - preenchimento suave
-          if (exposed.left && exposed.up) {
-            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
-            ctx.beginPath(); ctx.arc(x, y, 4, 0, 6.283); ctx.fill();
+
+        if (k > 0.45) {
+          // Núcleo compactado: marca oval levemente mais escura no centro
+          if (hv % 3 !== 0) {
+            ctx.globalAlpha = 0.16;
+            ctx.fillStyle = pathPalette.core;
+            ctx.beginPath(); ctx.ellipse(x + 16, y + 16, 10, 8, 0, 0, 6.283); ctx.fill();
+            ctx.globalAlpha = 1;
           }
-          if (exposed.right && exposed.up) {
-            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
-            ctx.beginPath(); ctx.arc(x + TILE, y, 4, 0, 6.283); ctx.fill();
+          // Pedrinhas soltas (mais claras que a terra)
+          if (hv % 5 < 2) {
+            ctx.fillStyle = pathPalette.pebble;
+            ctx.fillRect(x + 6 + (hv % 6) * 4, y + 8 + ((hv / 6) % 5) * 4, 2, 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillRect(x + 7 + (hv % 6) * 4, y + 9 + ((hv / 6) % 5) * 4, 2, 2);
           }
-          if (exposed.left && exposed.down) {
-            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
-            ctx.beginPath(); ctx.arc(x, y + TILE, 4, 0, 6.283); ctx.fill();
+          // Tufos de palha e sulcos de carroça na direção do caminho
+          const vert = (this.pathTiles.has((tx - 1) + ',' + ty) || this.wornTiles.has((tx - 1) + ',' + ty)) && (this.pathTiles.has((tx + 1) + ',' + ty) || this.wornTiles.has((tx + 1) + ',' + ty));
+          ctx.fillStyle = 'rgba(0,0,0,0.13)';
+          if (vert) {
+            ctx.fillRect(x + 9, y + 12, 2, 8);
+            if (hv % 4 === 0) ctx.fillRect(x + 21, y + 10, 2, 6);
+          } else {
+            ctx.fillRect(x + 12, y + 9, 8, 2);
+            if (hv % 4 === 0) ctx.fillRect(x + 10, y + 21, 6, 2);
           }
-          if (exposed.right && exposed.down) {
-            ctx.fillStyle = this.blendHexWithAlpha(pathPalette.halo, 0.3);
-            ctx.beginPath(); ctx.arc(x + TILE, y + TILE, 4, 0, 6.283); ctx.fill();
+        } else if (k > 0.12) {
+          // Beirada frágil: tufos de grama sobrevivente e palha mais clara,
+          // quebrando a linha reta da borda contra o mato
+          const g = hv % 5;
+          if (g < 3) {
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            ctx.fillRect(x + 4 + g * 8, y + 6 + ((hv >> 3) % 4) * 7, 3, 2);
+            ctx.fillStyle = this.shadeColor(pathPalette.core, 26);
+            ctx.fillRect(x + 13 + g * 5, y + 20 + ((hv >> 6) % 3) * 4, 4, 1);
           }
-        }
-        
-        // Detalhes sutis no núcleo (pedrinhas, marcas de desgaste)
-        const np = (hash2(tx, ty) >>> 0) % 8;
-        if (np < 3) {
-          ctx.fillStyle = pathPalette.pebble;
-          const px = x + 6 + (np % 3) * 7;
-          const py = y + 8 + Math.floor(np / 3) * 7;
-          ctx.fillRect(px, py, 2, 2);
-        }
-        
-        // Marcas lineares de desgaste (direção do caminho)
-        if ((hash2(tx * 7, ty * 13) >>> 0) % 5 === 0) {
-          ctx.strokeStyle = pathPalette.pebble;
-          ctx.lineWidth = 1;
-          ctx.globalAlpha = 0.3;
-          ctx.beginPath();
-          if (left && right) {
-            // Horizontal
-            ctx.moveTo(x + 4, y + 16);
-            ctx.lineTo(x + 28, y + 16);
-          } else if (up && down) {
-            // Vertical
-            ctx.moveTo(x + 16, y + 4);
-            ctx.lineTo(x + 16, y + 28);
-          }
-          ctx.stroke();
+          // resquício de grama resistente na beira exposta
+          ctx.fillStyle = blendedColor;
+          ctx.globalAlpha = 0.35;
+          ctx.fillRect(x + 4 + ((hv >> 9) % 4) * 7, y + 12 + ((hv >> 11) % 3) * 6, 2, 3);
           ctx.globalAlpha = 1;
         }
         break;
@@ -1458,89 +1572,21 @@ export class World {
             ctx.fillRect(x + 20, y + 24, 6, 2);
           }
         } else {
-          // casa civil: parede rebocada sob telhado de telhas.
-          // A vizinhança define qual parte da casa este tile representa
-          // (telhado com cumeeira no topo, fachada com janelas nas laterais).
+          // casa civil: telhado de telhas no topo e parede com material variado
+          // por edifício (enxaimel, pedra lavrada, pedra irregular ou madeira).
+          // A identidade do prédio (linha do telhado) define o material e o tom,
+          // então cada casa tem cara própria sem abrir novas paredes.
+          const bid = this.buildingId(tx, ty);
+          const bv = bid % 4;
           const above = this.tileAt(tx, ty - 1);
           const left = this.tileAt(tx - 1, ty);
           const right = this.tileAt(tx + 1, ty);
           const isRoofTop = above !== 'h' && above !== 'd' && above !== 'f';
           const hasLeft = left === 'h', hasRight = right === 'h';
-          const cv = (hash2(tx, ty) >>> 0) % 6;
           if (isRoofTop) {
-            // --- telhado de telhas com cumeeira, beirais e chaminé ---
-            ctx.fillStyle = '#96492e';
-            ctx.fillRect(x, y, TILE, TILE);
-            // cumeeira no alto (mais clara) e sombra do beiral na base
-            ctx.fillStyle = 'rgba(255,255,255,0.16)';
-            ctx.fillRect(x, y, TILE, 3);
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
-            ctx.fillRect(x, y + TILE - 4, TILE, 4);
-            // linhas de telhas
-            ctx.fillStyle = 'rgba(0,0,0,0.10)';
-            for (let k = 1; k < 4; k++) ctx.fillRect(x, y + k * 8, TILE, 1);
-            // beirais nas extremidades do telhado
-            if (!hasLeft && hasRight) {
-              ctx.fillStyle = '#7a3827';
-              ctx.fillRect(x, y, 5, TILE);
-              ctx.fillStyle = 'rgba(255,255,255,0.10)';
-              ctx.beginPath(); ctx.moveTo(x - 1, y + TILE); ctx.lineTo(x + 4, y); ctx.lineTo(x + 6, y + TILE); ctx.closePath(); ctx.fill();
-            } else if (hasLeft && !hasRight) {
-              ctx.fillStyle = '#7a3827';
-              ctx.fillRect(x + TILE - 5, y, 5, TILE);
-              ctx.fillStyle = 'rgba(255,255,255,0.10)';
-              ctx.beginPath(); ctx.moveTo(x + TILE + 1, y + TILE); ctx.lineTo(x + TILE - 4, y); ctx.lineTo(x + TILE - 6, y + TILE); ctx.closePath(); ctx.fill();
-            } else if (!hasLeft && !hasRight) {
-              // casinha estreita: empena triangular no meio
-              ctx.fillStyle = '#7a3827';
-              ctx.beginPath();
-              ctx.moveTo(x + 2, y + TILE); ctx.lineTo(x + 16, y + 2); ctx.lineTo(x + 30, y + TILE);
-              ctx.closePath(); ctx.fill();
-              ctx.fillStyle = '#b06a48';
-              ctx.fillRect(x + 13, y + 6, 6, TILE - 6);
-            }
-            // chaminé em algumas casas
-            if (cv === 1 || cv === 4) {
-              ctx.fillStyle = '#8a8078';
-              ctx.fillRect(x + 6, y - 4, 5, 8);
-              ctx.fillStyle = '#6f665f';
-              ctx.fillRect(x + 6, y - 4, 5, 2);
-              const sy = (Math.floor(t * 10) + tx + ty) % 4;
-              ctx.fillStyle = 'rgba(210,210,210,0.45)';
-              ctx.beginPath(); ctx.arc(x + 8, y - 6 - sy, 2.2, 0, 6.283); ctx.fill();
-            }
+            this.drawHouseRoof(ctx, x, y, tx, ty, t, hasLeft, hasRight, bid);
           } else {
-            // --- fachada de enxaimel rebocada com cornija ---
-            ctx.fillStyle = '#c4ac82';
-            ctx.fillRect(x, y, TILE, TILE);
-            // cornija/calha sob o telhado
-            ctx.fillStyle = 'rgba(0,0,0,0.16)';
-            ctx.fillRect(x, y, TILE, 3);
-            // vigas de madeira (esqueleto do enxaimel)
-            ctx.fillStyle = '#5a4430';
-            ctx.fillRect(x + 1, y + 3, 3, TILE - 8);
-            ctx.fillRect(x + TILE - 4, y + 3, 3, TILE - 8);
-            ctx.fillStyle = 'rgba(58,42,26,0.85)';
-            ctx.fillRect(x + 2, y + 13, TILE - 4, 2);
-            ctx.fillRect(x + 15, y + 13, 2, TILE - 14);
-            // janelas em paredes superiores (variam por construção)
-            if (cv === 0 || cv === 3) {
-              const wg = 0.85 + Math.sin(t * 3 + tx * 0.5 + ty * 0.3) * 0.15;
-              const jy = y + 15;
-              const jx = cv === 0 ? x + 8 : x + 17;
-              ctx.fillStyle = 'rgba(255,224,150,' + wg.toFixed(2) + ')';
-              ctx.fillRect(jx, jy, 6, 7);
-              ctx.strokeStyle = '#4a3624';
-              ctx.lineWidth = 1;
-              ctx.strokeRect(jx, jy, 6, 7);
-              ctx.fillStyle = '#4a3624';
-              ctx.fillRect(jx + 2, jy, 1, 7);
-              ctx.fillRect(jx, jy + 3, 6, 1);
-            } else if (cv === 1) {
-              // arbusto baixo ao lado da porta
-              ctx.fillStyle = '#4a6b32';
-              ctx.beginPath(); ctx.ellipse(x + 14, y + TILE - 4, 9, 4, 0, 0, 6.283); ctx.fill();
-            }
+            this.drawHouseWall(ctx, x, y, tx, ty, t, bv);
           }
         }
         break;
@@ -1589,25 +1635,30 @@ export class World {
         }
         break;
       case 'd':
-        // porta em arco com moldura e soleira
-        ctx.fillStyle = '#b09a72';
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = '#4a3018';
-        ctx.fillRect(x + 5, y + 4, 22, 26);
-        ctx.fillStyle = '#8a6a3a';
-        ctx.beginPath();
-        ctx.moveTo(x + 7, y + 30);
-        ctx.lineTo(x + 7, y + 14);
-        ctx.quadraticCurveTo(x + 16, y + 4, x + 25, y + 14);
-        ctx.lineTo(x + 25, y + 30);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#5a4020';
-        ctx.fillRect(x + 8, y + 16, 2, 12);
-        ctx.fillRect(x + 23, y + 16, 2, 12);
-        ctx.fillStyle = '#c9a227';
-        ctx.fillRect(x + 21, y + 20, 2, 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fillRect(x, y + 28, TILE, 3);
+        // porta em arco com moldura e soleira; a moldura acompanha o material
+        // do edifício (mesma identidade usada nas paredes/telhado)
+        {
+          const dbv = this.buildingId(tx, ty) % 4;
+          const surround = dbv === 1 ? '#a9a4ab' : dbv === 2 ? '#8f887c' : dbv === 3 ? '#c2a25e' : '#b09a72';
+          ctx.fillStyle = surround;
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = '#4a3018';
+          ctx.fillRect(x + 5, y + 4, 22, 26);
+          ctx.fillStyle = '#8a6a3a';
+          ctx.beginPath();
+          ctx.moveTo(x + 7, y + 30);
+          ctx.lineTo(x + 7, y + 14);
+          ctx.quadraticCurveTo(x + 16, y + 4, x + 25, y + 14);
+          ctx.lineTo(x + 25, y + 30);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#5a4020';
+          ctx.fillRect(x + 8, y + 16, 2, 12);
+          ctx.fillRect(x + 23, y + 16, 2, 12);
+          ctx.fillStyle = '#c9a227';
+          ctx.fillRect(x + 21, y + 20, 2, 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.2)';
+          ctx.fillRect(x, y + 28, TILE, 3);
+        }
         break;
       case 'f':
         if (region === 'torre') {
