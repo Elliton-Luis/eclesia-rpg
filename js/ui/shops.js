@@ -1,4 +1,4 @@
-import { T, MAX_EXTRA_SKILLS } from '../data/constants.js';
+import { T } from '../data/constants.js';
 import { upgradeCost, weaponDamage } from '../data/utils.js';
 import { EXTRA_SKILLS } from '../data/skills.js';
 import { SHOP } from '../data/shop.js';
@@ -40,20 +40,17 @@ export const shops = {
   buildSkillShop() {
     const p = this.player;
     const el = byId('skillsPanel');
-    const nextKey = ['R', 'T', 'Y'][p.extraSkills ? p.extraSkills.length : 0];
     const isClero = p.sub.casta === 'clero';
     let html = `<h2>Mestre das Artes</h2><div class="goldline">Ouro: <b>${p.gold}</b></div><div class="items">`;
     for (const sk of EXTRA_SKILLS) {
       const has = p.extraSkills && p.extraSkills.some(s => s.id === sk.id);
-      const maxed = p.extraSkills && p.extraSkills.length >= MAX_EXTRA_SKILLS;
       const cleroOnly = sk.id === 'reza_maior';
-      html += `<div class="item"><div><b>${sk.name}</b><div class="desc">${sk.desc} <span style="opacity:.7">(${nextKey})</span>${cleroOnly && !isClero ? ' <span style="opacity:.7">[dom sacerdotal do Clero]</span>' : ''}</div></div>${
+      html += `<div class="item"><div><b>${sk.name}</b><div class="desc">${sk.desc}${cleroOnly && !isClero ? ' <span style="opacity:.7">[dom sacerdotal do Clero]</span>' : ''}</div></div>${
         has ? '<span class="owned">APRENDIDA</span>'
-          : maxed ? '<span class="owned">MÁXIMO</span>'
           : cleroOnly && !isClero ? '<span class="owned">SOMENTE CLERO</span>'
           : `<button class="btn" data-skill="${sk.id}">${sk.cost} ●</button>`}</div>`;
     }
-    html += `<div class="hint">Você pode aprender até ${MAX_EXTRA_SKILLS} habilidades adicionais (R, T, Y).</div>`;
+    html += `<div class="hint">Aprenda todas as habilidades que quiser! A restrição fica na <b>hotbar</b>: você pode equipar até ${this.HOTBAR_SLOTS} para uso rápido (teclas 1–0, organize no inventário — tecla I).</div>`;
     html += `</div><button class="btn ghost" id="closeSkills">Fechar (Esc)</button>`;
     el.innerHTML = html;
     el.querySelectorAll('[data-skill]').forEach(b => b.onclick = () => this.buySkill(b.dataset.skill));
@@ -68,15 +65,15 @@ export const shops = {
       this.banner('A Reza Maior é um dom sacerdotal do Clero.', '#ffd23f', 2.2);
       return;
     }
-    if (p.extraSkills.length >= MAX_EXTRA_SKILLS) { this.banner('Limite de habilidades atingido', '#ff9d5c', 2); return; }
     if (p.extraSkills.some(s => s.id === id)) return;
     const cost = this.cheats.gold ? 0 : sk.cost;
     if (p.gold < cost) { this.banner('Ouro insuficiente', '#ff5c5c', 1.5); return; }
     p.gold -= cost;
-    const newSk = Object.assign({}, sk, { key: ['R', 'T', 'Y'][p.extraSkills.length] });
+    const newSk = Object.assign({}, sk);
     delete newSk.cost;
     p.extraSkills.push(newSk);
     p.cd[sk.id] = 0;
+    p.tryEquip(sk.id);
     this.sfx.upgrade();
     this.burst(p.x, p.y - 20, sk.color, 14, 200);
     this.buildSkillbar();

@@ -1,85 +1,103 @@
 import { clamp } from '../data/utils.js';
 import { CASTAS } from '../data/classes.js';
+import { HOTBAR_SLOTS } from '../data/constants.js';
 import { byId } from '../dom.js';
 
 export const hud = {
-  // Hotbar estilo Minecraft: slots selecionáveis por clique, números (1-9) ou
-  // rodinha do mouse. A habilidade selecionada é usada pelo comando de ataque/uso (J/X/click).
-  HOTBAR_SLOTS: 9,
+  // Hotbar fixa de HOTBAR_SLOTS slots (teclas 1–0). Cada slot abriga uma
+  // habilidade equipada; o ataque básico continua nas teclas J/X/clique.
+  HOTBAR_SLOTS,
+
+  SKILL_KEYS: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+
+  skillKey(i) {
+    return this.SKILL_KEYS[i] || '·';
+  },
 
   buildSkillbar() {
     const p = this.player;
-    const SW = this.HOTBAR_SLOTS;
+    if (!p) return;
     const bar = byId('skillbar');
     bar.innerHTML = '';
     this.skillEls = [];
-    // Lista de ações utilizáveis: ataque + habilidades + Bênção Suprema (se concedida).
-    const actions = [{ kind: 'attack', name: 'Ataque', color: p.sub.color }];
-    p.allSkills().forEach((s, i) => actions.push({ kind: 'skill', i, name: s.name, color: s.color }));
-    if (p.supremeBlessed) actions.push({ kind: 'supreme', name: 'Bênção Suprema', color: '#fff3b0' });
-    this.hotList = actions;
-    const L = actions.length;
     if (this.hotSel === undefined) this.hotSel = 0;
-    this.hotSel = Math.max(0, Math.min(this.hotSel, L - 1));
-    // Janela visível: mantém a seleção à vista (centralizada) quando há mais
-    // habilidades do que slots visíveis.
-    this.hotStart = L <= SW ? 0 : Math.max(0, Math.min(this.hotSel - Math.floor((SW - 1) / 2), L - SW));
-    const visible = Math.min(SW, L);
-    const mk = (act, absIdx, numLabel) => {
+    this.hotSel = clamp(this.hotSel, 0, HOTBAR_SLOTS - 1);
+    for (let i = 0; i < HOTBAR_SLOTS; i++) {
       const d = document.createElement('div');
-      d.className = 'skill' + (absIdx === this.hotSel ? ' selected' : '');
-      d.style.setProperty('--c', act.color);
-      d.dataset.hotIndex = String(absIdx);
-      d.innerHTML = `<span class="skey">${numLabel}</span><span class="sicon" style="background:${act.color}"></span><span class="sname">${act.name}</span><div class="cdfill"></div><div class="cdnum"></div>`;
-      d.onclick = () => { if (this.state === 'play') this.selectHot(absIdx); };
+      d.className = 'skill hotslot';
+      d.dataset.slot = String(i);
+      d.innerHTML = `<span class="skey">${this.skillKey(i)}</span><span class="sicon"></span><span class="sname"></span><div class="cdfill"></div><div class="cdnum"></div>`;
+      d.onclick = () => { if (this.state === 'play') this.selectHot(i); };
       bar.appendChild(d);
-      return d;
-    };
-    for (let k = 0; k < visible; k++) {
-      const absIdx = this.hotStart + k;
-      const act = actions[absIdx];
-      this.skillEls.push(mk(act, absIdx, String(k + 1)));
+      this.skillEls.push(d);
     }
-    // Indicador de página quando o número de habilidades excede a hotbar visível.
-    if (L > SW) {
-      const pg = document.createElement('div');
-      pg.className = 'hotpage';
-      pg.textContent = Math.floor(this.hotStart / SW) + 1 + '/' + Math.ceil(L / SW);
-      bar.appendChild(pg);
-    }
+    this.hudSlots();
   },
 
-  selectHot(absIdx) {
-    if (!this.hotList || !this.hotList.length) return;
-    this.hotSel = Math.max(0, Math.min(absIdx, this.hotList.length - 1));
-    this.buildSkillbar();
-    this.hud();
-  },
-
-  selectHotByNumber(n) {
-    if (!this.hotList || !this.hotList.length) return;
-    const idx = this.hotStart + (n - 1);
-    if (idx >= 0 && idx < this.hotList.length) this.selectHot(idx);
+  selectHot(i) {
+    this.hotSel = clamp(i, 0, HOTBAR_SLOTS - 1);
+    this.hudSlots();
   },
 
   scrollHot(dir) {
-    if (!this.hotList || !this.hotList.length) return;
-    this.hotSel = (this.hotSel + dir + this.hotList.length) % this.hotList.length;
-    this.buildSkillbar();
-    this.hud();
+    this.selectHot((this.hotSel + dir + HOTBAR_SLOTS) % HOTBAR_SLOTS);
   },
 
-  useHot() {
-    const act = this.hotList && this.hotList[this.hotSel];
-    if (!act) return;
-    if (act.kind === 'attack') this.doAttack();
-    else if (act.kind === 'skill') this.castSkill(act.i);
-    else if (act.kind === 'supreme') this.useSupreme();
+  // Teclas 1–0: seleciona o slot e ativa a habilidade equipada nele.
+  useSlot(i) {
+    if (i < 0 || i >= HOTBAR_SLOTS) return;
+    this.selectHot(i);
+    if (this.state !== 'play') return;
+    const s = this.player.hotSkill(i);
+    if (s) this.castSkillId(s.id);
   },
 
-  hotKind() {
-    const act = this.hotList && this.hotList[this.hotSel];
-    return act ? act.kind : null;
+  // Atalho da Bênção Suprema (H): só funciona se ela estiver equipada na hotbar.
+  useSupremeKey() {
+    const p = this.player;
+    if (!p) return;
+    const i = p.findSlot('bencao_suprema');
+    if (i === -1) {
+      this.banner('A Bênção Suprema não está na hotbar. Equipe-a no inventário (tecla I).', '#fff3b0', 2.4);
+      return;
+    }
+    this.useSlot(i);
+  },
+
+  // Atualiza os 10 slots visíveis (ícone, nome, cooldown) a partir do estado real.
+  hudSlots() {
+    const p = this.player;
+    if (!p || !this.skillEls) return;
+    for (let i = 0; i < HOTBAR_SLOTS; i++) {
+      const el = this.skillEls[i];
+      if (!el) continue;
+      const s = p.hotSkill(i);
+      el.classList.toggle('selected', i === (this.hotSel || 0));
+      const ic = el.querySelector('.sicon');
+      const nm = el.querySelector('.sname');
+      const cf = el.querySelector('.cdfill');
+      const cn = el.querySelector('.cdnum');
+      if (!s) {
+        el.style.setProperty('--c', '#4a5468');
+        ic.style.background = 'rgba(255,255,255,0.08)';
+        nm.textContent = 'vazio';
+        cf.style.height = '0%';
+        cn.textContent = '';
+        el.style.opacity = '';
+        continue;
+      }
+      el.style.setProperty('--c', s.color);
+      ic.style.background = s.color;
+      nm.textContent = s.name;
+      el.style.opacity = '';
+      // Bênção Suprema consumida: o orbe esmaece para mostrar que não há mais uso.
+      if (s.bless === 'supreme') el.style.opacity = p.supremeUses > 0 ? '' : '0.4';
+      const cd = p.cd[s.id] || 0;
+      const mx = s.cd || 1;
+      const f = clamp(cd / mx, 0, 1);
+      cf.style.height = (f * 100) + '%';
+      cn.textContent = cd > 0 ? cd.toFixed(1) : '';
+    }
   },
 
   hud() {
@@ -97,28 +115,7 @@ export const hud = {
     const lvEl = byId('lvlval');
     if (lvEl) lvEl.textContent = this.progressLevel;
 
-    for (let i = 0; i < this.skillEls.length; i++) {
-      const el = this.skillEls[i];
-      const act = this.hotList && this.hotList[this.hotStart + i];
-      if (!el || !act) continue;
-      if (act.kind === 'attack') {
-        el.querySelector('.sname').textContent = p.mw ? p.mw.name : 'Ataque';
-      } else if (act.kind === 'skill') {
-        const s = p.allSkills()[act.i];
-        if (!s) continue;
-      } else if (act.kind === 'supreme') {
-        const ready = p.supremeBlessed && p.supremeUses > 0;
-        el.style.opacity = ready ? '1' : '0.35';
-        el.querySelector('.sname').textContent = ready ? 'Bênção Suprema' : 'Consumida';
-        continue;
-      }
-      let cd = 0, max = 1;
-      if (act.kind === 'attack') { cd = p.attackCd; max = ((p.mw || p.sub.attack).cd || 1) / (1 + (p.atkSpd || 0) * 0.1); }
-      else { const s = p.allSkills()[act.i]; cd = p.cd[s.id]; max = s.cd; }
-      const f = clamp(cd / max, 0, 1);
-      el.querySelector('.cdfill').style.height = (f * 100) + '%';
-      el.querySelector('.cdnum').textContent = cd > 0 ? cd.toFixed(1) : '';
-    }
+    this.hudSlots();
 
     const bb = byId('bossbar');
     const b = this.boss || this.bossesActive.find(m => !m.dead);

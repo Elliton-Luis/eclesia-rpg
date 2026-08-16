@@ -1,4 +1,4 @@
-import { MAX_BLESSINGS, BLESSING_KEYS } from '../data/constants.js';
+import { MAX_BLESSINGS } from '../data/constants.js';
 import { weaponDamage } from '../data/utils.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { SUBCLASSES } from '../data/classes.js';
@@ -122,17 +122,16 @@ export const cheats = {
     const b = BLESSINGS[name];
     if (b) {
       if (b.bless === 'supreme') {
-        p.supremeBlessed = true;
-        p.supremeUses = 1;
-        this.banner('👑 ' + b.name + ' concedida! (tecla H)', b.color, 2.4);
+        p.grantSupreme();
+        this.banner('👑 ' + b.name + ' concedida! (use-a pela hotbar)', b.color, 2.4);
         this.blessingFx(p, '#fff3b0', 24);
       } else {
         if (p.blessings.length >= MAX_BLESSINGS) { this.banner('Limite de bênçãos atingido (' + MAX_BLESSINGS + ').', '#ff9d5c', 2); return; }
-        const key = BLESSING_KEYS[p.blessings.length];
-        const newB = Object.assign({}, b, { key });
+        const newB = Object.assign({}, b);
         p.blessings.push(newB);
         p.cd[newB.id] = 0;
-        this.banner(newB.name + ' aprendida! (tecla ' + key + ')', newB.color, 2);
+        p.tryEquip(newB.id);
+        this.banner(newB.name + ' aprendida! Equipe-a na hotbar (tecla I).', newB.color, 2);
         this.burst(p.x, p.y - 20, newB.color, 14, 200);
       }
       this.sfx.upgrade();

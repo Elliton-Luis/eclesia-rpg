@@ -1,4 +1,4 @@
-import { MAX_TRAIN_REFLEX, MAX_BLESSINGS, BLESSING_KEYS } from '../data/constants.js';
+import { MAX_TRAIN_REFLEX, MAX_BLESSINGS } from '../data/constants.js';
 import { BLESSINGS } from '../data/blessings.js';
 import { byId } from '../dom.js';
 
@@ -254,16 +254,16 @@ export const buildings = {
     }
     if (p.blessings.some(x => x.id === id)) { this.banner('Esta bênção já foi aprendida.', '#ff9d5c', 1.5); return; }
     if (p.blessings.length >= MAX_BLESSINGS) { this.banner('Limite de bênçãos atingido (' + MAX_BLESSINGS + ' aprendidas).', '#ff9d5c', 2); return; }
-    const key = BLESSING_KEYS[p.blessings.length];
-    const newB = Object.assign({}, b, { key });
+    const newB = Object.assign({}, b);
     p.blessings.push(newB);
     p.cd[newB.id] = 0;
+    p.tryEquip(newB.id);
     this.sfx.upgrade();
     this.burst(p.x, p.y - 20, b.color, 14, 200);
     this.blessingFx(p, b.color, 16);
     this.buildSkillbar();
     this.hud();
-    this.banner('✨ ' + newB.name + ' aprendida! (tecla ' + key + ')', b.color, 2.6);
+    this.banner('✨ ' + newB.name + ' aprendida! Equipe-a na hotbar (tecla I).', b.color, 2.6);
     this.openBuilding(npc);
   },
 

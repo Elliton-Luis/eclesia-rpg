@@ -23,7 +23,7 @@ sad
 ## Funcionalidades
 
 - **3 castas / 9 subclasses**: Clero (Diácono, Padre, Bispo), Templários (Guerreiro, Arqueiro, Inventor), Mago (Elemental, Psíquico, Abençoador) — cada uma com stats, arma, ataque base e 2 habilidades únicas (Q/E). As subclasses de cada casta seguem uma progressão de poder da mais fraca para a mais forte.
-- **Habilidades extras**: até 3 habilidades adicionais compráveis (R/T/Y) no Mestre das Artes.
+- **Inventário e Hotbar**: aprenda todas as habilidades disponíveis (sem limite de aprendizado) e equipe até **10** delas nos slots da hotbar (teclas `1–0`) para uso rápido durante o combate. A tela de inventário (tecla `I`) mostra ícone, nome, tipo de dano, dano, cooldown, descrição, tecla atribuída e estado de equipamento de cada habilidade, com dicas ao passar o mouse sobre as estatísticas.
 - **Combate**: corpo a corpo, projéteis, auras e área; sistema de fraquezas/resistências por tipo de dano (Físico, Sagrado, Mágico).
 - **Progressão**: ouro para melhorar arma no Ferreiro, comprar poções/tomés no Vendedor, aprender habilidades extras e treinar reflexos (ataque/disparo mais rápidos).
 - **Mundo vasto e dinâmico**: mapa de 400×240 tiles (12.800 × 7.680 px) gerado proceduralmente em chunks de 16×16 tiles. Apenas a área próxima ao jogador é carregada/renderizada; chunks distantes são descarregados e recriados ao retornar, preservando dados importantes (chefes derrotados, árvores destruídas, progresso de selos).
@@ -34,7 +34,7 @@ sad
   - **Igreja** (Clero): rezar (cura total grátis), estudar escrituras (+vida máx), liturgia (lore do Clero), Missa/Crisma/Ordenação por grau do clero.
   - **Taverna** (Templários): bebida (cura por ouro), histórias de guerra (lore dos Templários), treino forjado (+força permanente), treino de reflexos (+10% de velocidade de ataque/disparo por nível).
   - **Torre Arcana** (Mago): meditar (cura + reset cooldowns grátis), grimório (lore do Mago), consulta arcana (+inteligência permanente).
-- **Sistema de Bênçãos**: 10 bênçãos sagradas aprendidas ao explorar — ensinadas por Padres e Bispos espalhados pelo mundo (igrejas/capelas em biomas variados). Padres ensinam bênçãos comuns/intermediárias (Luz, Misericórdia, Coragem, Escudo da Fé, Passos do Peregrino); Bispos ensinam as raras (Cadência, Precisão, Fúria, Julgamento). Teclas B/G/U/V/N (reutilizando o pipeline de habilidades). Até 6 por partida.
+- **Sistema de Bênçãos**: 10 bênçãos sagradas aprendidas ao explorar — ensinadas por Padres e Bispos espalhados pelo mundo (igrejas/capelas em biomas variados). Padres ensinam bênçãos comuns/intermediárias (Luz, Misericórdia, Coragem, Escudo da Fé, Passos do Peregrino); Bispos ensinam as raras (Cadência, Precisão, Fúria, Julgamento). Equipadas e usadas pela hotbar (reutilizando o pipeline de habilidades). Até 6 por partida.
 - **O Papa (10% de chance por partida)**: aparição rara num bioma perigoso distante da vila. Ao ser encontrado, ensina a **Bênção Suprema** (tecla H) — o milagre mais poderoso do jogo.
 - **Bênção Suprema**: uso único por partida (consumida permanentemente ao usar). Cria uma coluna de luz divina que **aniquila instantaneamente qualquer ser na área do impacto** (raio ~430px), ignorando vida e resistências — inclusive chefes — mas NÃO afeta o mapa inteiro.
 - **NPCs e pequenas histórias**: 22 NPCs espalhados com diálogos específicos por casta. Interações exclusivas:
@@ -102,6 +102,7 @@ Definidos em `js/data/monsters.js` (`MONSTERS`). Cada um tem:
 - Papa com 10% de chance por partida — ensina a Bênção Suprema (uso único, hitkill em área ao redor do impacto, visual de coluna de luz)
 - Treino de reflexos na Taverna (bater/atirar mais rápido, até 2x)
 - Tela de vitória completa e recordes locais detalhados (última jornada + recordes por estatística)
+- Sistema de inventário e hotbar (10 slots, teclas 1–0): aprendizado ilimitado de habilidades no Mestre das Artes, com equipamento limitado à hotbar e tela de inventário com dicas por estatística
 - Controle de spawn por região (pára/reduz drasticamente após boss)
 - Efeitos visuais, áudio, HUD, menus
 

@@ -19,10 +19,10 @@
     <div id="gold"><span class="coin">●</span><span id="goldval">0</span></div>
   </div>
   <div id="attrs">
-    <div class="attr"><span class="al">❤</span><b id="st_vida">0</b></div>
-    <div class="attr"><span class="al">▶</span><b id="st_vel">0</b></div>
-    <div class="attr"><span class="al">⚔</span><b id="st_for">0</b></div>
-    <div class="attr"><span class="al">✦</span><b id="st_int">0</b></div>
+    <div class="attr"><span class="al">❤</span><b id="st_vida" data-tip="Vida máxima atual do personagem.">0</b></div>
+    <div class="attr"><span class="al">▶</span><b id="st_vel" data-tip="Velocidade de deslocamento do personagem (pixels por segundo).">0</b></div>
+    <div class="attr"><span class="al">⚔</span><b id="st_for" data-tip="Refere-se ao dano físico causado pelo personagem: quanto maior a Força, mais dano físico suas armas e habilidades causam.">0</b></div>
+    <div class="attr"><span class="al">✦</span><b id="st_int" data-tip="Refere-se ao dano mágico e sagrado causado pelo personagem: quanto maior a Inteligência, mais forte esse dano.">0</b></div>
   </div>
   <div id="info">
     <div id="classname">—</div>
@@ -36,7 +36,7 @@
     <span class="ctag">CHEAT</span>
     <input id="cheatInput" placeholder="código... (F3)" spellcheck="false" autocomplete="off">
   </div>
-  <div id="helpbar">A/D/W/S mover · Shift correr · J atacar · Q/E habilidades · F interagir · P pausa · M som · F3 cheats</div>
+  <div id="helpbar">A/D/W/S mover · Shift correr · J atacar · 1–0 habilidades · I inventário · H Bênção Suprema · F interagir · P pausa · M som · F3 cheats</div>
 </div>
 
 <div id="menu" class="overlay">
@@ -47,7 +47,7 @@
     <button class="btn ghost" id="btnRecords">Recordes Locais</button>
     <div class="help">
       <b>Controles:</b> A/D/W/S mover · Shift correr · J ou clique atacar ·
-      Q/E/R/T habilidades · F interagir · P pausa · M som
+      1–0 habilidades equipadas · I inventário · H Bênção Suprema · F interagir · P pausa · M som
     </div>
   </div>
 </div>
@@ -55,6 +55,7 @@
 <div id="shop" class="overlay hidden"><div class="panel small" id="shopPanel"></div></div>
 <div id="forge" class="overlay hidden"><div class="panel small" id="forgePanel"></div></div>
 <div id="skills" class="overlay hidden"><div class="panel small" id="skillsPanel"></div></div>
+<div id="inventory" class="overlay hidden"><div class="panel wide" id="inventoryPanel"></div></div>
 <div id="guide" class="overlay hidden"><div class="panel small" id="guidePanel"></div></div>
   <div id="records" class="overlay hidden"><div class="panel small" id="recordsPanel"></div></div>
   <div id="results" class="overlay hidden"><div class="panel small" id="resultsPanel"></div></div>

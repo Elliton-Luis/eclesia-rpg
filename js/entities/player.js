@@ -1,5 +1,6 @@
-import { T, RUN } from '../data/constants.js';
+import { T, RUN, HOTBAR_SLOTS } from '../data/constants.js';
 import { rand, clamp } from '../data/utils.js';
+import { BLESSINGS } from '../data/blessings.js';
 import { Particle } from './effects.js';
 
 // Paleta visual de cada subclasse (somente aparência; não afeta atributos,
@@ -65,12 +66,76 @@ export class Player {
     this.contactHit = {};
     this.supremeBlessed = false;
     this.supremeUses = 0;
+    this.supreme = null;
+    // Hotbar: até HOTBAR_SLOTS habilidades equipadas simultaneamente (teclas 1–0).
+    // O jogador aprende quantas habilidades quiser; apenas as equipadas aqui
+    // podem ser usadas rapidamente em combate.
+    this.hotKeys = new Array(HOTBAR_SLOTS).fill(null);
     this.atkSpd = 0; // +0.1 por nível de treino de reflexos
     this.sub.skills.forEach(s => { this.cd[s.id] = 0; });
+    // As duas habilidades base da classe já iniciam equipadas nos primeiros slots.
+    this.sub.skills.forEach((s, i) => { if (i < HOTBAR_SLOTS) this.hotKeys[i] = s.id; });
   }
 
   allSkills() {
     return this.sub.skills.concat(this.extraSkills, this.blessings);
+  }
+
+  // Todas as habilidades conhecidas (aprendidas ou concedidas), incluindo a
+  // Bênção Suprema quando o jogador foi digno de recebê-la.
+  allKnownSkills() {
+    const list = this.allSkills();
+    if (this.supremeBlessed && this.supreme) list.push(this.supreme);
+    return list;
+  }
+
+  learnedSkill(id) {
+    if (!id) return null;
+    return this.allKnownSkills().find(s => s.id === id) || null;
+  }
+
+  // Concede a Bênção Suprema (Papa/cheat) e equipa-a automaticamente na hotbar.
+  grantSupreme() {
+    this.supremeBlessed = true;
+    this.supremeUses = 1;
+    this.supreme = Object.assign({}, BLESSINGS.bencao_suprema);
+    this.tryEquip('bencao_suprema');
+  }
+
+  // Slot em que a habilidade está equipada, ou -1 se não estiver.
+  findSlot(id) {
+    for (let i = 0; i < this.hotKeys.length; i++) {
+      if (this.hotKeys[i] === id) return i;
+    }
+    return -1;
+  }
+
+  hotSkill(i) {
+    return this.learnedSkill(this.hotKeys[i]);
+  }
+
+  // Equipa a habilidade no primeiro slot livre; retorna false se a hotbar
+  // estiver cheia (a restrição de equipamento fica somente na hotbar).
+  tryEquip(id) {
+    if (!this.learnedSkill(id) || this.findSlot(id) !== -1) return true;
+    for (let i = 0; i < this.hotKeys.length; i++) {
+      if (!this.hotKeys[i]) { this.hotKeys[i] = id; return true; }
+    }
+    return false;
+  }
+
+  equipSkill(id, slot) {
+    if (slot < 0 || slot >= this.hotKeys.length) return;
+    if (!this.learnedSkill(id)) return;
+    // Garante que nunca haja a mesma habilidade duplicada em dois slots.
+    for (let i = 0; i < this.hotKeys.length; i++) {
+      if (this.hotKeys[i] === id) this.hotKeys[i] = null;
+    }
+    this.hotKeys[slot] = id;
+  }
+
+  unequipSlot(slot) {
+    if (slot >= 0 && slot < this.hotKeys.length) this.hotKeys[slot] = null;
   }
 
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }

@@ -1,4 +1,4 @@
-import { TILE } from './data/constants.js';
+import { TILE, HOTBAR_SLOTS } from './data/constants.js';
 import { clamp, lerp, rand } from './data/utils.js';
 import { SUBCLASSES, CLASS_TIER } from './data/classes.js';
 import { REGIONS, SEALS } from './data/regions.js';
@@ -14,6 +14,7 @@ import { dialog } from './ui/dialog.js';
 import { buildings } from './ui/buildings.js';
 import { shops } from './ui/shops.js';
 import { records } from './ui/records.js';
+import { inventory } from './ui/inventory.js';
 import { cheats } from './systems/cheats.js';
 import { interactions } from './systems/interactions.js';
 import { combat } from './systems/combat.js';
@@ -256,7 +257,7 @@ const GAME = {
     this.chargeTick(dt);
     this.contactHit(dt);
 
-    if (this.attackHeld && this.hotKind() === 'attack' && p.mw && p.mw.kind === 'auto' && p.attackCd <= 0) this.doAttack();
+    if (this.attackHeld && p.mw && p.mw.kind === 'auto' && p.attackCd <= 0) this.doAttack();
 
     if (this.cheats.gold) p.gold = Math.max(p.gold, 999999);
     if (this.cheats.hp) p.hp = p.maxHp;
@@ -452,10 +453,12 @@ churchAura() {
     // jogo para não dispararem combate/movimento, mas deixamos Escape/Enter livres.
     const inOverlay = this.state === 'talk' || this.state === 'building' ||
       this.state === 'shop' || this.state === 'forge' || this.state === 'skills' ||
-      this.state === 'guide' || this.state === 'bossintro' || this.state === 'cheats';
+      this.state === 'guide' || this.state === 'bossintro' || this.state === 'cheats' ||
+      this.state === 'inventory';
 
     if (inOverlay) {
       if (e.code === 'Escape') { e.preventDefault(); this.closeOverlay(); return; }
+      if (e.code === 'KeyI' && this.state === 'inventory') { e.preventDefault(); this.closeOverlay(); return; }
       if (e.code === 'Enter' && this.state === 'bossintro') { e.preventDefault();
         byId('bossintro').classList.add('hidden'); this.state = 'play'; return; }
       return; // ignore qualquer outra tecla de jogo durante overlays
@@ -466,14 +469,16 @@ churchAura() {
     this.sfx.unlock();
 
     if (this.state === 'play') {
-      if (e.code === 'KeyJ' || e.code === 'KeyX') { this.attackHeld = true; this.useHot(); }
+      if (e.code === 'KeyJ' || e.code === 'KeyX') { this.attackHeld = true; this.doAttack(); }
       if (e.code === 'KeyF') this.tryInteract();
       if (e.code === 'KeyP') this.pause(true);
       if (e.code === 'KeyM') this.toggleMute();
-      if (e.code === 'KeyH') this.useSupreme();
+      if (e.code === 'KeyI') this.openInventory();
+      if (e.code === 'KeyH') this.useSupremeKey();
       if (e.code.indexOf('Digit') === 0) {
-        const n = parseInt(e.code.slice(5), 10);
-        if (n >= 1 && n <= this.HOTBAR_SLOTS) this.selectHotByNumber(n);
+        // Teclas 1–9 e 0 selecionam e ativam o slot correspondente da hotbar.
+        const n = e.code === 'Digit0' ? 10 : parseInt(e.code.slice(5), 10);
+        if (n >= 1 && n <= HOTBAR_SLOTS) this.useSlot(n - 1);
       }
     } else if (this.state === 'paused') {
       if (e.code === 'KeyP' || e.code === 'Escape') this.pause(false);
@@ -506,7 +511,7 @@ churchAura() {
     this.aim.y = this.mouse.y + this.cam.y;
     this.sfx.unlock();
     this.attackHeld = true;
-    if (this.state === 'play') this.useHot();
+    if (this.state === 'play') this.doAttack();
   },
 
   pause(v) {
@@ -530,6 +535,6 @@ churchAura() {
 };
 
 GAME.sfx = sfx;
-Object.assign(GAME, menu, hud, dialog, buildings, shops, records, cheats, interactions, combat, effects, render, playerDamage, enemyCombat, bosses, progression);
+Object.assign(GAME, menu, hud, dialog, buildings, shops, records, inventory, cheats, interactions, combat, effects, render, playerDamage, enemyCombat, bosses, progression);
 
 export { GAME };

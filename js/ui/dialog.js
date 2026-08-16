@@ -156,6 +156,7 @@ doTalk(npc) {
     byId('cheatpanel').classList.add('hidden');
     byId('records').classList.add('hidden');
     byId('skills').classList.add('hidden');
+    byId('inventory').classList.add('hidden');
     byId('bld').classList.add('hidden');
     byId('dialog').classList.add('hidden');
     byId('bossintro').classList.add('hidden');

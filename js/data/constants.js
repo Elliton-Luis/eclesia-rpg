@@ -5,7 +5,9 @@ export const T = { PHYS: 'phys', HOLY: 'holy', MAGIC: 'magic' };
 
 export const TYPE_MULT = { WEAK: 1.6, RESIST: 0.45 };
 
-export const MAX_EXTRA_SKILLS = 3;
+// Aprendizado de habilidades é ilimitado; a restrição fica somente na hotbar
+// (até HOTBAR_SLOTS habilidades equipadas para uso rápido, teclas 1–0).
+export const HOTBAR_SLOTS = 10;
 export const MAX_TRAIN_REFLEX = 10; // 10 treinos de +10% de velocidade de ataque/disparo (máx +100%)
 
 export const MAX_BLESSINGS = 6;

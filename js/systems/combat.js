@@ -232,9 +232,17 @@ export const combat = {
   },
 
   castSkill(i) {
+    const skills = this.player.allSkills();
+    this.castSkillEntry(skills[i]);
+  },
+
+  // Conjura uma habilidade pelo id (usado pela hotbar/inventário).
+  castSkillId(id) {
+    this.castSkillEntry(this.player.learnedSkill(id));
+  },
+
+  castSkillEntry(s) {
     const p = this.player;
-    const skills = p.allSkills();
-    const s = skills[i];
     if (!s || p.cd[s.id] > 0) return;
     p.cd[s.id] = s.cd;
     if (s.bless) { this.castBlessing(s); return; }

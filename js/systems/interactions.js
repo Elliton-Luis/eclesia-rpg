@@ -92,8 +92,7 @@ export const interactions = {
           '"A fé já vos marcou, filho. Guardai a Bênção Suprema para a noite mais densa — pois ela desce uma única vez sobre a terra."<div class="confessTag">Bênção Suprema à vossa disposição (tecla H).</div>',
           '<button class="btn" id="dlgOk">Amém</button>');
       } else {
-        p.supremeBlessed = true;
-        p.supremeUses = 1;
+        p.grantSupreme();
         this.blessingFx(p, '#fff3b0', 28);
         this.sparkleFx(p, '#ffd23f', 20);
         this.sfx.upgrade();
