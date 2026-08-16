@@ -1,5 +1,6 @@
 import { MAX_TRAIN_REFLEX, MAX_BLESSINGS } from '../data/constants.js';
 import { BLESSINGS } from '../data/blessings.js';
+import { greetingFor } from '../data/relations.js';
 import { byId } from '../dom.js';
 
 export const buildings = {
@@ -127,6 +128,10 @@ export const buildings = {
       if (casta === 'mago') html += `<div class="item"><div><b>Consulta Arcano</b><div class="desc">+6 de inteligência permanente. (150 ●)</div></div><button class="btn" data-bact="consult">150</button></div>`;
     }
     html += `</div><button class="btn ghost" id="closeBld">Sair (Esc)</button>`;
+    // Cumprimento da relação: uma linha do dono do estabelecimento que evolui
+    // com as visitas e as vitórias (nas igrejas, a reação do ministro).
+    const greet = greetingFor(npc, this);
+    if (greet) html = html.replace('<div class="goldline">', `<div class="bldGreet">«${greet}»</div><div class="goldline">`);
     byId('bldPanel').innerHTML = html;
     byId('bldPanel').querySelectorAll('[data-bact]').forEach(b => b.onclick = () => this.buildingAction(npc, b.dataset.bact));
     byId('closeBld').onclick = () => this.closeOverlay();

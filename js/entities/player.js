@@ -1,6 +1,7 @@
 import { T, RUN, HOTBAR_SLOTS } from '../data/constants.js';
 import { rand, clamp } from '../data/utils.js';
 import { BLESSINGS } from '../data/blessings.js';
+import { RELICS, MAX_RELICS } from '../data/relics.js';
 import { Particle } from './effects.js';
 
 // Paleta visual de cada subclasse (somente aparência; não afeta atributos,
@@ -14,7 +15,8 @@ const LOOKS = {
   inventor:   { apron: '#6f4e2e', apronDark: '#553a20', trim: '#a32222', tabard: '#ddd5c0', leather: '#3e3122', steel: '#8a919c', skin: '#e9c29b', hair: '#4a3c26' },
   elemental:  { robe: '#3d5fd6', robeDark: '#2b43a0', robeShade: '#6a87e8', trim: '#f2c14e', trim2: '#eaf2ff', belt: '#2b43a0', skin: '#e9c29b', hair: '#34344a' },
   psiquico:   { robe: '#c0392b', robeDark: '#8e241a', robeShade: '#e0604a', trim: '#f2cf54', trim2: '#ffe9e6', belt: '#8e241a', skin: '#e9c29b', hair: '#3a3030' },
-  abencoador: { robe: '#2f9e63', robeDark: '#21784a', robeShade: '#52c68d', trim: '#eef3e6', trim2: '#d8f2e4', belt: '#21784a', skin: '#e9c29b', hair: '#6a5232' }
+  abencoador: { robe: '#2f9e63', robeDark: '#21784a', robeShade: '#52c68d', trim: '#eef3e6', trim2: '#d8f2e4', belt: '#21784a', skin: '#e9c29b', hair: '#6a5232' },
+  papa: { robe: '#f8f4e4', robeDark: '#dcd3b4', robeShade: '#ffffff', trim: '#e6b422', trim2: '#ffffff', belt: '#e6b422', skin: '#e9c29b', hair: '#f0ece2' }
 };
 
 export class Player {
@@ -64,6 +66,10 @@ export class Player {
     this.mw = null;
     this.items = {};
     this.blessings = [];
+    // Relíquias equipadas e obtidas nesta jornada (máx MAX_RELICS equipadas).
+    this.relics = [];
+    this.ownedRelics = [];
+    this.passiveRegen = 0;
     this.contactHit = {};
     this.supremeBlessed = false;
     this.supremeUses = 0;
@@ -111,6 +117,68 @@ export class Player {
     if (n <= 0 || this.learnedSkill('fulmen_ruptor')) return;
     this.blessings.push(Object.assign({}, BLESSINGS.fulmen_ruptor));
     this.tryEquip('fulmen_ruptor');
+  }
+
+  // A classe do personagem pode usar a relíquia? 'all' libera para todos;
+  // senão valida por subclasse e/ou casta.
+  relicAllowed(id) {
+    const r = RELICS[id];
+    if (!r) return false;
+    if (r.allowed === '*') return true;
+    if (r.allowed.subs && r.allowed.subs.includes(this.sub.id)) return true;
+    if (r.allowed.casta && r.allowed.casta === this.sub.casta) return true;
+    return false;
+  }
+
+  equipRelic(id) {
+    const r = RELICS[id];
+    if (!r) return false;
+    if (this.relics.includes(id)) return false;
+    if (!this.ownedRelics.includes(id)) return false;
+    if (!this.relicAllowed(id)) return false;
+    if (this.relics.length >= MAX_RELICS) return false;
+    const e = r.effects || {};
+    if (e.hp) { this.maxHp += e.hp; this.hp += e.hp; }
+    if (e.str) this.str += e.str;
+    if (e.int) this.int += e.int;
+    if (e.spd) this.spd += e.spd;
+    if (e.regen) this.passiveRegen = (this.passiveRegen || 0) + e.regen;
+    this.relics.push(id);
+    return true;
+  }
+
+  unequipRelic(id) {
+    const i = this.relics.indexOf(id);
+    if (i === -1) return false;
+    const r = RELICS[id];
+    this.relics.splice(i, 1);
+    if (r) {
+      const e = r.effects || {};
+      if (e.hp) { this.maxHp = Math.max(1, this.maxHp - e.hp); this.hp = Math.min(this.hp, this.maxHp); }
+      if (e.str) this.str = Math.max(0, this.str - e.str);
+      if (e.int) this.int = Math.max(0, this.int - e.int);
+      if (e.spd) this.spd = Math.max(0, this.spd - e.spd);
+      if (e.regen) this.passiveRegen = Math.max(0, (this.passiveRegen || 0) - e.regen);
+    }
+    return true;
+  }
+
+  // Concede posse de uma relíquia (NPCs, eventos raros). Equipar fica por conta
+  // do jogador, respeitando a restrição de classe.
+  grantRelic(id) {
+    if (!RELICS[id] || this.ownedRelics.includes(id)) return false;
+    this.ownedRelics.push(id);
+    return true;
+  }
+
+  // Multiplicador global de cooldown imposto pelas relíquias equipadas.
+  relicsCdMult() {
+    let m = 1;
+    for (const id of this.relics) {
+      const e = (RELICS[id] && RELICS[id].effects) || {};
+      if (e.cdMult) m *= e.cdMult;
+    }
+    return m;
   }
 
   // Slot em que a habilidade está equipada, ou -1 se não estiver.
@@ -199,6 +267,10 @@ export class Player {
       if (Math.random() < 0.15) {
         g.particles.push(new Particle({ x: this.x + rand(-10, 10), y: this.y + rand(-10, 10), vx: 0, vy: 0, life: 0.5, color: '#c4ffb0', size: 3, grav: 0 }));
       }
+    }
+    // Regeneração passiva de relíquias (não expira com o temporário status.regen).
+    if (this.passiveRegen > 0 && this.hp < this.maxHp) {
+      this.hp = Math.min(this.maxHp, this.hp + this.maxHp * this.passiveRegen * dt);
     }
 
     const ix = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0);
@@ -445,6 +517,39 @@ export class Player {
       ctx.fillRect(-0.8, fy - 13, 1.6, 1.6);
       ctx.fillRect(-0.8, fy - 8, 1.6, 1.6);
       ctx.fillRect(-0.8, fy - 3, 1.6, 1.6);
+    // Moços de luz: personagem do jogador
+    } else if (s.id === 'papa') {
+      // Papa: veste alva e imponente — mais larga que a do Bispo — com o pálio
+      // dourado e a barra orlada de ouro. A silhueta é reconhecível à distância.
+      ctx.fillStyle = '#f8f4e4';
+      ctx.beginPath();
+      ctx.moveTo(-wTop - 2.5, fy - 19);
+      ctx.lineTo(-wBot - 2.5, fy - 2);
+      ctx.quadraticCurveTo(0, fy, wBot + 2.5, fy - 2);
+      ctx.lineTo(wTop + 2.5, fy - 19);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#dcd3b4';
+      ctx.beginPath();
+      ctx.moveTo(-wTop - 2.5, fy - 19);
+      ctx.lineTo(-wBot - 2.5, fy - 2);
+      ctx.quadraticCurveTo(0, fy, 0, fy);
+      ctx.lineTo(0, fy - 19);
+      ctx.closePath();
+      ctx.fill();
+      // pálio central dourado (faixa vertical)
+      ctx.fillStyle = '#e6b422';
+      ctx.fillRect(-1.4, fy - 19, 2.8, 15);
+      // cinturão de ouro
+      ctx.fillStyle = '#e6b422';
+      ctx.fillRect(-wBot, fy - 10.6, (wBot - 1) * 2, 1.8);
+      // galões de ouro (chaves de São Pedro) no peito
+      ctx.fillStyle = '#c9a227';
+      ctx.fillRect(-3.5, fy - 14, 7, 1.4);
+      ctx.fillRect(-1.2, fy - 16, 2.4, 5);
+      // barra inferior orlada de ouro
+      ctx.fillStyle = '#e6b422';
+      ctx.fillRect(-wBot - 2, fy - 3.2, (wBot + 2) * 2, 1.8);
     } else {
       // bispo: roquete branco + palio dourado + cruz peitoral
       ctx.fillStyle = 'rgba(253,246,236,0.92)';
@@ -651,6 +756,29 @@ export class Player {
         ctx.beginPath();
         ctx.arc(0, fy - 38.5, 4.6, 0, 6.283);
         ctx.stroke();
+      } else if (s.id === 'papa') {
+        // Papa: auréola dourada + tiara tripla (triregnum) com esfera
+        ctx.strokeStyle = 'rgba(230,180,34,0.9)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, fy - 31, 9.5, 0, 6.283); ctx.stroke();
+        ctx.fillStyle = '#f0ece2';
+        ctx.beginPath(); ctx.arc(0, fy - 30.5, 4.6, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#fff7e0';
+        ctx.beginPath();
+        ctx.moveTo(-6.2, fy - 39);
+        ctx.lineTo(-4, fy - 55);
+        ctx.lineTo(0, fy - 46.5);
+        ctx.lineTo(4, fy - 55);
+        ctx.lineTo(6.2, fy - 39);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#e6b422';
+        ctx.fillRect(-6.2, fy - 40, 12.4, 2.4);     // base dourada
+        ctx.fillRect(-4.6, fy - 45, 9.2, 1.6);      // 1ª coroa
+        ctx.fillRect(-3.2, fy - 50, 6.4, 1.4);      // 2ª coroa
+        ctx.fillRect(-0.8, fy - 56.4, 1.6, 3.4);    // ponta
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(0, fy - 57.6, 1.4, 0, 6.283); ctx.fill(); // esfera do mundo
       } else {
         // bispo: cabelos brancos + zucchetto + mitra alta
         ctx.fillStyle = L.hair;

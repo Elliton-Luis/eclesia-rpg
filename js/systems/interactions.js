@@ -1,12 +1,19 @@
 import { TILE } from '../data/constants.js';
 import { REGIONS } from '../data/regions.js';
 import { WALK_SPAWN } from '../world/tiles.js';
+import { RELICS } from '../data/relics.js';
+import { greetingFor } from '../data/relations.js';
 import { byId } from '../dom.js';
 
 export const interactions = {
   tryInteract() {
     const npc = this.npcNear();
     if (!npc) return;
+    // Memória da relação: cada contato com um personagem conta e o marca como
+    // conhecido nesta jornada (persiste entre respawns, reinicia na partida).
+    npc.talks = (npc.talks || 0) + 1;
+    npc.met = true;
+    this.curNpc = npc;
     if (npc.kind === 'forge') {
       this.state = 'forge';
       this.buildForge();
@@ -26,7 +33,10 @@ export const interactions = {
       const hints = npc.hints || [];
       const avail = hints.filter(h => h.need <= this.progressLevel).length;
       const fresh = hints.slice(npc.hintsDone || 0, avail);
+      const greet = greetingFor(npc, this);
       byId('guidePanel').innerHTML = `<h2>${npc.name}</h2><div class="dlgbody">${
+        greet ? `<div class="bldGreet">«${greet}»</div>` : ''
+      }${
         fresh.length
           ? fresh.map(h => `<p>«${h.text}»</p>`).join('')
           : '<p>Nada de novo por ora. O mundo guarda segredos para quem batalha.</p>'
@@ -41,6 +51,8 @@ export const interactions = {
       byId('bld').classList.remove('hidden');
     } else if (npc.kind === 'pope') {
       this.doPope(npc);
+    } else if (npc.kind === 'anjo') {
+      this.doAnjo(npc);
     } else if (npc.kind === 'talk') {
       this.doTalk(npc);
     } else if (npc.kind === 'seal') {
@@ -85,12 +97,22 @@ export const interactions = {
     const p = this.player;
     const casta = p.sub.casta;
     this.state = 'talk';
+    // A cátedra de São Pedro como classe jogável: oferta única e raríssima.
+    // O Papa ensina a Bênção Suprema e, além disso, pode ser ADQUIRIDO como
+    // personagem (20.000 ●) — fica desbloqueado permanentemente no menu.
+    const rec = this.loadRecords() || {};
+    const ownedPope = !!rec.popeUnlocked;
+    const buyBtn = ownedPope
+      ? '<div class="confessTag">A cátedra de São Pedro já vos pertence — encontrai o Papa no menu, na casta do Clero.</div>'
+      : (p.gold >= 20000
+          ? '<button class="btn" id="dlgBuyPapa" style="margin-top:8px">⚜ Comprar o Papa como personagem jogável · 20.000 ●</button>'
+          : '<button class="btn ghost" id="dlgBuyPapa" style="margin-top:8px">⚜ Adquirir a cátedra (20.000 ●) — ouro insuficiente</button>');
     // O Milagre Supremo é um dom sacramental: desce somente pelas mãos ordenadas.
     // Leigos (Templários) e pagãos (Magos) recebem do Papa uma bênção de sustento.
     if (casta === 'clero') {
       if (p.supremeBlessed) {
         this.showDialog('👑 O Papa Leão XI',
-          '"A fé já vos marcou, filho. Guardai a Bênção Suprema para a noite mais densa — pois ela desce uma única vez sobre a terra."<div class="confessTag">Bênção Suprema à vossa disposição (tecla H).</div>',
+          '"A fé já vos marcou, filho. Guardai a Bênção Suprema para a noite mais densa — pois ela desce uma única vez sobre a terra."<div class="confessTag">Bênção Suprema à vossa disposição (tecla H).</div>' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       } else {
         p.grantSupreme();
@@ -100,13 +122,13 @@ export const interactions = {
         this.buildSkillbar();
         this.hud();
         this.showDialog('👑 O Papa Leão XI',
-          '"Vós fostes digno de encontrar-me no ermo, fiel. Recebei o dom mais alto de Eclésia: a <b>Bênção Suprema</b>. Uma única vez ela descerá dos céus e aniquilará todo o mal ao redor de vós — mesmo o mais poderoso dos demônios não resiste à luz do Senhor. Usai-a com sabedoria, pois, consumida, não retornará nesta jornada."<div class="confessTag">✨ BÊNÇÃO SUPREMA CONCEDIDA — tecla H · Uso único · Aniquila qualquer ser na área do impacto</div>',
+          '"Vós fostes digno de encontrar-me no ermo, fiel. Recebei o dom mais alto de Eclésia: a <b>Bênção Suprema</b>. Uma única vez ela descerá dos céus e aniquilará todo o mal ao redor de vós — mesmo o mais poderoso dos demônios não resiste à luz do Senhor. Usai-a com sabedoria, pois, consumida, não retornará nesta jornada."<div class="confessTag">✨ BÊNÇÃO SUPREMA CONCEDIDA — tecla H · Uso único · Aniquila qualquer ser na área do impacto</div>' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       }
     } else if (casta === 'templarios') {
       if (npc.eventDone) {
         this.showDialog('👑 O Papa Leão XI',
-          '"A fé já vos marcou, filho. Lutai, e o povo vos terá por guardião."',
+          '"A fé já vos marcou, filho. Lutai, e o povo vos terá por guardião."' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       } else {
         npc.eventDone = true;
@@ -116,13 +138,13 @@ export const interactions = {
         this.sfx.upgrade();
         this.hud();
         this.showDialog('👑 O Papa Leão XI',
-          '"Templário... a vossa espada é a oração do povo. Mas o Milagre Supremo desce somente pelas mãos ordenadas — nem a mais brava das espadas o invoca. Não vos invejo, filho: a vossa força é outra. Nasce da fé, da disciplina e da graça que recebeis de joelhos, como Elias e Sansão. Levai o meu favor: mais vida e mais vigor para a batalha que vos espera."<div class="confessTag">✨ Bênção do Papa: +15 de vida máxima · +5 de força (permanentes)</div>',
+          '"Templário... a vossa espada é a oração do povo. Mas o Milagre Supremo desce somente pelas mãos ordenadas — nem a mais brava das espadas o invoca. Não vos invejo, filho: a vossa força é outra. Nasce da fé, da disciplina e da graça que recebeis de joelhos, como Elias e Sansão. Levai o meu favor: mais vida e mais vigor para a batalha que vos espera."<div class="confessTag">✨ Bênção do Papa: +15 de vida máxima · +5 de força (permanentes)</div>' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       }
     } else {
       if (npc.eventDone) {
         this.showDialog('👑 O Papa Leão XI',
-          '"Que o véu não vos devore, pagão. Cuidai dos vossos passos."',
+          '"Que o véu não vos devore, pagão. Cuidai dos vossos passos."' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       } else {
         npc.eventDone = true;
@@ -131,11 +153,86 @@ export const interactions = {
         this.sfx.upgrade();
         this.hud();
         this.showDialog('👑 O Papa Leão XI',
-          '"Pagão... a vossa arte vem de onde a Igreja não alcança. Não posso descer o Milagre Supremo sobre vós — nem ele obedeceria a mãos não ungidas. Mas a luz acolhe até os errantes: tomai este dom de proteção e segui o vosso caminho."<div class="confessTag">✨ Bênção do Papa: +10 de vida máxima · +15 de ouro</div>',
+          '"Pagão... a vossa arte vem de onde a Igreja não alcança. Não posso descer o Milagre Supremo sobre vós — nem ele obedeceria a mãos não ungidas. Mas a luz acolhe até os errantes: tomai este dom de proteção e segui o vosso caminho."<div class="confessTag">✨ Bênção do Papa: +10 de vida máxima · +15 de ouro</div>' + buyBtn,
           '<button class="btn" id="dlgOk">Amém</button>');
       }
     }
     byId('dlgOk').onclick = () => this.closeDialog();
+    const buy = byId('dlgBuyPapa');
+    if (buy) buy.onclick = () => this.buyPope(npc);
+  },
+
+  // A compra do Papa como personagem jogável: 20.000 ●, desbloqueio permanente.
+  buyPope(npc) {
+    const p = this.player;
+    const rec = this.loadRecords() || {};
+    if (rec.popeUnlocked) { this.banner('A cátedra já foi adquirida.', '#ffe9b0', 2); this.closeDialog(); return; }
+    if (p.gold < 20000) { this.banner('Ouro insuficiente — são 20.000 ●.', '#ff5c5c', 2); return; }
+    p.gold -= 20000;
+    rec.popeUnlocked = true;
+    this.persistProfile(rec);
+    this.sfx.upgrade();
+    this.burst(p.x, p.y, '#fff3b0', 30, 420);
+    this.sparkleFx(p, '#ffd23f', 26);
+    this.hud();
+    this.showDialog('👑 A CÁTEDRA DE SÃO PEDRO',
+      'O Papa Leão XI deposita o pálio sobre os vossos ombros. Roma reconhece o novo Pontífice.<div class="confessTag">⚜ O PAPA agora é uma classe jogável! Procurai por «Papa» no menu inicial, dentro do Clero.</div>',
+      '<button class="btn" id="dlgOk">Gloria in Excelsis Deo</button>');
+    byId('dlgOk').onclick = () => this.closeDialog();
+  },
+
+  // Anjo de Eclésia: evento raro. Purifica um fragmento do mal e confia ao fiel
+  // escolhido uma relíquia compatível com a sua casta.
+  doAnjo(npc) {
+    const p = this.player;
+    this.state = 'talk';
+    if (npc.eventDone) {
+      this.showDialog('✨ Anjo de Eclésia', '"A graça que trouxe já se cumpriu, servo da luz. Segui o vosso caminho."', '<button class="btn" id="dlgOk">Amém</button>');
+      byId('dlgOk').onclick = () => this.closeDialog();
+      return;
+    }
+    npc.eventDone = true;
+    const candidates = Object.values(RELICS).filter(r => p.relicAllowed(r.id) && !p.ownedRelics.includes(r.id));
+    let granted = null;
+    if (candidates.length) granted = candidates[Math.floor(Math.random() * candidates.length)].id;
+    this.sfx.upgrade();
+    this.burst(p.x, p.y, '#bfe8ff', 26, 360);
+    this.sparkleFx(p, '#fff', 22);
+    if (granted && p.grantRelic(granted)) {
+      this.showDialog('✨ Anjo de Eclésia',
+        'Uma luz desce dos céus e deposita algo aos vossos pés. "Leva isto — o mundo precisará de quem o carregue."<div class="confessTag">✨ RELÍQUIA OBTIDA — equipe-a no inventário (tecla I)</div>',
+        '<button class="btn" id="dlgOk">Receber</button>');
+    } else {
+      p.maxHp += 20; p.hp += 20; p.int += 2;
+      this.hud();
+      this.showDialog('✨ Anjo de Eclésia',
+        'Uma luz desce dos céus e toca o vosso coração. "Que a graça vos acompanhe, servo da luz."<div class="confessTag">✨ Bênção do Anjo: +20 de vida máxima · +2 de inteligência</div>',
+        '<button class="btn" id="dlgOk">Amém</button>');
+    }
+    byId('dlgOk').onclick = () => this.closeDialog();
+  },
+
+  // Posiciona o Anjo de Eclésia num tile caminhável de uma região de perigo >= 2.
+  spawnAnjo() {
+    const walk = WALK_SPAWN || new Set(['g', 'p', 'y', 'c', 'f', 'z', 'b', 'x', 's', 'd']);
+    const regs = REGIONS.filter(r => r.id !== 'vila' && r.danger >= 2);
+    if (!regs.length) return;
+    for (let tries = 0; tries < 50; tries++) {
+      const r = regs[Math.floor(Math.random() * regs.length)];
+      const gx = r.x + Math.floor(Math.random() * r.w);
+      const gy = r.y + Math.floor(Math.random() * r.h);
+      if (!walk.has(this.world.charFor(gx, gy))) continue;
+      const anjo = {
+        id: 'anjo', name: 'Anjo de Eclésia', kind: 'anjo',
+        x: gx, y: gy, color: '#cfe8ff', accent: '#ffffff',
+        px: gx * TILE, py: gy * TILE, bobT: 0,
+        eventDone: false
+      };
+      this.npcs.push(anjo);
+      this.banner('Uma luz desceu dos céus...', '#bfe8ff', 3);
+      return true;
+    }
+    return false;
   },
 
   // Posiciona o Papa num tile caminhável de uma região de perigo >= 2, longe da

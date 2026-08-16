@@ -256,7 +256,8 @@ export const combat = {
   castSkillEntry(s) {
     const p = this.player;
     if (!s || p.cd[s.id] > 0) return;
-    p.cd[s.id] = s.cd;
+    // Relíquias com cdMult encurtam o cooldown de todas as habilidades.
+    p.cd[s.id] = (s.cd || 0) * p.relicsCdMult();
     if (s.bless) { this.castBlessing(s); return; }
     switch (s.id) {
       case 'heal': {
@@ -346,7 +347,34 @@ export const combat = {
       case 'confession': this.confession(s); break;
       case 'uncao': this.uncao(s); break;
       case 'grande_exorcismo': this.grandeExorcismo(s); break;
+      case 'palavra_santa': this.rezaMaior(s); break;
+      case 'jubileu': this.jubileu(s); break;
     }
+  },
+
+  // Jubileu: ano de graça — a palavra do Papa purga toda a tela e cura o fiel.
+  jubileu(s) {
+    const p = this.player;
+    const dmg = s.dmg || 360;
+    let n = 0;
+    for (const m of this.monsters) {
+      if (m.dying || m.dead) continue;
+      this.damageMonster(m, dmg, s.type || T.HOLY);
+      this.burst(m.x, m.y - 8, '#fff9c4', 12, 190);
+      n++;
+    }
+    if (s.heal) p.hp = Math.min(p.maxHp, p.hp + Math.round(p.maxHp * s.heal));
+    this.pillarFx(p.x, p.y, 170);
+    this.ring(p.x, p.y, 120, 0.9, '#fff9c4', 8);
+    this.ring(p.x, p.y, 220, 0.9, '#fff3b0', 6);
+    this.ring(p.x, p.y, 320, 0.9, '#ffe9b0', 5);
+    this.burst(p.x, p.y, '#ffffff', 42, 460);
+    this.burst(p.x, p.y, '#fff3b0', 30, 340);
+    this.shake += 20;
+    this.sfx.explosion();
+    this.sfx.holy();
+    if (n === 0) this.banner('O Jubileu não encontra inimigos para perdoar.', '#fff9c4', 1.2);
+    else this.text(p.x, p.y - 34, 'Jubileu: ' + n + ' inimigo(s) purgado(s)!', '#fff9c4', 16);
   },
 
   // Batismo: águas sagradas congelam todos os inimigos presentes na tela.

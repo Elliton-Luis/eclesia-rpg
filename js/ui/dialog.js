@@ -1,5 +1,7 @@
 import { randArr } from '../data/utils.js';
 import { LORE, BIBLIA_PASSAGENS } from '../data/lore.js';
+import { RELATIONS, relationLabel, stageFor, currentStages } from '../data/relations.js';
+import { RELICS } from '../data/relics.js';
 import { byId } from '../dom.js';
 
 export const dialog = {
@@ -80,11 +82,76 @@ doTalk(npc) {
       return;
     }
     const extra = npc.eventDone ? '' : this.classEventButton(npc, casta);
-    this.showDialog(npc.name, `"${finalLine}"`, extra + '<button class="btn ghost" id="dlgOk">Continuar</button>');
+    // Relações: os NPCs de conversa guardam memória da vila. O texto evolui por
+    // estágio (conversas, chefes derrotados, vocação, Papa); os marcos com
+    // recompensa são concedidos uma única vez.
+    const hasRel = npc.kind === 'talk' && RELATIONS[npc.id];
+    let relStage = null;
+    let relLabelTag = '';
+    if (hasRel) {
+      relStage = stageFor(npc, this);
+      this.applyRelRewards(npc);
+      relLabelTag = `<div class="relation">${relationLabel(npc)}</div>`;
+    }
+    const relLine = hasRel && relStage ? (relStage.text && relStage.text[casta]) || relStage.text : '';
+    const spoken = hasRel && relLine ? relLine : finalLine;
+    this.showDialog(npc.name, `"${spoken}"${relLabelTag}`, extra + '<button class="btn ghost" id="dlgOk">Continuar</button>');
     byId('dlgOk').onclick = () => this.closeDialog();
     if (extra) {
       const btn = byId('dlgEvent');
       if (btn) btn.onclick = () => this.doClassEvent(npc);
+    }
+  },
+
+  // Concede, uma única vez, cada recompensa única dos marcos de relação
+  // alcançados neste estado do mundo (relíquias, ouro, atributos, bênção, lore).
+  applyRelRewards(npc) {
+    const def = RELATIONS[npc.id];
+    if (!def) return;
+    npc.gave = npc.gave || {};
+    currentStages(npc, this).forEach((st, i) => {
+      if (!st.give || npc.gave[i]) return;
+      npc.gave[i] = true;
+      this.grantRelReward(npc, st.give);
+    });
+  },
+
+  grantRelReward(npc, give) {
+    const p = this.player;
+    const casta = p.sub.casta;
+    let tag = '';
+    let color = '#ffe9b0';
+    if (give.relic && p.relicAllowed(give.relic) && p.grantRelic(give.relic)) {
+      const r = (RELICS[give.relic] && RELICS[give.relic].name) || give.relic;
+      tag = 'Recebestes uma relíquia de ' + npc.name + ': ' + r + '!';
+      color = '#ffe9b0';
+      this.blessingFx(p, '#fff3b0', 16);
+    } else if (give.gold) {
+      p.gold += give.gold;
+      tag = npc.name + ' vos oferta ' + give.gold + ' moedas.';
+      color = '#ffd23f';
+    } else if (give.hp) {
+      p.maxHp += give.hp; p.hp = Math.min(p.maxHp, p.hp + give.hp);
+      tag = 'Sua confiança fortalece: +' + give.hp + ' de vida máxima.';
+      color = '#7cff8a';
+    } else if (give.str) {
+      p.str += give.str;
+      tag = 'Sua confiança aguça a lâmina: +' + give.str + ' de força.';
+      color = '#ff9d5c';
+    } else if (give.int) {
+      p.int += give.int;
+      tag = 'Sua confiança abre os livros: +' + give.int + ' de inteligência.';
+      color = '#b07cff';
+    } else if (give.spd) {
+      p.spd += give.spd;
+      tag = 'Sua confiança solta o passo: +' + give.spd + ' de velocidade.';
+      color = '#7ec8e3';
+    }
+    if (tag) {
+      this.sfx.upgrade();
+      this.banner(tag, '#fff3b0', 2.6);
+      this.text(p.x, p.y - 30, tag.split(': ')[0], color, 15);
+      this.hud();
     }
   },
 

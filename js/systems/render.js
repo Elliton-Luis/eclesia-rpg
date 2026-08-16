@@ -389,6 +389,34 @@ export const render = {
       return;
     }
 
+    // ---- Anjo de Eclésia: evento raro — veste alva, asas e halo pulsante ----
+    if (n.kind === 'anjo') {
+      drawLegs(ctx, fy);
+      drawTunic(ctx, '#f4f7ff', darken('#f4f7ff', -16), fy);
+      // asas abertas
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.ellipse(-11, fy - 22, 5.5, 8, -0.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(11, fy - 22, 5.5, 8, 0.4, 0, 6.283); ctx.fill();
+      ctx.fillStyle = '#cfe8ff';
+      ctx.beginPath(); ctx.ellipse(-11, fy - 20, 3, 6, -0.4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(11, fy - 20, 3, 6, 0.4, 0, 6.283); ctx.fill();
+      // botoeira dourada
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(-0.9, fy - 12, 1.8, 6);
+      // halo dourado pulsante
+      const ph2 = t * 3;
+      ctx.globalAlpha = 0.6 + Math.sin(ph2) * 0.3;
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(0, fy - 32, 7.5, 0, 6.283); ctx.stroke();
+      ctx.globalAlpha = 1;
+      drawFace(ctx, fy);
+      // cabelos claros
+      ctx.fillStyle = '#f5e1c0';
+      ctx.beginPath(); ctx.arc(0, fy - 31, 4.4, Math.PI, 0); ctx.fill();
+      return;
+    }
+
     // ---- Ofícios e aldeões: túnica + item de trabalho ----
     drawLegs(ctx, fy);
     drawTunic(ctx, color, darken(color, -22), fy);

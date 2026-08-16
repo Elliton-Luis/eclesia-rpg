@@ -1,5 +1,7 @@
 import { HOTBAR_SLOTS, T } from '../data/constants.js';
 import { EXTRA_SKILLS } from '../data/skills.js';
+import { RELICS, MAX_RELICS } from '../data/relics.js';
+import { SUBCLASSES, CASTAS } from '../data/classes.js';
 import { byId } from '../dom.js';
 
 const KEY_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
@@ -56,6 +58,8 @@ export const inventory = {
       <div class="invlist">${this.learnedHtml(p)}</div>
       <div class="inv-sec">DISPONÍVEIS PARA APRENDER</div>
       <div class="invlist">${this.availableHtml(p)}</div>
+      <div class="inv-sec">RELIQUIAS · ${p.relics.length}/${MAX_RELICS} equipadas</div>
+      <div class="invlist">${this.relicsHtml(p)}</div>
       <button class="btn ghost" id="closeInventory">Fechar (Esc)</button>
     `;
     this.bindInventory(p, el);
@@ -143,6 +147,45 @@ export const inventory = {
     return list + '<p class="desc">Bênçãos sagradas são ensinadas por Padres e Bispos espalhados pelo mundo.</p>';
   },
 
+  relicsHtml(p) {
+    if (!p.ownedRelics.length) return '<p class="desc">Nenhuma relíquia obtida ainda. Personagens que confiam em vós e os eventos raros podem presenteá-lo com elas.</p>';
+    return p.ownedRelics.map(id => {
+      const r = RELICS[id];
+      if (!r) return '';
+      const ok = p.relicAllowed(id);
+      const equipped = p.relics.includes(id);
+      const e = r.effects || {};
+      const stats = [];
+      if (e.hp) stats.push(`<span class="stat" data-tip="Vida máxima adicional.">Vida +${e.hp}</span>`);
+      if (e.str) stats.push(`<span class="stat" data-tip="Força: escala o dano físico.">Força +${e.str}</span>`);
+      if (e.int) stats.push(`<span class="stat" data-tip="Inteligência: escala o dano sagrado/mágico. (atual: ${p.int})">Int +${e.int}</span>`);
+      if (e.spd) stats.push(`<span class="stat" data-tip="Velocidade de deslocamento.">Vel +${e.spd}</span>`);
+      if (e.cdMult) stats.push(`<span class="stat" data-tip="Multiplica o cooldown de todas as habilidades.">CD ×${e.cdMult}</span>`);
+      if (e.regen) stats.push(`<span class="stat" data-tip="Regenera (% da vida máxima por segundo), permanentemente.">Regen +${(e.regen * 100).toFixed(0)}/s</span>`);
+      const side = equipped
+        ? '<button class="btn ghost min" data-relic="' + id + '" data-action="unequip">REMOVER</button>'
+        : (ok
+            ? '<button class="btn" data-relic="' + id + '" data-action="equip">EQUIPAR</button>'
+            : `<span class="tag lock">${this.relicWho(r)}</span>`);
+      return `<div class="invrow relic" style="--c:${r.color}">
+        <div class="sicon" style="background:${r.color}">${r.icon}</div>
+        <div class="meta">
+          <b>${r.name}</b>
+          <div class="stats">${stats.join('')}${equipped ? '<span class="tag eq">EQUIPADA</span>' : ''}</div>
+          <div class="desc">${r.desc}</div>
+        </div>
+        <div class="side">${side}</div>
+      </div>`;
+    }).join('');
+  },
+
+  relicWho(r) {
+    if (r.allowed === '*') return 'GENÉRICA';
+    const subs = (r.allowed.subs || []).map(id => (SUBCLASSES[id] ? SUBCLASSES[id].name : id)).join(' · ');
+    const casta = r.allowed.casta ? (CASTAS[r.allowed.casta] ? 'Casta ' + CASTAS[r.allowed.casta].name : r.allowed.casta) : '';
+    return 'SÓ ' + [casta, subs].filter(Boolean).join(' · ');
+  },
+
   assignBarHtml(p) {
     if (!this.invSel) return '';
     const s = p.learnedSkill(this.invSel);
@@ -224,6 +267,24 @@ export const inventory = {
     });
     el.querySelectorAll('[data-cancel]').forEach(b => {
       b.onclick = () => { this.invSel = null; this.buildInventory(); };
+    });
+
+    el.querySelectorAll('[data-relic]').forEach(b => {
+      b.onclick = () => {
+        const id = b.dataset.relic;
+        if (b.dataset.action === 'equip') {
+          if (this.player.equipRelic(id)) {
+            this.sfx.upgrade();
+            this.banner('Relíquia equipada: ' + this.player.relics.length + '/' + MAX_RELICS, '#ffe9b0', 2);
+          } else {
+            this.banner('Não é possível equipar esta relíquia para a vossa classe.', '#ff9d5c', 2);
+          }
+        } else {
+          this.player.unequipRelic(id);
+          this.banner('Relíquia removida.', '#9aa0ab', 1.5);
+        }
+        this.afterEquip();
+      };
     });
 
     byId('closeInventory').onclick = () => this.closeOverlay();

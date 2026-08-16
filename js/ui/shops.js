@@ -2,6 +2,7 @@ import { T } from '../data/constants.js';
 import { upgradeCost, weaponDamage } from '../data/utils.js';
 import { EXTRA_SKILLS } from '../data/skills.js';
 import { SHOP } from '../data/shop.js';
+import { greetingFor } from '../data/relations.js';
 import { byId } from '../dom.js';
 
 export const shops = {
@@ -9,6 +10,8 @@ export const shops = {
     const p = this.player;
     const el = byId('shopPanel');
     let html = `<h2>Vendedor</h2><div class="goldline">Ouro: <b>${p.gold}</b></div><div class="items">`;
+    const greet = this.curNpc ? greetingFor(this.curNpc, this) : '';
+    if (greet) html = `<div class="bldGreet">«${greet}»</div>` + html;
     for (const id in SHOP) {
       const it = SHOP[id];
       const n = this.shopN[id] || 0;
@@ -42,6 +45,8 @@ export const shops = {
     const el = byId('skillsPanel');
     const isClero = p.sub.casta === 'clero';
     let html = `<h2>Mestre das Artes</h2><div class="goldline">Ouro: <b>${p.gold}</b></div><div class="items">`;
+    const greet = this.curNpc ? greetingFor(this.curNpc, this) : '';
+    if (greet) html = `<div class="bldGreet">«${greet}»</div>` + html;
     for (const sk of EXTRA_SKILLS) {
       const has = p.extraSkills && p.extraSkills.some(s => s.id === sk.id);
       const cleroOnly = sk.id === 'reza_maior';
@@ -89,7 +94,8 @@ export const shops = {
     const cost = upgradeCost(w.tier);
     const next = w.base + (w.tier + 1) * 3;
     const el = byId('forgePanel');
-    el.innerHTML = `<h2>Ferreiro</h2>
+    const greet = this.curNpc ? greetingFor(this.curNpc, this) : '';
+    el.innerHTML = (greet ? `<div class="bldGreet">«${greet}»</div>` : '') + `<h2>Ferreiro</h2>
       <div class="weaponinfo">
         <div class="wtitle">${w.name}</div>
         <div class="wrow">Nível <b>+${w.tier}</b></div>

@@ -644,6 +644,30 @@ html, body {
 /* ---------- Building / Dialog / Boss Intro ---------- */
 .bldIcon { font-size: 22px; margin-right: 8px; vertical-align: middle; }
 .bldSub { opacity: 0.7; font-size: 13px; margin-bottom: 8px; }
+.bldGreet {
+  margin: 2px 0 10px;
+  padding: 8px 12px;
+  background: rgba(255,210,63,0.08);
+  border-left: 3px solid rgba(255,210,63,0.55);
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: #f2dc9a;
+  text-align: left;
+  line-height: 1.5;
+}
+.relation {
+  margin-top: 10px;
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(255,210,63,0.14);
+  border: 1px solid rgba(255,210,63,0.45);
+  color: #ffe9b0;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
 .dlgbody { line-height: 1.6; margin: 12px 0; text-align: left; }
 .dlgbtns { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
 .dlgbtns .btn { margin-top: 0; }

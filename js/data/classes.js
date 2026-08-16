@@ -120,10 +120,27 @@ export const SUBCLASSES = {
       { id: 'beam', name: 'Raio Divino', key: 'Q', cd: 7, color: '#fff9c4', desc: 'Coluna de luz na direção do cursor.', dmg: 2.7, type: T.MAGIC, range: 360 },
       { id: 'aura', name: 'Aura', key: 'E', cd: 15, color: '#c4ffb0', desc: 'Aura: cura contínua e +25% de dano por 8s.', heal: 0.02, dmg: 0.25, dur: 8 }
     ]
+  },
+  papa: {
+    id: 'papa', casta: 'clero', name: 'Papa', color: '#fff7e0', accent: '#e6b422',
+    desc: 'O sumo pontífice de Eclésia. Recompensa secreta: coisa alguma se sustenta diante da sua palavra.',
+    hp: 500, speed: 265, str: 38, int: 46, jump: 800,
+    ordained: true, exorcistLevel: 3,
+    weapon: { name: 'Báculo de São Pedro', base: 50, color: '#f4f0e0', kind: 'aura' },
+    attack: { kind: 'aura', dmg: 2.6, type: T.HOLY, radius: 265, cd: 0.55, color: '#fff3b0' },
+    aura: { radius: 250, dmg: 1.5, tick: 0.5 },
+    skills: [
+      { id: 'palavra_santa', name: 'Palavra Santa', key: 'Q', cd: 4, color: '#fff9c4',
+        desc: 'O eco da palavra que varre a montanha: nova sagrada devastadora ao redor.',
+        dmg: 6.5, type: T.HOLY, radius: 270 },
+      { id: 'jubileu', name: 'Jubileu', key: 'E', cd: 14, color: '#ffe9b0',
+        desc: 'Ano de graça: purga todos os inimigos da tela com dano sagrado imenso e cura o Papa.',
+        dmg: 380, type: T.HOLY, heal: 1.0 }
+    ]
   }
 };
 
-export const SUB_ORDER = ['diacono', 'padre', 'bispo', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
+export const SUB_ORDER = ['diacono', 'padre', 'bispo', 'papa', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
 export const CASTA_ORDER = ['clero', 'templarios', 'mago'];
 
 // Nível de desbloqueio de cada subclasse dentro da sua casta:

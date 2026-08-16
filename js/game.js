@@ -149,6 +149,9 @@ const GAME = {
   isClassUnlocked(subId) {
     // Cheat de desenvolvimento: libera todas as classes só nesta sessão.
     if (this.cheats.libera_tudo) return true;
+    // O Papa é a classe secreta: só é jogável depois de comprado do Papa Leão XI
+    // (20.000 ● na raríssima aparição dele pelo mundo).
+    if (subId === 'papa') return !!((this.loadRecords() || {}).popeUnlocked);
     const line = castaLine(SUBCLASSES[subId] && SUBCLASSES[subId].casta);
     const idx = line.indexOf(subId);
     if (idx <= 0) return true;
@@ -159,6 +162,7 @@ const GAME = {
 
   // Classe cuja vitória desbloqueia subId (ou '' se já estiver livre).
   unlockHint(subId) {
+    if (subId === 'papa') return 'O Papa (compre-o por 20.000 ● quando ele aparecer no mundo)';
     const line = castaLine(SUBCLASSES[subId] && SUBCLASSES[subId].casta);
     const idx = line.indexOf(subId);
     if (idx <= 0) return '';
@@ -212,10 +216,13 @@ const GAME = {
     this.zoneId = '';
     this.hotSel = 0;
     this.npcs = this.npcs.filter(n => n.id !== 'papa');
-    this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; });
-    // Aparição rara do Papa: 10% de chance por partida.
+    this.npcs.forEach(n => { n.eventDone = false; n.confessed = false; delete n.talks; delete n.met; delete n.gave; });
+    // Eventos raros: o Papa (10%) ou, mais raramente ainda, a visita de um Anjo
+    // de Eclésia (7%). No máximo um evento raro por partida — o mapa continua
+    // dominado pelos acontecimentos comuns, e cada aparição vira lembrança.
     this.popeHere = Math.random() < 0.1;
     if (this.popeHere) this.spawnPope();
+    else if (Math.random() < 0.07) this.spawnAnjo();
 
     this.player = new Player(sub, this.startPos.x, this.startPos.y, this);
     // Fulmen Ruptor comprado com o Vendedor da vila é levado para a jornada
