@@ -53,7 +53,7 @@ sad
 - **Estatísticas**: tempo, abates, chefes, mortes, dano causado/recebido, combo máximo, power-ups, zonas visitadas.
 - **Recordes locais**: salvos no `localStorage` por subclasse; a tela de vitória exibe estatísticas completas (tempo jogado, abates, chefes, mortes, dano, combo, exploração) e marca novos recordes.
 - **Consumíveis/armas modernas**: removidos e substituídos pelo sistema de Bênçãos (ver acima).<br>
-- **Sistema de cheats** (F3): ouro/vida infinitos, edição de stats, painel visual e `get <bencao_id>` (ex.: `get bencao_suprema` para testar a Bênção Suprema).
+- **Sistema de cheats** (F3): comandos com prefixo `/` — `/personagem <classe>`, `/stats <campo> <valor>` (vida, forca, int, vel, ouro, dano, tier), `/get <id|nome> [xN]` (bênçãos, habilidades extras, relíquias e itens da loja), `/monstro <id> [xN]`, `/matar [id]`, `/curar`, toggles de sessão (`/ouroinfinito`, `/vidainfinita`, `/fantasma`, `/libera_tudo`). Nada é salvo (só afeta a run atual); id aceita snake_case do código (`bencao_suprema`) ou o nome com acento/espaço (`Benção Suprema`). `/lista <categoria>` mostra os ids.
 - **Efeitos visuais**: partículas, screen shake, flash de dano, barras de vida, anéis de habilidade, texto flutuante, auras de raro/chefes finais.
 - **Áudio**: Web Audio API para efeitos (ataque, hit, cura, upgrade, boss, arremesso, etc.).
 

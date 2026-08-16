@@ -551,6 +551,94 @@ html, body {
 .cheatrow { display: flex; gap: 10px; margin-top: 10px; }
 .cheatrow .btn { margin-top: 0; }
 
+/* ---------- Manual de cheats (F3) / /ajuda / /lista ---------- */
+#cheatpanel .panel.small { max-width: 680px; }
+#cheatPanel h2.cheat-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  color: #ffd23f;
+}
+.cheat-title .cheat-sub {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.55);
+}
+.cheat-section { margin-top: 14px; text-align: left; }
+.cheat-section + .cheat-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+}
+.cheat-sec-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ff9d5c;
+  margin-bottom: 6px;
+}
+.cheat-cmd { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; font-size: 13px; line-height: 1.5; }
+.cheat-cmd code {
+  flex: 0 0 auto;
+  background: rgba(255, 210, 63, 0.12);
+  border: 1px solid rgba(255, 210, 63, 0.35);
+  color: #ffe9a0;
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+}
+.cheat-cmd span { opacity: 0.85; }
+.cheat-cmd span b { color: #ffd23f; }
+.cheat-note { font-size: 12px; opacity: 0.5; margin-top: 2px; }
+.cheat-cat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cheat-cat-row > span {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-right: 2px;
+}
+.cheat-cat {
+  font: inherit;
+  font-size: 12px;
+  color: #cfe0ff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cheat-cat:hover { background: rgba(255, 210, 63, 0.18); border-color: #ffd23f; color: #ffe9a0; }
+.cheat-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; text-align: left; }
+.cheat-id {
+  font: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.cheat-id:hover { border-color: #ffd23f; background: rgba(255, 210, 63, 0.14); }
+.cheat-id.copied { border-color: #7cff8a; background: rgba(124, 255, 138, 0.16); color: #c8ffd0; }
+.cheat-empty { font-size: 12px; opacity: 0.5; }
+
 /* ---------- Banner / Boss bar ---------- */
 #banner {
   position: fixed;
