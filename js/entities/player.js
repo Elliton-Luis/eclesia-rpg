@@ -217,6 +217,12 @@ export class Player {
     if (slot >= 0 && slot < this.hotKeys.length) this.hotKeys[slot] = null;
   }
 
+  // Ímã: item de utilidade equipável. Está "equipado" quando ocupa um slot da
+  // hotbar; enquanto equipado concede o bônus passivo de raio de coleta.
+  magnetEquipped() {
+    return this.findSlot('ima') !== -1;
+  }
+
   box() { return { x: this.x - this.w / 2, y: this.y - this.h / 2, w: this.w, h: this.h }; }
 
   update(dt, g) {

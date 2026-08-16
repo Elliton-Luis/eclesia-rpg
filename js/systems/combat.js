@@ -349,7 +349,32 @@ export const combat = {
       case 'grande_exorcismo': this.grandeExorcismo(s); break;
       case 'palavra_santa': this.rezaMaior(s); break;
       case 'jubileu': this.jubileu(s); break;
+      case 'ima': this.magnetSkill(s); break;
     }
+  },
+
+  // Ímã: atração ativa. Puxa todas as moedas e corações atualmente visíveis na
+  // tela em direção ao jogador (independentemente da distância), exibindo um
+  // pulso que sai dele. Nenhum outro objeto (inimigos, projéteis, NPCs) é movido.
+  magnetSkill(s) {
+    const p = this.player;
+    const margin = 40;
+    let n = 0;
+    for (const pk of this.pickups) {
+      if (pk.kind !== 'coin' && pk.kind !== 'heart') continue;
+      if (pk.x < this.cam.x - margin || pk.x > this.cam.x + this.cam.w + margin) continue;
+      if (pk.y < this.cam.y - margin || pk.y > this.cam.y + this.cam.h + margin) continue;
+      pk.pull = true;
+      n++;
+    }
+    // Pulso magnético: ondas partindo do jogador, na medida de toda a tela.
+    this.ring(p.x, p.y, 120, 0.5, '#7ec8e3', 5);
+    this.ring(p.x, p.y, Math.max(this.cw, this.ch) * 0.5, 0.65, '#7ec8e3', 3);
+    this.burst(p.x, p.y, '#7ec8e3', 18, 260);
+    this.burst(p.x, p.y, '#ffd23f', 10, 220);
+    this.sfx.buff();
+    if (n === 0) this.banner('Ímã: nenhuma moeda ou coração visível.', '#9aa0ab', 1.5);
+    else this.text(p.x, p.y - 34, 'Ímã: ' + n + ' item(ns) atraído(s)', '#7ec8e3', 15);
   },
 
   // Jubileu: ano de graça — a palavra do Papa purga toda a tela e cura o fiel.

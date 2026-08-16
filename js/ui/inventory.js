@@ -82,6 +82,8 @@ export const inventory = {
 
   statsHtml(p, s) {
     const parts = [];
+    if (s.passive) parts.push(`<span class="stat badge" data-tip="Efeito passivo: vale enquanto o item estiver equipado na hotbar.">PASSIVO</span>`);
+    if (s.active) parts.push(`<span class="stat badge" data-tip="Habilidade ativa: disparada ao usar o item pela hotbar.">ATIVO</span>`);
     if (s.type) {
       const tip = s.type === T.PHYS
         ? 'Físico: dano que escala com a Força (atual: ' + p.str + ').'

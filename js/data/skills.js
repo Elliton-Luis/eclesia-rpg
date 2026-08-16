@@ -11,4 +11,6 @@ export const EXTRA_SKILLS = [
     desc: 'Cura grande e purga efeitos.', heal: 0.5 },
   { id: 'passo_luz', name: 'Passo da Luz', key: 'R', cd: 8, color: '#ffe9a0', cost: 180,
     desc: 'Teleporta na direção do cursor.', dist: 220 },
+  { id: 'ima', name: 'Ímã', key: 'R', cd: 12, color: '#7ec8e3', cost: 200, passive: true, active: true,
+    desc: 'Item de utilidade: aumenta o alcance de coleta de moedas e corações enquanto equipado. Ativo: atrai todas as moedas e corações visíveis na tela.' },
 ];

@@ -15,17 +15,21 @@ export class Pickup {
     const p = g.player;
     const d = Math.hypot(this.x - p.x, this.y - p.y);
 
-    // Atração magnética: dentro de um raio ampliado, o item é puxado para o jogador.
-    const magnet = 96;                 // raio de atração ao redor do jogador
+    // Ímã: atração magnética ao redor do jogador. Com o Ímã equipado na hotbar
+    // o raio de coleta passivo cresce; durante a habilidade ativa, qualquer
+    // moeda/coração visível é puxado, independentemente da distância.
+    let magnet = 96;                    // raio padrão de atração
+    if (p.magnetEquipped()) magnet += 120; // raio com o Ímã equipado (~216)
+    if (this.pull) magnet = 1e9;        // ativa: alcança tudo que está na tela
     const pickupR = this.radius() + p.w / 2 + 6;
     if (d < magnet && d > pickupR) {
-      const pull = 1 - d / magnet;     // 0 longe, 1 perto
+      const pull = this.pull ? 1 : 1 - d / magnet;  // 0 longe, 1 perto
       const ang = Math.atan2(p.y - this.y, p.x - this.x);
-      const sp = 260 * pull + 140;
+      const sp = (this.pull ? 920 : 260) * pull + 120;
       this.x += Math.cos(ang) * sp * dt;
       this.y += Math.sin(ang) * sp * dt;
-      // pequena faísca de magnet
-      if (Math.random() < 0.18) {
+      // pequena faísca de magnet (mais intensa durante a atração ativa)
+      if (Math.random() < (this.pull ? 0.45 : 0.18)) {
         g.particles.push(new Particle({ x: this.x, y: this.y, vx: 0, vy: 0, life: 0.25,
           color: this.kind === 'coin' ? '#ffd23f' : this.kind === 'heart' ? '#ff5c7a' : '#ffe66d',
           size: 2, grav: 0 }));
