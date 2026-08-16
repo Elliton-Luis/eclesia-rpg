@@ -1,6 +1,6 @@
 import { TILE, HOTBAR_SLOTS } from './data/constants.js';
 import { clamp, lerp, rand } from './data/utils.js';
-import { SUBCLASSES, CLASS_TIER } from './data/classes.js';
+import { SUBCLASSES, castaLine } from './data/classes.js';
 import { REGIONS, SEALS } from './data/regions.js';
 import { NPC_DEFS } from './data/npcs.js';
 import { LORE_ZONE } from './data/lore.js';
@@ -144,16 +144,26 @@ const GAME = {
   },
 
   // Desbloqueio de classes — regra centralizada (fácil de trocar no futuro).
-  // Hoje: cada final concluído (qualquer classe) libera o próximo nível de
-  // todas as categorias (zeramentos >= tier). Amanhã: trocar por uma condição
-  // baseada em finais específicos sem mexer na interface.
+  // Hoje: sequencial estrita dentro de cada casta. A primeira classe da casta é
+  // livre; as seguintes exigem uma vitória com a classe ANTERIOR da própria
+  // casta (progressão linear, em vez de tudo-ou-nada global entre castas).
   isClassUnlocked(subId) {
     // Cheat de desenvolvimento: libera todas as classes só nesta sessão.
     if (this.cheats.libera_tudo) return true;
-    const tier = CLASS_TIER[subId] || 0;
-    if (tier <= 0) return true;
+    const line = castaLine(SUBCLASSES[subId] && SUBCLASSES[subId].casta);
+    const idx = line.indexOf(subId);
+    if (idx <= 0) return true;
     const rec = this.loadRecords();
-    return (rec.wins || 0) >= tier;
+    const prev = rec.byClass && rec.byClass[line[idx - 1]];
+    return !!(prev && prev.wins > 0);
+  },
+
+  // Classe cuja vitória desbloqueia subId (ou '' se já estiver livre).
+  unlockHint(subId) {
+    const line = castaLine(SUBCLASSES[subId] && SUBCLASSES[subId].casta);
+    const idx = line.indexOf(subId);
+    if (idx <= 0) return '';
+    return SUBCLASSES[line[idx - 1]].name;
   },
 
   // force=true (usado por cheats de desenvolvimento): inicia a classe ignorando
@@ -164,7 +174,8 @@ const GAME = {
     if (!sub) return;
     // Coerência: jamais iniciar uma classe bloqueada, mesmo chamando direto.
     if (!force && !this.isClassUnlocked(subId)) {
-      this.banner('Classe bloqueada: zere o jogo para desbloquear as demais.', '#ffd23f', 2.2);
+      const req = this.unlockHint(subId);
+      this.banner(`Classe bloqueada: vença com ${req} para desbloquear.`, '#ffd23f', 2.4);
       return;
     }
     this.sfx.unlock();

@@ -1,5 +1,76 @@
 import { TILE } from '../data/constants.js';
 
+// Ajusta o brilho de uma cor hex (negativo escurece). Falha → cinza neutro.
+const darken = (hex, d) => {
+  const m = /^#([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(String(hex || ''));
+  if (!m) return '#3a3a44';
+  let h = m[1];
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  const n = parseInt(h, 16);
+  const r = Math.max(0, Math.min(255, ((n >> 16) & 255) + d));
+  const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + d));
+  const b = Math.max(0, Math.min(255, (n & 255) + d));
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+};
+
+const SKIN = '#e9c29b';
+const HAIR = '#4a3a30';
+
+// Túnica A-line (mesma gramática do sprite do jogador), sombreada num lado.
+const drawTunic = (ctx, color, shade, fy, w) => {
+  w = w || 9;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(-w + 1, fy - 18);
+  ctx.lineTo(-w - 1, fy - 2);
+  ctx.quadraticCurveTo(0, fy, w + 1, fy - 2);
+  ctx.lineTo(w - 1, fy - 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = shade;
+  ctx.beginPath();
+  ctx.moveTo(-w + 1, fy - 18);
+  ctx.lineTo(-w - 1, fy - 2);
+  ctx.quadraticCurveTo(0, fy, 0, fy - 1);
+  ctx.lineTo(0, fy - 18);
+  ctx.closePath();
+  ctx.fill();
+};
+
+// Pernas e botas simples (cobertas em grande parte pelo corpo).
+const drawLegs = (ctx, fy) => {
+  ctx.fillStyle = '#2b2b33';
+  ctx.fillRect(-8.6, fy - 6, 4.6, 5);
+  ctx.fillRect(4, fy - 6, 4.6, 5);
+  ctx.fillStyle = '#4a4438';
+  ctx.fillRect(-8.6, fy - 1.6, 4.6, 2.6);
+  ctx.fillRect(4, fy - 1.6, 4.6, 2.6);
+};
+
+// Rosto comum: pele + dois olhos.
+const drawFace = (ctx, fy) => {
+  ctx.fillStyle = SKIN;
+  ctx.beginPath();
+  ctx.arc(0, fy - 30, 5.2, 0, 6.283);
+  ctx.fill();
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(-3, fy - 30, 1.8, 0, 6.283);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(3, fy - 30, 1.8, 0, 6.283);
+  ctx.fill();
+};
+
+// Barba rala em torno do queixo.
+const drawBeard = (ctx, fy, color) => {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, fy - 27.4, 4.2, 1.2, 0, 0, 6.283);
+  ctx.fill();
+  ctx.fillRect(-3.6, fy - 26.8, 7.2, 1.8);
+};
+
 export const render = {
   render() {
     const ctx = this.ctx;
@@ -165,73 +236,17 @@ export const render = {
     const bob = Math.sin(n.bobT * 2) * 2;
     ctx.save();
     ctx.translate(n.px, n.py + bob);
+
+    // Sombra no chão
     ctx.globalAlpha = 0.22;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(0, 20, 14, 5, 0, 0, 6.283);
+    ctx.ellipse(0, 20, 13, 5, 0, 0, 6.283);
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    ctx.fillStyle = n.color;
-    ctx.beginPath();
-    ctx.arc(0, 0, 13, 0, 6.283);
-    ctx.fill();
-    ctx.fillStyle = '#e8e8e8';
-    ctx.beginPath();
-    ctx.arc(0, -18, 9, 0, 6.283);
-    ctx.fill();
-
-    if (n.kind === 'forge') {
-      ctx.fillStyle = n.accent;
-      ctx.fillRect(-6, -26, 12, 5);
-      ctx.fillRect(-8, -29, 16, 4);
-    } else if (n.kind === 'shop') {
-      ctx.fillStyle = n.accent;
-      ctx.beginPath();
-      ctx.arc(0, -27, 7, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(-7, -26, 14, 3);
-    } else if (n.kind === 'skills') {
-      ctx.fillStyle = n.accent;
-      ctx.beginPath();
-      ctx.moveTo(0, -32);
-      ctx.lineTo(9, -18);
-      ctx.lineTo(-9, -18);
-      ctx.closePath();
-      ctx.fill();
-    } else if (n.kind === 'guide') {
-      ctx.fillStyle = n.accent;
-      ctx.beginPath();
-      ctx.arc(0, -28, 6, 0, 6.283);
-      ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(-1, -31, 2, 6);
-    } else if (n.kind === 'church') {
-      ctx.fillStyle = '#fff3b0';
-      ctx.beginPath();
-      ctx.moveTo(0, -30);
-      ctx.lineTo(-8, -16);
-      ctx.lineTo(8, -16);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#c9a227';
-      ctx.fillRect(-2, -20, 4, 10);
-    } else if (n.kind === 'tavern') {
-      ctx.fillStyle = '#a8823f';
-      ctx.beginPath();
-      ctx.arc(0, -26, 8, Math.PI, 0);
-      ctx.fill();
-      ctx.fillRect(-8, -25, 16, 4);
-      ctx.fillStyle = '#ffd23f';
-      ctx.fillRect(-3, -18, 6, 6);
-    } else if (n.kind === 'tower') {
-      ctx.fillStyle = '#7a6bd8';
-      ctx.fillRect(-4, -28, 8, 12);
-      ctx.fillStyle = '#c0b4ff';
-      ctx.beginPath();
-      ctx.arc(0, -32, 5, 0, 6.283);
-      ctx.fill();
-    } else if (n.kind === 'seal') {
+    if (n.kind === 'seal') {
+      // Selos de progressão: aura pulsante sobre anel — não são pessoas.
       const ph = t * 3 + n.px * 0.01;
       ctx.globalAlpha = 0.5 + Math.sin(ph) * 0.3;
       ctx.fillStyle = n.accent || '#b05cff';
@@ -244,67 +259,337 @@ export const render = {
       ctx.beginPath();
       ctx.arc(0, -20, 14, 0, 6.283);
       ctx.stroke();
-    } else if (n.kind === 'talk') {
-      ctx.fillStyle = n.accent;
-      ctx.beginPath();
-      ctx.arc(0, -26, 6, 0, 6.283);
-      ctx.fill();
-    } else if (n.kind === 'pope') {
-      // O Papa: auréola dourada pulsante e tiara tripla branca.
-      const ph = t * 3;
-      ctx.globalAlpha = 0.55 + Math.sin(ph) * 0.3;
-      ctx.strokeStyle = '#ffd23f';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, -18, 17 + Math.sin(ph * 2) * 2, 0, 6.283);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.moveTo(0, -40);
-      ctx.lineTo(-9, -28);
-      ctx.lineTo(9, -28);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#c9a227';
-      ctx.fillRect(-7, -27, 14, 3);
-      ctx.fillRect(-10, -24, 20, 3);
     } else {
-      ctx.fillStyle = n.accent;
-      ctx.beginPath();
-      ctx.moveTo(0, -32);
-      ctx.lineTo(9, -18);
-      ctx.lineTo(-9, -18);
-      ctx.closePath();
-      ctx.fill();
-    }
+      // Personagens procedurais consistentes com o sprite do jogador.
+      const v = ((Math.floor(n.px) * 13 + Math.floor(n.py) * 7) >>> 0) % 5;
+      this.drawNpcChar(ctx, n, v, 20, t);
 
-    // Confession indicator for Clero NPCs
-    if (n.confessed && this.player && this.player.sub.casta === 'clero') {
-      ctx.fillStyle = '#fff3b0';
-      ctx.globalAlpha = 0.7 + Math.sin(t * 5) * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(0, -38);
-      ctx.lineTo(-6, -30);
-      ctx.lineTo(6, -30);
-      ctx.closePath();
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      // Indicador de confissão (NPCs do Clero)
+      if (n.confessed && this.player && this.player.sub.casta === 'clero') {
+        ctx.fillStyle = '#fff3b0';
+        ctx.globalAlpha = 0.7 + Math.sin(t * 5) * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, -38);
+        ctx.lineTo(-6, -30);
+        ctx.lineTo(6, -30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
     }
-
-    ctx.fillStyle = '#222';
-    ctx.beginPath();
-    ctx.arc(-3, -18, 1.8, 0, 6.283);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(3, -18, 1.8, 0, 6.283);
-    ctx.fill();
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.font = '700 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(n.name, 0, 34);
     ctx.restore();
+  },
+
+  drawNpcChar(ctx, n, v, fy, t) {
+    const color = n.color;
+    const accent = n.accent || '#ffffff';
+
+    // ---- Clero (igreja e Papa) ----
+    if (n.kind === 'church' || n.kind === 'pope') {
+      drawLegs(ctx, fy);
+      const vest = n.kind === 'pope' || (n.rank && n.rank !== 'capela') ? '#f5f0e4' : color;
+      drawTunic(ctx, vest, darken(vest, -18), fy);
+      if (n.kind === 'pope') {
+        // Papa: palio dourado + mozeta escarlate
+        ctx.fillStyle = '#b2002e';
+        ctx.beginPath(); ctx.arc(-9, fy - 17, 3.4, Math.PI * 0.55, Math.PI * 1.45); ctx.fill();
+        ctx.beginPath(); ctx.arc(9, fy - 17, 3.4, Math.PI * -0.45, Math.PI * 0.45); ctx.fill();
+        ctx.fillStyle = accent;
+        ctx.fillRect(-1.2, fy - 18, 2.4, 16);
+      } else if (n.rank === 'bispo') {
+        ctx.fillStyle = '#b2002e';
+        ctx.beginPath(); ctx.arc(-9, fy - 17, 3.4, Math.PI * 0.55, Math.PI * 1.45); ctx.fill();
+        ctx.beginPath(); ctx.arc(9, fy - 17, 3.4, Math.PI * -0.45, Math.PI * 0.45); ctx.fill();
+        ctx.fillStyle = accent;
+        ctx.fillRect(-1.2, fy - 18, 2.4, 16);
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillRect(-1.2, fy - 12, 2.4, 4);
+        ctx.fillRect(-3.2, fy - 10.6, 6.4, 2);
+      } else {
+        // colarinho romano + estola/faixa
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-2.6, fy - 19.5, 5.2, 2.4);
+        ctx.fillStyle = accent;
+        ctx.fillRect(-3.4, fy - 16.5, 1.7, 14);
+        ctx.fillRect(1.7, fy - 16.5, 1.7, 14);
+      }
+      drawFace(ctx, fy);
+      if (n.kind === 'pope') {
+        // tiara tripla + auréola dourada pulsante
+        const ph = t * 3;
+        ctx.globalAlpha = 0.55 + Math.sin(ph) * 0.3;
+        ctx.strokeStyle = '#ffd23f';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, fy - 29, 8 + Math.sin(ph * 2) * 1.5, 0, 6.283);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-5.5, fy - 37);
+        ctx.lineTo(-3.5, fy - 49);
+        ctx.lineTo(0, fy - 44);
+        ctx.lineTo(3.5, fy - 49);
+        ctx.lineTo(5.5, fy - 37);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = accent;
+        ctx.fillRect(-4.2, fy - 40, 8.4, 1.7);
+        ctx.fillRect(-0.8, fy - 46.5, 1.6, 4.5);
+      } else if (n.rank === 'bispo') {
+        // mitra branca + galão + auréola
+        ctx.fillStyle = '#fdf6ec';
+        ctx.beginPath();
+        ctx.moveTo(-5, fy - 38);
+        ctx.lineTo(-3, fy - 50);
+        ctx.lineTo(0, fy - 43);
+        ctx.lineTo(3, fy - 50);
+        ctx.lineTo(5, fy - 38);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = accent;
+        ctx.fillRect(-3.6, fy - 41, 7.2, 1.6);
+        ctx.fillRect(-0.9, fy - 48, 1.8, 5);
+        ctx.strokeStyle = 'rgba(255,210,63,0.9)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, fy - 30, 7.2, 0, 6.283);
+        ctx.stroke();
+      } else if (n.rank === 'capela') {
+        // capela do bosque: capuz humilde + auréola
+        ctx.fillStyle = darken(color, -20);
+        ctx.beginPath();
+        ctx.arc(0, fy - 33.5, 6.4, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(-6.4, fy - 33, 12.8, 2);
+        ctx.fillStyle = darken(vest, -30);
+        ctx.fillRect(-6, fy - 32.4, 12, 1.4);
+        ctx.strokeStyle = 'rgba(255,215,106,0.85)';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, fy - 30, 7, 0, 6.283);
+        ctx.stroke();
+      } else {
+        // padre: tonsura + auréola discreta
+        ctx.fillStyle = '#3a3a44';
+        ctx.beginPath();
+        ctx.arc(0, fy - 31, 4.6, Math.PI * 0.9, Math.PI * 2.1);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,215,106,0.9)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(0, fy - 37.6, 4.4, 0, 6.283);
+        ctx.stroke();
+      }
+      return;
+    }
+
+    // ---- Ofícios e aldeões: túnica + item de trabalho ----
+    drawLegs(ctx, fy);
+    drawTunic(ctx, color, darken(color, -22), fy);
+    ctx.fillStyle = accent;
+    ctx.fillRect(-8.5, fy - 9, 17, 1.8);
+
+    if (n.kind === 'forge') {
+      // avental de couro + bigorna + martelo no ombro
+      ctx.fillStyle = darken(color, -34);
+      ctx.beginPath();
+      ctx.moveTo(-6, fy - 17);
+      ctx.lineTo(6, fy - 17);
+      ctx.lineTo(7, fy - 3);
+      ctx.lineTo(-7, fy - 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = HAIR;
+      ctx.fillRect(-7, fy - 3, 14, 1.6);
+      drawFace(ctx, fy);
+      drawBeard(ctx, fy, '#6a5232');
+      ctx.fillStyle = HAIR;
+      ctx.beginPath();
+      ctx.arc(0, fy - 31, 4.6, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-4.8, fy - 30.4, 9.6, 1.4);
+      // bigorna ao lado + martelo no ombro
+      ctx.fillStyle = '#3a3d42';
+      ctx.fillRect(-11.5, fy - 8, 7, 8);
+      ctx.fillRect(-13, fy - 9.5, 10, 2);
+      ctx.fillStyle = accent;
+      ctx.fillRect(8, fy - 20, 2.5, 9);
+      ctx.fillRect(7, fy - 21, 4.5, 2.4);
+      return;
+    }
+
+    if (n.kind === 'shop') {
+      drawFace(ctx, fy);
+      // lenço na cabeça
+      ctx.fillStyle = darken(color, -8);
+      ctx.beginPath();
+      ctx.arc(0, fy - 32, 5.6, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-5.6, fy - 31.5, 11.2, 2.4);
+      ctx.fillStyle = darken(color, -24);
+      ctx.fillRect(-5.6, fy - 29.4, 11.2, 1.4);
+      // moeda na mão
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(9.5, fy - 10, 2.2, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = '#ffd23f';
+      ctx.beginPath();
+      ctx.arc(9.5, fy - 10, 1, 0, 6.283);
+      ctx.fill();
+      return;
+    }
+
+    if (n.kind === 'skills') {
+      // mestre das artes: capuz + cajado com orbe
+      ctx.fillStyle = darken(color, -16);
+      ctx.beginPath();
+      ctx.arc(0, fy - 34, 7.2, Math.PI * 0.92, Math.PI * 2.08);
+      ctx.fill();
+      ctx.fillRect(-7, fy - 33.4, 14, 1.6);
+      ctx.fillStyle = darken(color, -30);
+      ctx.beginPath();
+      ctx.arc(0, fy - 30.8, 4.6, Math.PI, 0);
+      ctx.fill();
+      drawFace(ctx, fy);
+      ctx.fillStyle = '#6b4a2e';
+      ctx.fillRect(8.5, fy - 24, 2.2, 24);
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(9.6, fy - 26, 3.2, 0, 6.283);
+      ctx.fill();
+      return;
+    }
+
+    if (n.kind === 'guide') {
+      drawFace(ctx, fy);
+      drawBeard(ctx, fy, darken(SKIN, -40));
+      // capuz de viajante
+      ctx.fillStyle = darken(color, -14);
+      ctx.beginPath();
+      ctx.arc(0, fy - 34, 7.2, Math.PI * 0.92, Math.PI * 2.08);
+      ctx.fill();
+      ctx.fillRect(-7, fy - 33.4, 14, 1.6);
+      // pergaminho na mão
+      ctx.fillStyle = '#f0e6c8';
+      ctx.fillRect(7.5, fy - 16, 5.5, 8);
+      ctx.fillStyle = '#c9a884';
+      ctx.fillRect(9.8, fy - 16, 1.2, 8);
+      return;
+    }
+
+    if (n.kind === 'tavern') {
+      // corpo mais largo + bigode + caneca
+      ctx.fillStyle = darken(color, -22);
+      ctx.fillRect(-10, fy - 18, 20, 16);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(0, fy - 12, 10, 7, 0, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.fillRect(-9.5, fy - 8, 19, 1.8);
+      drawFace(ctx, fy);
+      ctx.fillStyle = HAIR;
+      ctx.fillRect(-3.6, fy - 28.2, 7.2, 1.6);
+      ctx.beginPath();
+      ctx.arc(0, fy - 31.4, 4.8, Math.PI * 0.85, Math.PI * 2.15);
+      ctx.fill();
+      ctx.fillStyle = '#b5651d';
+      ctx.fillRect(9.5, fy - 18, 4, 8);
+      ctx.fillRect(13.5, fy - 17, 1.6, 6);
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(9.5, fy - 19, 4, 2);
+      return;
+    }
+
+    if (n.kind === 'tower') {
+      // erudito arcano: chapéu pontudo + óculos + livro
+      ctx.fillStyle = accent;
+      ctx.fillRect(-1.2, fy - 19, 2.4, 17);
+      drawFace(ctx, fy);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(-6, fy - 36);
+      ctx.lineTo(-4, fy - 50);
+      ctx.lineTo(0, fy - 45);
+      ctx.lineTo(4, fy - 50);
+      ctx.lineTo(6, fy - 36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.fillRect(-4.2, fy - 39, 8.4, 1.8);
+      ctx.fillRect(-0.8, fy - 46, 1.6, 4);
+      ctx.fillStyle = '#bfe4ff';
+      ctx.beginPath();
+      ctx.arc(-2.7, fy - 30.4, 1.9, 0, 6.283);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(2.7, fy - 30.4, 1.9, 0, 6.283);
+      ctx.fill();
+      ctx.strokeStyle = '#3a3f46';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-0.7, fy - 30.4);
+      ctx.lineTo(0.7, fy - 30.4);
+      ctx.stroke();
+      ctx.fillStyle = '#5a3a2a';
+      ctx.fillRect(-10.5, fy - 13, 4.5, 7);
+      ctx.fillStyle = '#f0e6c8';
+      ctx.fillRect(-8.5, fy - 12.5, 1, 6);
+      return;
+    }
+
+    // ---- Aldeão comum (talk): variação de penteado ----
+    drawFace(ctx, fy);
+    if (v === 0) {
+      // cabelo curto
+      ctx.fillStyle = HAIR;
+      ctx.beginPath();
+      ctx.arc(0, fy - 31, 4.8, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.fill();
+    } else if (v === 1) {
+      // lenço de camponesa
+      ctx.fillStyle = darken(color, -8);
+      ctx.beginPath();
+      ctx.arc(0, fy - 33, 5.8, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-5.8, fy - 32.5, 11.6, 2.6);
+      ctx.fillStyle = darken(color, -24);
+      ctx.fillRect(-5.8, fy - 30.2, 11.6, 1.2);
+    } else if (v === 2) {
+      // calvo com barba
+      ctx.fillStyle = darken(SKIN, -60);
+      ctx.fillRect(-4.6, fy - 32.6, 9.2, 1.6);
+      drawBeard(ctx, fy, darken(SKIN, -30));
+    } else if (v === 3) {
+      // topetinho
+      ctx.fillStyle = HAIR;
+      ctx.beginPath();
+      ctx.arc(0, fy - 32, 4.4, Math.PI * 0.95, Math.PI * 2.05);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, fy - 36.5);
+      ctx.lineTo(-3, fy - 33);
+      ctx.lineTo(0, fy - 32);
+      ctx.lineTo(3, fy - 33);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // cabelo com coque
+      ctx.fillStyle = HAIR;
+      ctx.beginPath();
+      ctx.arc(0, fy - 31.4, 4.6, Math.PI * 0.85, Math.PI * 2.15);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, fy - 35.6, 2, 0, 6.283);
+      ctx.fill();
+    }
   },
 
 };

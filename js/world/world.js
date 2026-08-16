@@ -720,26 +720,27 @@ export class World {
     return this.rgbToHex(r / totalWeight, g / totalWeight, b / totalWeight);
   }
 
-  // Paleta de árvores por bioma: copas com contraste claro contra o chão do
-  // bioma (silhueta escura + tonalidade própria), incluindo identidades roxa
-  // (pântano) e vermelha/outono (colinas).
+  // Paleta de árvores por bioma: tronco e copas sempre MAIS ESCUROS que o chão
+  // do bioma (contraste visível sem depender de contorno). Identidade própria:
+  // verde (floresta), trigo (campos), roxo (pântano), cinza (mortas), outono
+  // (colinas), oliva (forte).
   treePalette(region) {
     switch (region) {
       case 'floresta': case 'lobos': case 'sagrado':
-        return { trunk: '#4a331f', leaf: '#57a33c', leaf2: '#6cb94a', leaf3: '#3a7a2b', sil: '#1d3a14', cones: true };
+        return { trunk: '#332410', leaf: '#2a5320', leaf2: '#356628', leaf3: '#1f4217' };
       case 'campos':
-        return { trunk: '#5f4425', leaf: '#6a9c38', leaf2: '#7db246', leaf3: '#4a7626', sil: '#334d18', cones: false };
+        return { trunk: '#4a3a16', leaf: '#55641f', leaf2: '#668024', leaf3: '#455216' };
       case 'pantano':
-        return { trunk: '#3a2e48', leaf: '#7355b5', leaf2: '#8666cf', leaf3: '#543d90', sil: '#251a3f', cones: false };
+        return { trunk: '#2a2036', leaf: '#34264a', leaf2: '#3f2f5c', leaf3: '#241a3a' };
       case 'cemiterio':
-        // Mortas/secas: tronco cinza-escuro, silhueta quase preta, sem folhas verdes
-        return { trunk: '#3a3630', leaf: '#4a4640', leaf2: '#5a5650', leaf3: '#3a3630', sil: '#1a1816', cones: true };
+        // Mortas/secas: troncos cinza-escuros, sem verde, tudo sombrio
+        return { trunk: '#38332c', leaf: '#463f36', leaf2: '#544c40', leaf3: '#302c26' };
       case 'colinas':
-        return { trunk: '#4e3320', leaf: '#c05a2c', leaf2: '#d2723e', leaf3: '#8f3d1d', sil: '#572413', cones: false };
+        return { trunk: '#3a2815', leaf: '#8a3a1c', leaf2: '#994a26', leaf3: '#5e2a12' };
       case 'forte':
-        return { trunk: '#5a4024', leaf: '#8a7a46', leaf2: '#9c8c54', leaf3: '#6c6138', sil: '#3b341f', cones: true };
+        return { trunk: '#3d2b12', leaf: '#3f4a1c', leaf2: '#4e5c26', leaf3: '#2f3916' };
       default:
-        return { trunk: '#6b4a2a', leaf: '#337c3c', leaf2: '#42914a', leaf3: '#245c2c', sil: '#17331b', cones: false };
+        return { trunk: '#3f2c17', leaf: '#2c5730', leaf2: '#3a6d3a', leaf3: '#234828' };
     }
   }
 
@@ -794,97 +795,134 @@ export class World {
     return this.rgbToHex(r * alpha + 128 * (1 - alpha), g * alpha + 128 * (1 - alpha), b * alpha + 128 * (1 - alpha));
   }
 
-  // Árvore simples - 1 tile (32x32), 6 formas variadas por bioma
-  // Ancorada no chão (y+31), sem flutuar
+  // Árvore minimalista - 1 tile (32x32), 3 variações por bioma.
+  // Sem contorno (sem silhueta nem traço), copa e tronco sempre mais escuros
+  // que o chão (paleta de treePalette). Determinística por tile, ancorada no chão.
   drawTree(ctx, x, y, region, tx, ty, t) {
-    const hv = (hash2(tx * 31, ty * 7) >>> 0) % 1000;
+    const hv = (hash2(tx * 13, ty * 7) >>> 0) % 1000;
     const pal = this.treePalette(region);
     const isDead = region === 'cemiterio';
     const isSwamp = region === 'pantano';
-    const isPine = region === 'floresta' || region === 'lobos' || region === 'sagrado' || region === 'forte';
-    
-    // 6 formas simples
-    let shape;
-    if (isDead) shape = hv < 500 ? 4 : 5;      // Morta: galhos nus ou toco
-    else if (isSwamp) shape = hv < 500 ? 3 : 4; // Pântano: retorcida ou fina
-    else if (isPine) shape = hv < 333 ? 0 : hv < 666 ? 1 : 2; // Pinheiro, carvalho, copa redonda
-    else shape = hv < 250 ? 0 : hv < 500 ? 1 : hv < 750 ? 2 : 3; // Variadas
-    
-    const sway = Math.sin(t * 1.5 + tx * 0.13 + ty * 0.09) * 1.0;
-    const cx = x + 16, cy = y + 16;
-    const groundY = y + 31; // Base do tile
-    const lean = (hv % 3 === 0) ? -1 : (hv % 3 === 1) ? 1 : 0;
-    
-    // Sombra no chão
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath(); ctx.ellipse(cx + lean, groundY, 10, 2.5, 0, 0, 6.283); ctx.fill();
-    
-    // Tronco (sempre toca o chão)
-    const trunkW = shape === 4 ? 3 : shape === 5 ? 2 : 4;
-    const trunkTop = shape === 1 ? cy - 4 : shape === 3 ? cy - 2 : cy - 6;
-    ctx.fillStyle = pal.trunk;
-    ctx.fillRect(cx - trunkW / 2 + lean, trunkTop, trunkW, groundY - trunkTop);
-    // Raízes
-    ctx.fillRect(cx - 5 + lean, groundY - 2, 10, 2);
-    
+    const cx = x + 16;
+    const base = y + 30; // onde o tronco toca o chão
+    const lean = (hv % 11) < 3 ? -1 : (hv % 11) < 6 ? 1 : 0;
+    const v = hv % 3; // três variações por bioma
+
+    // sombra tênue na base
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(cx + lean * 2, base + 1, 9, 2.2, 0, 0, 6.283);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    if (isDead) return this.drawDeadTree(ctx, cx, base, lean, pal, v);
+    if (isSwamp) return this.drawSwampTree(ctx, cx, base, lean, pal, v, tx);
+
+    const sway = Math.sin(t * 1.3 + tx * 0.13 + ty * 0.09) * 0.8;
     ctx.save();
     ctx.translate(sway + lean, 0);
-    
-    const sil = pal.sil;
-    const leaf1 = pal.leaf;
-    const leaf2 = pal.leaf2;
-    
-    // Desenha copa simples por forma
-    if (shape === 0) {
-      // Pinheiro/cônica - triângulo + 2 círculos
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 18); ctx.lineTo(cx - 12, cy + 2); ctx.lineTo(cx + 12, cy + 2); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = leaf1;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 15); ctx.lineTo(cx - 10, cy); ctx.lineTo(cx + 10, cy); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = leaf2;
-      ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx - 8, cy + 4); ctx.lineTo(cx + 8, cy + 4); ctx.closePath(); ctx.fill();
-    } else if (shape === 1) {
-      // Carvalho alto - 3 elipses verticais
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 10, 11, 9, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf1;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 10, 9, 7, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf2;
-      ctx.beginPath(); ctx.ellipse(cx - 3, cy - 14, 5, 4, 0, 0, 6.283); ctx.fill();
-    } else if (shape === 2) {
-      // Copa redonda cheia - 2 círculos sobrepostos
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.arc(cx, cy - 8, 13, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf1;
-      ctx.beginPath(); ctx.arc(cx, cy - 8, 11, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf2;
-      ctx.beginPath(); ctx.arc(cx - 4, cy - 12, 5, 0, 6.283); ctx.fill();
-    } else if (shape === 3) {
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 4, 14, 7, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf1;
-      ctx.beginPath(); ctx.ellipse(cx, cy - 4, 12, 5, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf2;
-      ctx.beginPath(); ctx.ellipse(cx - 5, cy - 8, 6, 3, 0, 0, 6.283); ctx.fill();
-    } else if (shape === 4) {
-      ctx.fillStyle = sil;
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 4; i++) {
-        const angle = -Math.PI / 2 + (i - 1.5) * 0.5 + (hv % 7) * 0.1;
-        const len = 14 + (i % 3) * 4;
+
+    // tronco curto e encorpado
+    ctx.fillStyle = pal.trunk;
+    ctx.fillRect(cx - 1.5, base - 13, 3, 13);
+    ctx.fillRect(cx - 3, base - 2, 6, 2);
+
+    if (v === 0) {
+      // esférica: copa redonda única
+      ctx.fillStyle = pal.leaf;
+      ctx.beginPath(); ctx.arc(cx, base - 17, 9, 0, 6.283); ctx.fill();
+      ctx.fillStyle = pal.leaf2;
+      ctx.beginPath(); ctx.arc(cx - 3, base - 20, 4, 0, 6.283); ctx.fill();
+    } else if (v === 1) {
+      // cônica: dois triângulos empilhados (pinheiro/morro)
+      ctx.fillStyle = pal.leaf;
+      ctx.beginPath(); ctx.moveTo(cx, base - 25); ctx.lineTo(cx - 9, base - 9); ctx.lineTo(cx + 9, base - 9); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = pal.leaf2;
+      ctx.beginPath(); ctx.moveTo(cx, base - 16); ctx.lineTo(cx - 7, base - 3); ctx.lineTo(cx + 7, base - 3); ctx.closePath(); ctx.fill();
+    } else {
+      // achatada: copa larga e baixa (carvalho/olmo)
+      ctx.fillStyle = pal.leaf;
+      ctx.beginPath(); ctx.ellipse(cx, base - 12, 11, 6, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = pal.leaf2;
+      ctx.beginPath(); ctx.ellipse(cx - 4, base - 16, 5, 4, 0, 0, 6.283); ctx.fill();
+      ctx.fillStyle = pal.leaf3;
+      ctx.beginPath(); ctx.ellipse(cx + 5, base - 12, 4, 3, 0, 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Variações mortas (cemitério): galhos nus, toco ou árvore fina desgrenhada.
+  drawDeadTree(ctx, cx, base, lean, pal, v) {
+    ctx.save();
+    ctx.translate(lean, 0);
+    ctx.fillStyle = pal.trunk;
+    ctx.strokeStyle = pal.trunk;
+    ctx.lineWidth = 2;
+    if (v === 0) {
+      ctx.fillRect(cx - 1, base - 15, 2, 15);
+      for (let i = 0; i < 3; i++) {
+        const a = -Math.PI / 2 + (i - 1) * 0.7;
+        const len = 9 + (i % 2) * 4;
         ctx.beginPath();
-        ctx.moveTo(cx, cy - 6);
-        ctx.lineTo(cx + Math.cos(angle) * len, cy - 6 + Math.sin(angle) * len * 0.5);
+        ctx.moveTo(cx, base - 13);
+        ctx.lineTo(cx + Math.cos(a) * len, base - 14 + Math.sin(a) * len);
         ctx.stroke();
       }
-      ctx.lineWidth = 1;
+    } else if (v === 1) {
+      ctx.fillRect(cx - 2, base - 8, 4, 8);
+      ctx.fillRect(cx - 2, base - 10, 6, 3);
     } else {
-      ctx.fillStyle = sil;
-      ctx.beginPath(); ctx.ellipse(cx, cy + 2, 8, 5, 0, 0, 6.283); ctx.fill();
-      ctx.fillStyle = leaf1;
-      ctx.beginPath(); ctx.ellipse(cx, cy + 2, 6, 3, 0, 0, 6.283); ctx.fill();
+      ctx.fillRect(cx - 1, base - 19, 2, 19);
+      ctx.beginPath(); ctx.arc(cx, base - 22, 4, 0, 6.283); ctx.fill();
+      for (let i = 0; i < 3; i++) {
+        const a = -Math.PI / 2 + (i - 1) * 0.9;
+        const len = 7 + (i % 2) * 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, base - 20);
+        ctx.lineTo(cx + Math.cos(a) * len, base - 20 + Math.sin(a) * len);
+        ctx.stroke();
+      }
     }
-    
+    ctx.restore();
+  }
+
+  // Variações do pântano: tronco retorcido e copa murcha pendendo.
+  drawSwampTree(ctx, cx, base, lean, pal, v, tx) {
+    ctx.save();
+    ctx.translate(lean + Math.sin(tx * 0.13 + v * 2) * 0.6, 0);
+    const droop = v * 3 - 3; // inclinação murcha determinística
+    const sway = Math.sin(v * 2 + tx * 0.2) * 0.8;
+    ctx.translate(sway, 0);
+
+    ctx.fillStyle = pal.trunk;
+    ctx.beginPath();
+    ctx.moveTo(cx - 1.5, base - 14);
+    ctx.quadraticCurveTo(cx - 4 + droop, base - 8, cx + droop, base - 1);
+    ctx.quadraticCurveTo(cx + 4, base - 8, cx + 1.5, base - 14);
+    ctx.closePath(); ctx.fill();
+
+    if (v === 1) {
+      // galhos laterais baixos
+      ctx.strokeStyle = pal.trunk;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + droop, base - 10);
+      ctx.lineTo(cx - 7 + droop, base - 6);
+      ctx.moveTo(cx + droop, base - 6);
+      ctx.lineTo(cx + 7 + droop, base - 4);
+      ctx.stroke();
+    }
+
+    // copa caída
+    ctx.fillStyle = pal.leaf;
+    ctx.beginPath();
+    ctx.ellipse(cx + droop, base - 16, 10, 6, -0.3 + droop * 0.05, 0, 6.283);
+    ctx.fill();
+    ctx.fillStyle = pal.leaf2;
+    ctx.beginPath();
+    ctx.ellipse(cx + droop - 3, base - 19, 5, 3.5, 0, 0, 6.283);
+    ctx.fill();
     ctx.restore();
   }
 

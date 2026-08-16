@@ -384,7 +384,9 @@ html, body {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: var(--c);
+  background-color: var(--c);
+  background-size: cover;
+  background-position: center;
   box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.2), 0 0 14px var(--c);
   margin-bottom: 10px;
 }
