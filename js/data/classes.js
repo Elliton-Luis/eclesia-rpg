@@ -82,7 +82,7 @@ export const SUBCLASSES = {
     desc: 'Engenho do Templo: artilharia explosiva e fervor de batalha.',
     hp: 125, speed: 245, str: 15, int: 10, jump: 770,
     weapon: { name: 'Martelo do Templo', base: 14, color: '#c98a2e', kind: 'melee' },
-    attack: { kind: 'melee', dmg: 1.8, type: T.PHYS, range: 80, cd: 0.36, combo: 2, color: '#ffc2a0' },
+    attack: { kind: 'melee', dmg: 1.8, type: T.PHYS, range: 112, cd: 0.36, combo: 2, color: '#ffc2a0' },
     skills: [
       { id: 'grenade', name: 'Bombarda', key: 'Q', cd: 5, color: '#ffb020', desc: 'Bombarda incendiária que explode em área e destrói árvores e rochas.', dmg: 1.9, type: T.MAGIC, radius: 95, throw: 1 },
       { id: 'overclock', name: 'Fervor da Cruzada', key: 'E', cd: 15, color: '#7cffb0', desc: 'Fervor sagrado: muito dano e velocidade por 6s.', dmg: 0.6, spd: 0.35, dur: 6 }

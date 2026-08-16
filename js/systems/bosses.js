@@ -77,19 +77,17 @@ export const bosses = {
       this.sfx.upgrade();
     }
 
-    // Check if one of the three main bosses was defeated
-    const mainBossIds = ['krol_chefe', 'gere_osso', 'titan'];
-    if (mainBossIds.includes(d.id)) {
-      // Only increment if this boss hasn't been counted before
-      if (!this.game.progressionGranted[d.id]) { // Using progressionGranted as a flag
-        this.game.mainBossesDefeatedCount++;
-        this.game.progressionGranted[d.id] = true; // Mark as counted for ending
-      }
-
-      if (this.game.mainBossesDefeatedCount >= 3) {
+    // Vitória exclusiva: o jogo só finaliza quando os TRÊS chefes finais
+    // específicos — Demônio, Arcano e General — estiverem mortos. A condição é
+    // por identificador único (d.id), registrada em defeatedBosses: um chefe
+    // extra, renascido ou duplicado não conta, e a ordem de derrota é irrelevante.
+    const finalBossIds = ['demonio', 'arcano', 'general'];
+    if (finalBossIds.includes(d.id)) {
+      this.defeatedBosses[d.id] = true;
+      if (finalBossIds.every(id => this.defeatedBosses[id])) {
         this.flags.final = true;
         this.endGame();
-        return; // End game, no need for other logic
+        return; // Fim de jogo: não executa a lógica comum de baú/banner.
       }
     }
 

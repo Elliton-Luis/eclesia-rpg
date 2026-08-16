@@ -164,7 +164,10 @@ export const combat = {
       hit = true;
     }
     if (hit) this.sfx.hit();
-    this.slashEffect(p.x + ad.x * 14, p.y + ad.y * 14, ad);
+    // Impacto do golpe na ponta da arma: para o martelo longo do Inventor, o
+    // clarão nasce na altura da cabeça do martelo (proporcional ao alcance).
+    const impactDist = p.sub.id === 'inventor' ? Math.round(atk.range * 0.55) : 14;
+    this.slashEffect(p.x + ad.x * impactDist, p.y + ad.y * impactDist, ad);
   },
 
   // Armas de curta distância também ferem por simples contato físico.

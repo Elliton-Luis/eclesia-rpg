@@ -823,35 +823,40 @@ export class Player {
       ctx.translate(6, fy - 16);
       ctx.rotate(this.aimAng + off);
       if (s.id === 'inventor') {
-        // Martelo do Templo: cabo longo e cabeça maciça de forja
+        // Martelo de guerra do Inventor: haste longa e cabeça maciça de forja,
+        // com alcance correspondente ao ataque (s.attack.range).
         ctx.fillStyle = '#6b4a2e';
-        ctx.fillRect(3, -3, 14, 6);
+        ctx.fillRect(2, -2.8, 36, 5.6);
         ctx.fillStyle = '#4a3018';
-        ctx.fillRect(3, -2, 14, 1.8);
-        // cabeça do martelo — grande, pesada
+        ctx.fillRect(12, -1.8, 14, 3.6);
+        ctx.fillStyle = '#8a929c';
+        ctx.fillRect(34, -3.4, 3, 6.8);
+        // pescoço de fixação da cabeça
         ctx.fillStyle = '#3a3a42';
-        ctx.beginPath();
-        ctx.rect(15, -13, 4, 26);
-        ctx.fill();
+        ctx.fillRect(36, -16, 4, 32);
+        // cabeça do martelo — grande, pesada, mais larga que a haste
         ctx.fillStyle = this.weapon.color;
         ctx.beginPath();
-        ctx.rect(11, -11, 24, 22);
+        ctx.rect(31, -13, 32, 26);
         ctx.fill();
         // facetas de forja (brilho metálico)
         ctx.fillStyle = 'rgba(255,255,255,0.28)';
-        ctx.fillRect(12.5, -9, 5, 18);
+        ctx.fillRect(32.5, -11, 7, 22);
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(30, -9, 3, 18);
+        ctx.fillRect(58, -11, 4, 22);
         // filetes dourados na lateral
         ctx.fillStyle = '#c9a227';
-        ctx.fillRect(11, -11, 24, 2.4);
-        ctx.fillRect(11, 8.6, 24, 2.4);
+        ctx.fillRect(31, -13, 32, 2.8);
+        ctx.fillRect(31, 10.2, 32, 2.8);
         // variações de rebite
         ctx.fillStyle = '#6a6a72';
-        ctx.fillRect(13, -9, 2, 2);
-        ctx.fillRect(31, -9, 2, 2);
-        ctx.fillRect(13, 8, 2, 2);
-        ctx.fillRect(31, 8, 2, 2);
+        ctx.fillRect(34, -9, 2, 2);
+        ctx.fillRect(60, -9, 2, 2);
+        ctx.fillRect(34, 8, 2, 2);
+        ctx.fillRect(60, 8, 2, 2);
+        // espigão traseiro do martelo de guerra
+        ctx.fillStyle = '#8a929c';
+        ctx.fillRect(60, -21, 5, 9);
       } else if (s.id === 'guerreiro') {
         // Espada longa templária: lâmina, guarda dourada e contraguarda
         ctx.fillStyle = '#e8ecf2';
