@@ -545,6 +545,92 @@ export const render = {
       return;
     }
 
+    if (n.kind === 'guild') {
+      // Comandante templário: torso de aço, sobreveste branca com a cruz
+      // vermelha da Ordem, elmo de campo com pluma e espada ao lado.
+      drawLegs(ctx, fy);
+      ctx.fillStyle = '#8b929c';
+      ctx.fillRect(-9, fy - 18, 18, 15);
+      ctx.fillStyle = '#616a74';
+      ctx.fillRect(-9, fy - 18, 18, 2.5);
+      ctx.fillRect(-9, fy - 6, 18, 1.6);
+      // sobreveste com cruz
+      ctx.fillStyle = color;
+      ctx.fillRect(-5, fy - 14.5, 10, 9.5);
+      ctx.fillStyle = n.accent || accent;
+      ctx.fillRect(-0.9, fy - 13.4, 1.8, 6.5);
+      ctx.fillRect(-3, fy - 11.4, 6, 1.8);
+      // elmo com fenda em cruz
+      ctx.fillStyle = '#99a1ad';
+      ctx.beginPath();
+      ctx.arc(0, fy - 31, 6, Math.PI, 0);
+      ctx.fill();
+      ctx.fillRect(-6, fy - 30.6, 12, 2.4);
+      ctx.fillStyle = '#0e1114';
+      ctx.fillRect(-1.5, fy - 31.4, 3, 3.4);
+      ctx.fillRect(-4.4, fy - 30, 8.8, 1.6);
+      // pluma da Ordem
+      ctx.fillStyle = n.accent || accent;
+      ctx.beginPath();
+      ctx.moveTo(-0.8, fy - 36.6);
+      ctx.quadraticCurveTo(-6, fy - 46, -2.4, fy - 48);
+      ctx.quadraticCurveTo(0.6, fy - 44, 0.2, fy - 36.6);
+      ctx.fill();
+      // espada longa ao lado
+      ctx.fillStyle = '#c9d0da';
+      ctx.fillRect(-12.5, fy - 20, 2.2, 7);
+      ctx.fillStyle = '#c9a227';
+      ctx.fillRect(-12.5, fy - 13.5, 2.2, 1.6);
+      ctx.fillStyle = '#6b4a2e';
+      ctx.fillRect(-12.5, fy - 11.5, 2.2, 6);
+      return;
+    }
+
+    if (n.kind === 'circulo') {
+      // Mestre do Círculo: túnica arcana de tons profundos, chapéu cônico de
+      // mago e orbes flutuantes orbitando o cajado — hierofante do véu.
+      drawLegs(ctx, fy);
+      drawTunic(ctx, darken(color, -10), darken(color, -30), fy);
+      ctx.fillStyle = accent;
+      ctx.fillRect(-8.5, fy - 9, 17, 1.6);
+      ctx.fillStyle = darken(color, -40);
+      ctx.fillRect(-1, fy - 19, 2, 16);
+      drawFace(ctx, fy);
+      ctx.fillStyle = '#6b4a2e';
+      ctx.fillRect(8.5, fy - 26, 2.2, 26);
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(9.6, fy - 27.5, 3.4, 0, 6.283);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.arc(9.2, fy - 28.5, 1.2, 0, 6.283);
+      ctx.fill();
+      // chapéu cônico de mago + orbes orbitando
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(-5.5, fy - 36);
+      ctx.lineTo(-3.5, fy - 50);
+      ctx.lineTo(0, fy - 44);
+      ctx.lineTo(3.5, fy - 50);
+      ctx.lineTo(5.5, fy - 36);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = accent;
+      ctx.fillRect(-3.8, fy - 38.6, 7.6, 1.4);
+      const ph = t * 2;
+      for (let i = 0; i < 3; i++) {
+        const a = ph + i * 2.094;
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(5 + Math.cos(a) * 6, fy - 24 + Math.sin(a) * 3, 1.6, 0, 6.283);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      return;
+    }
+
     // ---- Aldeão comum (talk): variação de penteado ----
     drawFace(ctx, fy);
     if (v === 0) {

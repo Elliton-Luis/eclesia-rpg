@@ -19,6 +19,14 @@ export const NPC_DEFS = [
     teaches: ['bencao_cadencia', 'bencao_precisao'] },
   { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },
   { id: 'erudito', name: 'Erudito Tior', kind: 'tower', x: 120, y: 136, color: '#7a6bd8', accent: '#c0b4ff' },
+  // Vila — casta Templária: a Guarnição do Templo
+  { id: 'comandante', name: 'Comandante Roderigo', kind: 'guild', x: 123, y: 120, color: '#ece6d8', accent: '#c0392b' },
+  { id: 'veterano', name: 'Velho Gualter', kind: 'talk', x: 126, y: 124, color: '#9aa0ab', accent: '#c0392b',
+    event: 'war', lines: {
+      clero: 'Padre, rezo de joelhos e luto de pé. A cruz de madeira de vossa estola às vezes precisa de uma cruz de aço ao lado.',
+      templarios: 'A Ordem não fabrica padres de espada: fabrica irmãos que prometeram, de joelhos, proteger quem não pode. Obedecer ao Mestre, orar ao raiar e jamais desonrar o aço.',
+      mago: 'Em campanha vi convosco: mãos que falam, olhos que medem. O aço do Templo não se curva a palavras — mas respeita quem enfrenta o Demônio pelas costas do meu povo.'
+    } },
   // Vila — interações por casta
   { id: 'santa_ana', name: 'Ana, a Lavadeira', kind: 'talk', x: 107, y: 132, color: '#b8a080', accent: '#d8c0a0',
     event: 'confess', lines: {
@@ -89,6 +97,13 @@ export const NPC_DEFS = [
       templarios: 'Há aço antigo sob os escombros, digno de um templário. Permita-me mostrar-lhe o caminho?',
       mago: 'Glifos! Glifos preservados! O saber destas ruínas vale ouro e vida.'
     } },
+  { id: 'mestre_circulo', name: 'Mestre Thalion', kind: 'circulo', x: 180, y: 140, color: '#8e86c8', accent: '#7a6bd8' },
+  { id: 'vidente', name: 'Vidente Elara', kind: 'talk', x: 178, y: 154, color: '#a8a0c8', accent: '#b07cff',
+    event: 'saber', lines: {
+      clero: 'Levais a luz do altar. Nós levamos a luz que fica quando o altar se apaga: o saber. Guardai a vossa cruz; não entendereis o meu círculo.',
+      templarios: 'Cavaleiro, o véu aqui é fino. O vosso aço corta o que vedes; o meu círculo tece o que não vedes. Juntos incomodamos o que dorme.',
+      mago: 'Irmã, o Círculo não valida ninguém — o véu valida quem o lê. Eu leio estas paredes desde antes de chegarem. Sentai; há glifos para partilhar.'
+    } },
   { id: 'ferreiro_ruinas', name: 'Ferreiro das Ruínas', kind: 'forge', x: 184, y: 158, color: '#8a6a4b', accent: '#ff9d5c' },
   { id: 'abadia_ruinas', name: 'Abade Rufus', kind: 'church', rank: 'padre', x: 192, y: 146, color: '#c0b8c8', accent: '#fff3b0',
     teaches: ['bencao_escudo', 'bencao_passo'] },
@@ -112,6 +127,12 @@ export const NPC_DEFS = [
     teaches: ['bencao_furia', 'bencao_julgamento'] },
   // Forte
   { id: 'taberneira_fronteira', name: 'Taverneira da Fronteira', kind: 'tavern', x: 330, y: 190, color: '#c8a880', accent: '#e0b878' },
+  { id: 'veterano_fronteira', name: 'Sargento Baldo', kind: 'talk', x: 334, y: 192, color: '#8b929c', accent: '#c0392b',
+    event: 'war', lines: {
+      clero: 'O General pôs um capelão próprio e vendeu a alma por pólvora. Rezai, padre — mas eu confio mais na minha lança do que no perdão dele.',
+      templarios: 'Irmão, aqui não há confissão que cure bala. Guardai as costas do vosso companheiro e o resto vem. A fronteira ensina a fé dos que não podem ajoelhar.',
+      mago: 'Os magos que o General prendeu morreram calados. Se viestes atrás das armas dele, trouxestes mais do que feitiço.'
+    } },
   { id: 'soldado_desertor', name: 'Desertor Valdomiro', kind: 'talk', x: 328, y: 198, color: '#7a8a7a', accent: '#a8c0a8',
     event: 'war', lines: {
       clero: 'O General vendeu a alma por ferro e pólvora. Reze por nós, padre.',

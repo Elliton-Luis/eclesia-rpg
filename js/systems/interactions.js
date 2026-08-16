@@ -34,7 +34,8 @@ export const interactions = {
       npc.hintsDone = avail;
       byId('guide').classList.remove('hidden');
       byId('closeGuide').onclick = () => this.closeOverlay();
-    } else if (npc.kind === 'church' || npc.kind === 'tavern' || npc.kind === 'tower') {
+    } else if (npc.kind === 'church' || npc.kind === 'tavern' || npc.kind === 'tower' ||
+      npc.kind === 'guild' || npc.kind === 'circulo') {
       this.state = 'building';
       this.openBuilding(npc);
       byId('bld').classList.remove('hidden');

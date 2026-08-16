@@ -845,9 +845,11 @@ export class World {
 
   
 
-  // Árvore minimalista - 1 tile (32x32), 3 variações por bioma.
-  // Sem contorno (sem silhueta nem traço), copa e tronco sempre mais escuros
-  // que o chão (paleta de treePalette). Determinística por tile, ancorada no chão.
+  // Árvore minimalista - ancorada em 1 tile do mundo (32x32), 3 variações por
+  // bioma. Sem contorno (sem silhueta nem traço), copa e tronco sempre mais
+  // escuros que o chão (paleta de treePalette). Determinística por tile, ancorada
+  // no chão do tile — a copa pode extravasar um pouco o bloco, ganhando presença
+  // no cenário sem perder o posicionamento lógico.
   drawTree(ctx, x, y, region, tx, ty, t) {
     const hv = (hash2(tx * 13, ty * 7) >>> 0) % 1000;
     const pal = this.treePalette(region);
@@ -862,7 +864,7 @@ export class World {
     ctx.globalAlpha = 0.14;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(cx + lean * 2, base + 1, 9, 2.2, 0, 0, 6.283);
+    ctx.ellipse(cx + lean * 2, base + 1, 11, 2.7, 0, 0, 6.283);
     ctx.fill();
     ctx.globalAlpha = 1;
 
@@ -875,29 +877,29 @@ export class World {
 
     // tronco curto e encorpado
     ctx.fillStyle = pal.trunk;
-    ctx.fillRect(cx - 1.5, base - 13, 3, 13);
-    ctx.fillRect(cx - 3, base - 2, 6, 2);
+    ctx.fillRect(cx - 1.8, base - 16, 3.6, 16);
+    ctx.fillRect(cx - 3.4, base - 2.5, 6.8, 2.5);
 
     if (v === 0) {
       // esférica: copa redonda única
       ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.arc(cx, base - 17, 9, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, base - 19, 12, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.arc(cx - 3, base - 20, 4, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx - 4, base - 23, 5, 0, 6.283); ctx.fill();
     } else if (v === 1) {
       // cônica: dois triângulos empilhados (pinheiro/morro)
       ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.moveTo(cx, base - 25); ctx.lineTo(cx - 9, base - 9); ctx.lineTo(cx + 9, base - 9); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, base - 32); ctx.lineTo(cx - 11, base - 10); ctx.lineTo(cx + 11, base - 10); ctx.closePath(); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.moveTo(cx, base - 16); ctx.lineTo(cx - 7, base - 3); ctx.lineTo(cx + 7, base - 3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx, base - 21); ctx.lineTo(cx - 9, base - 4); ctx.lineTo(cx + 9, base - 4); ctx.closePath(); ctx.fill();
     } else {
       // achatada: copa larga e baixa (carvalho/olmo)
       ctx.fillStyle = pal.leaf;
-      ctx.beginPath(); ctx.ellipse(cx, base - 12, 11, 6, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, base - 14, 14, 7, 0, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf2;
-      ctx.beginPath(); ctx.ellipse(cx - 4, base - 16, 5, 4, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx - 5, base - 19, 6, 5, 0, 0, 6.283); ctx.fill();
       ctx.fillStyle = pal.leaf3;
-      ctx.beginPath(); ctx.ellipse(cx + 5, base - 12, 4, 3, 0, 0, 6.283); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 6, base - 14, 5, 4, 0, 0, 6.283); ctx.fill();
     }
     ctx.restore();
   }
@@ -910,27 +912,27 @@ export class World {
     ctx.strokeStyle = pal.trunk;
     ctx.lineWidth = 2;
     if (v === 0) {
-      ctx.fillRect(cx - 1, base - 15, 2, 15);
+      ctx.fillRect(cx - 1.2, base - 18, 2.4, 18);
       for (let i = 0; i < 3; i++) {
         const a = -Math.PI / 2 + (i - 1) * 0.7;
-        const len = 9 + (i % 2) * 4;
+        const len = 11 + (i % 2) * 5;
         ctx.beginPath();
-        ctx.moveTo(cx, base - 13);
-        ctx.lineTo(cx + Math.cos(a) * len, base - 14 + Math.sin(a) * len);
+        ctx.moveTo(cx, base - 16);
+        ctx.lineTo(cx + Math.cos(a) * len, base - 17 + Math.sin(a) * len);
         ctx.stroke();
       }
     } else if (v === 1) {
-      ctx.fillRect(cx - 2, base - 8, 4, 8);
-      ctx.fillRect(cx - 2, base - 10, 6, 3);
+      ctx.fillRect(cx - 2.5, base - 9, 5, 9);
+      ctx.fillRect(cx - 2.5, base - 12, 7, 3.5);
     } else {
-      ctx.fillRect(cx - 1, base - 19, 2, 19);
-      ctx.beginPath(); ctx.arc(cx, base - 22, 4, 0, 6.283); ctx.fill();
+      ctx.fillRect(cx - 1.2, base - 23, 2.4, 23);
+      ctx.beginPath(); ctx.arc(cx, base - 26, 5, 0, 6.283); ctx.fill();
       for (let i = 0; i < 3; i++) {
         const a = -Math.PI / 2 + (i - 1) * 0.9;
-        const len = 7 + (i % 2) * 3;
+        const len = 9 + (i % 2) * 4;
         ctx.beginPath();
-        ctx.moveTo(cx, base - 20);
-        ctx.lineTo(cx + Math.cos(a) * len, base - 20 + Math.sin(a) * len);
+        ctx.moveTo(cx, base - 24);
+        ctx.lineTo(cx + Math.cos(a) * len, base - 24 + Math.sin(a) * len);
         ctx.stroke();
       }
     }
@@ -947,9 +949,9 @@ export class World {
 
     ctx.fillStyle = pal.trunk;
     ctx.beginPath();
-    ctx.moveTo(cx - 1.5, base - 14);
-    ctx.quadraticCurveTo(cx - 4 + droop, base - 8, cx + droop, base - 1);
-    ctx.quadraticCurveTo(cx + 4, base - 8, cx + 1.5, base - 14);
+    ctx.moveTo(cx - 2, base - 17);
+    ctx.quadraticCurveTo(cx - 5 + droop, base - 10, cx + droop, base - 1);
+    ctx.quadraticCurveTo(cx + 5, base - 10, cx + 2, base - 17);
     ctx.closePath(); ctx.fill();
 
     if (v === 1) {
@@ -957,21 +959,21 @@ export class World {
       ctx.strokeStyle = pal.trunk;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx + droop, base - 10);
-      ctx.lineTo(cx - 7 + droop, base - 6);
-      ctx.moveTo(cx + droop, base - 6);
-      ctx.lineTo(cx + 7 + droop, base - 4);
+      ctx.moveTo(cx + droop, base - 12);
+      ctx.lineTo(cx - 8 + droop, base - 7);
+      ctx.moveTo(cx + droop, base - 7);
+      ctx.lineTo(cx + 8 + droop, base - 5);
       ctx.stroke();
     }
 
     // copa caída
     ctx.fillStyle = pal.leaf;
     ctx.beginPath();
-    ctx.ellipse(cx + droop, base - 16, 10, 6, -0.3 + droop * 0.05, 0, 6.283);
+    ctx.ellipse(cx + droop, base - 18, 12, 7, -0.3 + droop * 0.05, 0, 6.283);
     ctx.fill();
     ctx.fillStyle = pal.leaf2;
     ctx.beginPath();
-    ctx.ellipse(cx + droop - 3, base - 19, 5, 3.5, 0, 0, 6.283);
+    ctx.ellipse(cx + droop - 3.5, base - 22, 6, 4.5, 0, 0, 6.283);
     ctx.fill();
     ctx.restore();
   }

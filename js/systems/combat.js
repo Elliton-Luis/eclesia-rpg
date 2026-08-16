@@ -103,6 +103,15 @@ export const combat = {
     }
   },
 
+  // Flecha Perfurante (Arqueiro): upgrade comprado na Guarnição do Templo que
+  // faz todas as flechas do Arqueiro atravessarem os inimigos pelo restante da
+  // run. Vigora em qualquer flecha do Arqueiro (tiro comum, rajada e tiro
+  // carregado); a Chuva de Flechas já era naturalmente perfurante.
+  arrowPiercing() {
+    const sub = this.player.sub;
+    return sub.id === 'arqueiro' && !!(this.shopN && this.shopN.flechaPerfurante);
+  },
+
   fireChargedArrow() {
     const p = this.player;
     const atk = p.sub.attack;
@@ -112,7 +121,7 @@ export const combat = {
       x: p.x + Math.cos(p.aimAng) * 18, y: p.y + Math.sin(p.aimAng) * 18,
       vx: Math.cos(p.aimAng) * speed, vy: Math.sin(p.aimAng) * speed,
       dmg, type: atk.type, color: '#fff6d8', size: (atk.size || 6) + 2, life: 1.6,
-      pierce: !!atk.pierce, owner: 'player', trail: true
+      pierce: !!atk.pierce || this.arrowPiercing(), owner: 'player', trail: true
     }));
     this.burst(p.x + Math.cos(p.aimAng) * 22, p.y + Math.sin(p.aimAng) * 22, '#fff3b0', 8, 160);
     this.ring(p.x, p.y, 26, 0.35, '#fff3b0', 4);
@@ -194,7 +203,7 @@ export const combat = {
       x: p.x + Math.cos(p.aimAng) * 16, y: p.y + Math.sin(p.aimAng) * 16,
       vx: Math.cos(p.aimAng) * atk.speed, vy: Math.sin(p.aimAng) * atk.speed,
       dmg, type: atk.type, color: atk.color, size: atk.size || 8, life: 1.2,
-      pierce: !!atk.pierce, owner: 'player', trail: true
+      pierce: !!atk.pierce || this.arrowPiercing(), owner: 'player', trail: true
     }));
   },
 
@@ -585,7 +594,8 @@ export const combat = {
       this.projectiles.push(new Projectile({
         x: p.x + Math.cos(ang) * 16, y: p.y + Math.sin(ang) * 16,
         vx: Math.cos(ang) * s.speed, vy: Math.sin(ang) * s.speed,
-        dmg, type: s.type, color: s.color, size: 7, life: 1.1, owner: 'player', trail: true
+        dmg, type: s.type, color: s.color, size: 7, life: 1.1, owner: 'player', trail: true,
+        pierce: !!s.pierce || this.arrowPiercing()
       }));
     }
     this.sfx.skill();

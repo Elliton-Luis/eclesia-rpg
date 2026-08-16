@@ -18,14 +18,19 @@ export const LORE = {
     { id: 'fronteira', title: 'A Fronteira', text: 'O Templo de Eclésia vela sobre a fronteira. As bestas e bandos açoitam as aldeias — espadas, flechas e engenho dos templários são a sua guarda.' },
     { id: 'guarnicao', title: 'As Guarnições', text: 'Dizem que as ruínas guardam aço sagrado. Um cavaleiro que se arma com fé e aço é um cavaleiro que resiste.' },
     { id: 'forte', title: 'O Forte', text: 'Ao sul-leste, um General rebelde ergue um forte para escravizar as aldeias. Enquanto ele viver, a fronteira sangra.' },
-    { id: 'chama', title: 'A Cruz do Templo', text: 'O General caiu. A cruz do Templo ascende sobre a fronteira — e ela, enfim, respira.' }
+    { id: 'chama', title: 'A Cruz do Templo', text: 'O General caiu. A cruz do Templo ascende sobre a fronteira — e ela, enfim, respira.' },
+    { id: 'ordem', title: 'A Ordem do Templo', text: 'A Ordem é uma irmandade de leigos, não um sacerdócio. Armaduras, arcos e engenho — cada vínculo serve ao mesmo juramento: proteger o inocente de corpo e aço. Não há bispo no comando; há o Mestre, eleito entre os mais provados, e a regra é a sua palavra.' },
+    { id: 'juramento', title: 'O Juramento', text: '"Eu, guerreiro/arqueiro/inventor do Templo, prometo obedecer ao Mestre, socorrer o fraco, respeitar o padre e morrer antes de desonrar esta cruz." Não se nasce cavaleiro: prova-se. E a prova é feita de suor, cicatriz e uma oração dita em voz baixa antes do combate.' },
+    { id: 'irmaos', title: 'Irmãos de Armas', text: 'Entre os templários o laço se forja no campo: o arqueiro que cobre o avanço, o inventor que abre caminho, o guerreiro que segura a linha. Quem cai carrega a lembrança do outro. A Igreja vos abençoa; a Ordem vos conhece pelo nome de batalha.' }
   ],
   mago: [
     { id: 'pagao', title: 'A Tradição Pagã', text: 'Os Magos são pagãos. Seu poder nasce de conhecimentos e práticas sobrenaturais alheias à Igreja — grimórios, mestres, segredos arcanos. Isso não faz de todos os magos malvados, mas sua fonte de poder é incompatível com a doutrina: onde o clero recebe por vocação, o mago adquire por estudo; onde o templário reza, o mago invoca.' },
     { id: 'veo', title: 'O Véu Rasgado', text: 'Existe arcano antes do tempo. Os sabidos dizem que algo, no norte, desfiou o véu que separa o mundo e a eternidade.' },
     { id: 'cantos', title: 'Os Cantos Esquecidos', text: 'Nas ruínas há glifos que preservam o saber. Ler é lembrar — e lembrar é poder.' },
     { id: 'torre', title: 'A Torre Perdida', text: 'Uma torre erguia-se onde o arcano era mais denso. Hoje ela é um grito: algo dentro devora a força das palavras.' },
-    { id: 'arcaico', title: 'O Arcano Devorador', text: 'Mastema tolheu até o arcano e criou o Devorador. Enquanto ele viver, todo saber será corrompido.' }
+    { id: 'arcaico', title: 'O Arcano Devorador', text: 'Mastema tolheu até o arcano e criou o Devorador. Enquanto ele viver, todo saber será corrompido.' },
+    { id: 'circulo', title: 'O Círculo', text: 'Entre os Magos não há paróquia nem altar: há o Círculo, um concílio disperso de mestres e iniciados que se reconhecem pela leitura dos véus. Cada um se eleva pelo que prova saber — não há bispo que unja, há prova que demonstra.' },
+    { id: 'aprendizado', title: 'Aprendizado e Heresia', text: 'Os Magos adquirem o que o Clero recebe: o poder pelo estudo e risco, não pela vocação. Por isso a Igreja chama esse saber de heresia — e o Círculo devolve o nome: fé é memória antiga; arcano é memória futura. Onde o padre reza, o mago invoca; onde o templário ajoelha, ele domina.' }
   ]
 };
 

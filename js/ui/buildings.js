@@ -74,6 +74,52 @@ export const buildings = {
         html += `<div class="item"><div><b>Treino de Reflexos</b><div class="desc">+10% de velocidade de ataque/disparo por treino. Atual: <b>+${Math.round(p.atkSpd * 10)}%</b>.${maxed ? ' (no máximo!)' : ''}</div></div>${
           maxed ? '<span class="owned">MÁXIMO</span>' : `<button class="btn" data-bact="trainreflex">${cost}</button>`}</div>`;
       }
+    } else if (npc.kind === 'guild') {
+      html = `<h2><span class="bldIcon">⚔</span> ${npc.name}</h2><div class="bldSub">Guarnição do Templo — juramento, aço e tradição</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html += `<div class="item"><div><b>O Juramento</b><div class="desc">Roderigo recita o código que fundou a Ordem. Desvenda a lore dos Templários.</div></div><button class="btn" data-bact="juramento">Ouvir</button></div>`;
+      if (casta === 'templarios') {
+        if (sub.id === 'guerreiro') {
+          const done = this.shopN.provaCruz;
+          html += `<div class="item"><div><b>Prova da Cruz</b><div class="desc">Medir forças contra o braço mais firme da guarnição. +6 de força permanente. (200 ●)</div></div>${
+            done ? '<span class="owned">CUMPRIDA</span>' : '<button class="btn" data-bact="provaCruz">200</button>'}</div>`;
+        } else if (sub.id === 'arqueiro') {
+          const done = this.shopN.flechaPerfurante;
+          html += `<div class="item"><div><b>Flecha Perfurante</b><div class="desc">A técnica secreta das flechas da Ordem: todas as vossas flechas atravessam o inimigo e seguem rumo ao próximo. (200 ●)</div></div>${
+            done ? '<span class="owned">DOMINADA</span>' : '<button class="btn" data-bact="flecha">200</button>'}</div>`;
+        } else {
+          const done = this.shopN.forjaGuerra;
+          html += `<div class="item"><div><b>Forja de Guerra</b><div class="desc">O olhar do engenho do Templo sobre o equipamento. +4 de força e +2 de inteligência permanentes. (200 ●)</div></div>${
+            done ? '<span class="owned">FORJADA</span>' : '<button class="btn" data-bact="forjaGuerra">200</button>'}</div>`;
+        }
+        html += `<div class="hint">A Guarnição é a casa da vossa ordem: Guerreiro, Arqueiro ou Inventor, cada vínculo guarda o seu segredo.</div>`;
+      } else if (casta === 'clero') {
+        html += `<div class="hint">A Guarnição não abre doutrina a clérigos: o aço do Templo não se aprende na sacristia.</div>`;
+      } else {
+        html += `<div class="hint">A Guarnição não forma pagãos. O saber que vos interessa fica ao sul, entre os escombros.</div>`;
+      }
+    } else if (npc.kind === 'circulo') {
+      html = `<h2><span class="bldIcon">🔮</span> ${npc.name}</h2><div class="bldSub">O Círculo Arcano — o véu, o saber e os iniciados</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
+      html += `<div class="item"><div><b>O Círculo</b><div class="desc">Thalion conta a história pagã dos Magos e o seu lugar no mundo. Desvenda a lore dos Magos.</div></div><button class="btn" data-bact="circulo">Ouvir</button></div>`;
+      if (casta === 'mago') {
+        if (sub.id === 'elemental') {
+          const done = this.shopN.dominioFogo;
+          html += `<div class="item"><div><b>Domínio do Fogo</b><div class="desc">Afinar a chama interior com o véu. +6 de inteligência permanente. (200 ●)</div></div>${
+            done ? '<span class="owned">DOMINADO</span>' : '<button class="btn" data-bact="dominioFogo">200</button>'}</div>`;
+        } else if (sub.id === 'psiquico') {
+          const done = this.shopN.expansaoMental;
+          html += `<div class="item"><div><b>Expansão Mental</b><div class="desc">Abrir a mente ao que existe além do véu. +6 de inteligência permanente. (200 ●)</div></div>${
+            done ? '<span class="owned">EXPANDIDA</span>' : '<button class="btn" data-bact="expansaoMental">200</button>'}</div>`;
+        } else {
+          const done = this.shopN.luzInterior;
+          html += `<div class="item"><div><b>Luz Interior</b><div class="desc">Harmonizar a cura com o próprio ser. +4 de inteligência e +30 de vida máxima permanentes. (220 ●)</div></div>${
+            done ? '<span class="owned">DOMINADA</span>' : '<button class="btn" data-bact="luzInterior">220</button>'}</div>`;
+        }
+        html += `<div class="hint">O Círculo não tem bispo: aqui se ascende pela prova do saber — Elemental, Psíquico ou Abençoador.</div>`;
+      } else if (casta === 'clero') {
+        html += `<div class="hint">Buscar este saber mancha a vossa vocação. O Erudito Tior o dizia; Thalion apenas sorri.</div>`;
+      } else {
+        html += `<div class="hint">O Círculo não forma pagãos. A vossa arte fica na Guarnição — ou onde o General caiu.</div>`;
+      }
     } else { // tower
       html = `<h2><span class="bldIcon">🔮</span> ${npc.name}</h2><div class="bldSub">Torre Arcana — saber e mistério</div><div class="goldline">Ouro: <b>${gold}</b></div><div class="items">`;
       html += `<div class="item"><div><b>Meditar</b><div class="desc">Recupera a vida e abre os canais. (Grátis)</div></div><button class="btn" data-bact="med"></button></div>`;
@@ -203,7 +249,7 @@ export const buildings = {
           this.banner('Reflexos treinados! Ataque/disparo +10% (total: +' + Math.round(p.atkSpd * 10) + '%)', '#ffb020', 2.2);
         }
       }
-    } else { // tower
+    } else if (npc.kind === 'tower') {
       if (act === 'med') {
         p.hp = p.maxHp;
         const sk = p.allSkills();
@@ -225,6 +271,83 @@ export const buildings = {
         this.sparkleFx(p, '#7a6bd8', 16);
         this.sfx.upgrade();
         this.banner('Saber arcano: +6 de inteligência', '#b07cff', 2);
+      }
+    } else if (npc.kind === 'guild') {
+      // Guarnição do Templo: treino e segredos da casta Templária.
+      if (act === 'juramento') {
+        const lc = casta === 'mago' ? 'mago' : (casta === 'clero' ? 'clero' : 'templarios');
+        const next = this.nextLoreId(lc);
+        if (casta === 'templarios') this.discoverLore('templarios', 'ordem');
+        else if (next) this.discoverLore(lc, next);
+        else this.banner('Roderigo não tem nada novo para narrar.', '#ff9d5c', 2);
+      } else if (act === 'provaCruz') {
+        if (sub.id !== 'guerreiro') return;
+        if (this.shopN.provaCruz) { this.banner('A Prova da Cruz já foi cumprida.', '#7cff8a', 1.8); }
+        else if (ok(200)) {
+          this.shopN.provaCruz = 1;
+          p.str += 6;
+          this.burst(p.x, p.y - 20, '#c0392b', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Prova da Cruz cumprida: +6 de força!', '#ff9d5c', 2.6);
+        }
+      } else if (act === 'flecha') {
+        if (sub.id !== 'arqueiro') return;
+        if (this.shopN.flechaPerfurante) { this.banner('A Flecha Perfurante já foi dominada.', '#7cff8a', 1.8); }
+        else if (ok(200)) {
+          this.shopN.flechaPerfurante = 1;
+          this.burst(p.x, p.y - 20, '#f0e6c8', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Flecha Perfurante: vossas flechas atravessam o inimigo!', '#f0e6c8', 2.8);
+        }
+      } else if (act === 'forjaGuerra') {
+        if (sub.id !== 'inventor') return;
+        if (this.shopN.forjaGuerra) { this.banner('A Forja de Guerra já foi aplicada.', '#7cff8a', 1.8); }
+        else if (ok(200)) {
+          this.shopN.forjaGuerra = 1;
+          p.str += 4; p.int += 2;
+          this.burst(p.x, p.y - 20, '#c98a2e', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Forja de Guerra: +4 de força e +2 de inteligência!', '#ffb020', 2.6);
+        }
+      }
+    } else if (npc.kind === 'circulo') {
+      // Círculo Arcano: saber e aperfeiçoamento da casta Mago.
+      if (act === 'circulo') {
+        const lc = casta === 'mago' ? 'mago' : (casta === 'clero' ? 'clero' : 'templarios');
+        const next = this.nextLoreId(lc);
+        if (casta === 'mago') this.discoverLore('mago', 'circulo');
+        else if (next) this.discoverLore(lc, next);
+        else this.banner('Thalion nada tem de novo para contar.', '#b07cff', 2);
+      } else if (act === 'dominioFogo') {
+        if (sub.id !== 'elemental') return;
+        if (this.shopN.dominioFogo) { this.banner('O Domínio do Fogo já foi dominado.', '#7cff8a', 1.8); }
+        else if (ok(200)) {
+          this.shopN.dominioFogo = 1;
+          p.int += 6;
+          this.burst(p.x, p.y - 20, '#e67e22', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Domínio do Fogo: +6 de inteligência!', '#ffb35c', 2.6);
+        }
+      } else if (act === 'expansaoMental') {
+        if (sub.id !== 'psiquico') return;
+        if (this.shopN.expansaoMental) { this.banner('A Expansão Mental já foi expandida.', '#7cff8a', 1.8); }
+        else if (ok(200)) {
+          this.shopN.expansaoMental = 1;
+          p.int += 6;
+          this.burst(p.x, p.y - 20, '#d8b4ff', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Expansão Mental: +6 de inteligência!', '#b07cff', 2.6);
+        }
+      } else if (act === 'luzInterior') {
+        if (sub.id !== 'abencoador') return;
+        if (this.shopN.luzInterior) { this.banner('A Luz Interior já foi dominada.', '#7cff8a', 1.8); }
+        else if (ok(220)) {
+          this.shopN.luzInterior = 1;
+          p.int += 4; p.maxHp += 30; p.hp += 30;
+          this.burst(p.x, p.y - 20, '#2980b9', 16, 220);
+          this.sfx.upgrade();
+          this.banner('Luz Interior: +4 de inteligência e +30 de vida!', '#bfe8ff', 2.6);
+        }
       }
     }
     this.openBuilding(npc);
