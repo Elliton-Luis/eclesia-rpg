@@ -28,7 +28,7 @@ export const enemyCombat = {
       const tx = x + Math.cos(a) * r;
       const ty = y + Math.sin(a) * r;
       const m = new Monster(def, tx, ty, this);
-      if (!this.world.solidBox(m.box())) { nx = tx; ny = ty; break; }
+      if (!this.world.solidBox(m.box())) { nx = tx - x; ny = ty - y; break; }
     }
     const m = new Monster(def, x + nx, y + ny, this);
     if (this.world.solidBox(m.box())) return;

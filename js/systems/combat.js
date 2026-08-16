@@ -429,7 +429,13 @@ export const combat = {
   castBlessing(b) {
     const p = this.player;
     switch (b.bless) {
-      case 'nova': this.rezaMaior(b); break;
+      case 'nova':
+        this.rezaMaior(b);
+        // Identidade própria entre as duas novas de luz: Luz brilha com
+        // faíscas suaves ao redor do fiel; a Fúria abala o chão.
+        if (b.id === 'bencao_furia') this.shake += 8;
+        else if (b.id === 'bencao_luz') this.blessingFx(p, b.color, 6);
+        break;
       case 'heal': {
         const amt = Math.round(p.maxHp * b.heal);
         p.hp = Math.min(p.maxHp, p.hp + amt);

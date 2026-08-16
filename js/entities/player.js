@@ -9,9 +9,9 @@ const LOOKS = {
   diacono:    { robe: '#d6ece5', robeDark: '#a9d6cb', robeShade: '#d6ece5', trim: '#2f8a8a', trim2: '#ffffff', belt: '#2f8a8a', skin: '#e9c29b', hair: '#3a4a44' },
   padre:      { robe: '#2a2e35', robeDark: '#1b1e24', robeShade: '#3a3f4a', trim: '#cfaa5a', trim2: '#f6f2e6', belt: '#1b1e24', skin: '#e9c29b', hair: '#3a3a44' },
   bispo:      { robe: '#b2002e', robeDark: '#7e0020', robeShade: '#d22a4e', trim: '#e6c64a', trim2: '#fdf6ec', belt: '#e6c64a', skin: '#e9c29b', hair: '#e8e8ee' },
-  guerreiro:  { tabard: '#f1eee2', trim: '#c0392b', steel: '#bcc2cc', steelDark: '#949aa6', helm: '#cfd3da', helmDark: '#9aa0ac', skin: '#e9c29b' },
-  arqueiro:   { hood: '#7a7f52', hoodDark: '#5c6140', trim: '#c0392b', tabard: '#efece0', leather: '#7a5a37', skin: '#e9c29b' },
-  inventor:   { apron: '#9a6b3b', apronDark: '#7a5230', trim: '#c0392b', tabard: '#efece0', leather: '#6b4a2e', steel: '#bcc2cc', skin: '#e9c29b', hair: '#7a5a3a' },
+  guerreiro:  { tabard: '#ddd5c0', trim: '#a32222', steel: '#8a919c', steelDark: '#5c636e', helm: '#aab1bc', helmDark: '#747c89', skin: '#e9c29b' },
+  arqueiro:   { hood: '#4e4a40', hoodDark: '#35322b', trim: '#a32222', tabard: '#ddd5c0', leather: '#3e3122', steel: '#8a919c', skin: '#e9c29b' },
+  inventor:   { apron: '#6f4e2e', apronDark: '#553a20', trim: '#a32222', tabard: '#ddd5c0', leather: '#3e3122', steel: '#8a919c', skin: '#e9c29b', hair: '#4a3c26' },
   elemental:  { robe: '#3d5fd6', robeDark: '#2b43a0', robeShade: '#6a87e8', trim: '#f2c14e', trim2: '#eaf2ff', belt: '#2b43a0', skin: '#e9c29b', hair: '#34344a' },
   psiquico:   { robe: '#c0392b', robeDark: '#8e241a', robeShade: '#e0604a', trim: '#f2cf54', trim2: '#ffe9e6', belt: '#8e241a', skin: '#e9c29b', hair: '#3a3030' },
   abencoador: { robe: '#2f9e63', robeDark: '#21784a', robeShade: '#52c68d', trim: '#eef3e6', trim2: '#d8f2e4', belt: '#21784a', skin: '#e9c29b', hair: '#6a5232' }
@@ -461,46 +461,69 @@ export class Player {
     ctx.fillRect(-w, fy - 18, w * 2, 15);
 
     if (s.id === 'guerreiro') {
-      // peitoral de placas + ombreiras largas
+      // cavaleiro pesado: tórax em placas, ombreiras maciças e a sobreveste
+      // branca do Templo — a paleta escura confere peso e imponência.
+      // bandas de placas no peitoral
       ctx.fillStyle = L.steelDark;
-      ctx.beginPath(); ctx.arc(-w - 2.5, fy - 17, 4.2, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(w + 2.5, fy - 17, 4.2, 0, 6.283); ctx.fill();
-      ctx.fillStyle = L.helm;
-      ctx.beginPath(); ctx.arc(-w - 2.5, fy - 18.4, 2.2, 0, 6.283); ctx.fill();
-      ctx.beginPath(); ctx.arc(w + 2.5, fy - 18.4, 2.2, 0, 6.283); ctx.fill();
-      // gorjal
+      ctx.fillRect(-w, fy - 18, w * 2, 3);
+      ctx.fillRect(-w, fy - 12.6, w * 2, 2);
+      ctx.fillRect(-w, fy - 8, w * 2, 2);
+      // ombreiras enormes (placas arredondadas) com rebite no alto
+      for (const sx of [-1, 1]) {
+        ctx.fillStyle = L.steel;
+        ctx.beginPath(); ctx.arc(sx * (w + 2.5), fy - 16.5, 5.4, 0, 6.283); ctx.fill();
+        ctx.fillStyle = L.steelDark;
+        ctx.beginPath(); ctx.arc(sx * (w + 2.5), fy - 15.6, 3.6, 0, 6.283); ctx.fill();
+        ctx.fillStyle = L.helm;
+        ctx.beginPath(); ctx.arc(sx * (w + 2.5), fy - 19, 2.2, 0, 6.283); ctx.fill();
+      }
+      // gorjal (proteção do pescoço)
       ctx.fillStyle = L.steelDark;
-      ctx.fillRect(-w, fy - 20.2, w * 2, 2.4);
-      // sobreveste branca do Templo com cruz vermelha
+      ctx.fillRect(-w, fy - 20.4, w * 2, 2.6);
+      // sobreveste branca do Templo com cruz vermelha frontal
       ctx.fillStyle = L.tabard;
-      ctx.fillRect(-7, fy - 15, 14, 12);
+      ctx.fillRect(-7, fy - 14, 14, 12);
       ctx.fillStyle = L.trim;
-      ctx.fillRect(-1, fy - 14, 2, 9);
-      ctx.fillRect(-4.5, fy - 11.4, 9, 2);
-      // cinto
+      ctx.fillRect(-1, fy - 13, 2, 9);
+      ctx.fillRect(-4.5, fy - 10.4, 9, 2);
+      // cinto de placas + cota de malha aparecendo na barra
       ctx.fillStyle = L.steelDark;
       ctx.fillRect(-w, fy - 5, w * 2, 2);
+      ctx.fillRect(-7, fy - 3, 14, 1.4);
     } else if (s.id === 'arqueiro') {
-      // gibão de couro sobre túnica; aljava nas costas
+      // especialista em arco: gibão escuro com coifa de malha e sobreveste
+      // curta do Templo — rápido, porém na cor da ordem.
       ctx.fillStyle = L.leather;
       ctx.fillRect(-8.5, fy - 18, 17, 15);
+      // cota de malha nos ombros e nas laterais do torso
+      ctx.fillStyle = L.steel;
+      ctx.fillRect(-9, fy - 18.6, 18, 2.4);
+      ctx.fillRect(-7.5, fy - 17.4, 2, 12);
+      ctx.fillRect(5.5, fy - 17.4, 2, 12);
+      // sobreveste do Templo com cruz
       ctx.fillStyle = L.tabard;
-      ctx.fillRect(-5, fy - 16, 10, 10);
+      ctx.fillRect(-4.5, fy - 15.5, 9, 9);
       ctx.fillStyle = L.trim;
       ctx.fillRect(-0.8, fy - 14, 1.6, 6);
       ctx.fillRect(-3, fy - 12.2, 6, 1.6);
-      // aljava
+      // aljava com pena vermelha (assinatura da ordem)
       ctx.fillStyle = L.leather;
       ctx.fillRect(-10.5, fy - 17, 3, 9);
       ctx.fillStyle = L.trim;
-      ctx.fillRect(-10.5, fy - 11, 3, 1.5);
+      ctx.fillRect(-10.5, fy - 16, 3, 1.6);
+      ctx.beginPath(); ctx.moveTo(-11.2, fy - 17.6); ctx.lineTo(-10.6, fy - 19.4); ctx.lineTo(-9.9, fy - 17.2); ctx.closePath(); ctx.fill();
       // cinto
-      ctx.fillStyle = '#5a4630';
+      ctx.fillStyle = '#4a3a2a';
       ctx.fillRect(-8.5, fy - 5, 17, 1.6);
     } else {
-      // inventor: túnica + avental de ferreiro + bolsas
-      ctx.fillStyle = '#6b4a2e';
+      // inventor: engenho do Templo — túnica escura, avental de forja e faixa
+      // de ferramentas, com a cruz fundida no peito.
+      ctx.fillStyle = L.leather;
       ctx.fillRect(-9, fy - 18, 18, 16);
+      // ombreiras de couro acolchoadas
+      ctx.beginPath(); ctx.arc(-9, fy - 17, 3.4, Math.PI * 0.6, Math.PI * 1.4); ctx.fill();
+      ctx.beginPath(); ctx.arc(9, fy - 17, 3.4, Math.PI * -0.4, Math.PI * 0.4); ctx.fill();
+      // avental de ferreiro
       ctx.fillStyle = L.apron;
       ctx.beginPath();
       ctx.moveTo(-6, fy - 17);
@@ -512,17 +535,17 @@ export class Player {
       ctx.fillStyle = L.apronDark;
       ctx.fillRect(-7, fy - 3, 14, 1.8);
       // tiras do avental
-      ctx.fillStyle = '#4a3018';
+      ctx.fillStyle = '#3a2a18';
       ctx.fillRect(-7, fy - 15, 2.4, 9);
       ctx.fillRect(4.6, fy - 15, 2.4, 9);
-      // cruz do Templo no peito
+      // cruz do Templo gravada no peito
       ctx.fillStyle = L.tabard;
       ctx.fillRect(-3.2, fy - 14.5, 6.4, 5.4);
       ctx.fillStyle = L.trim;
       ctx.fillRect(-0.9, fy - 13.4, 1.8, 4.2);
       ctx.fillRect(-2.8, fy - 11.9, 5.6, 1.5);
-      // cinto de ferramentas com bolsas
-      ctx.fillStyle = '#4a3018';
+      // faixa de ferramentas com bolsos
+      ctx.fillStyle = '#3a2a18';
       ctx.fillRect(-8.5, fy - 7.5, 17, 2.2);
       ctx.fillStyle = L.apronDark;
       ctx.fillRect(-6.5, fy - 7, 2.8, 4.4);
@@ -643,30 +666,41 @@ export class Player {
       }
     } else if (s.casta === 'templarios') {
       if (s.id === 'guerreiro') {
-        // elmo de aço fechado com fenda de visão e cruz vermelha
+        // elmo fechado de cavaleiro com a fenda de visão EM CRUZ (assinatura do
+        // templário) e a cruz vermelha pintada na calota — rosto totalmente oculto.
         ctx.fillStyle = L.helm;
         ctx.beginPath();
-        ctx.arc(0, fy - 31, 6.6, Math.PI, 0);
+        ctx.arc(0, fy - 31, 7, Math.PI, 0);
         ctx.fill();
-        ctx.fillRect(-6.6, fy - 35.5, 13.2, 6.8);
-        ctx.fillStyle = '#23262b';
-        ctx.fillRect(-4, fy - 32.6, 8, 1.5);
-        ctx.fillRect(-4.6, fy - 33.4, 1.4, 2.6);
-        ctx.fillRect(3.2, fy - 33.4, 1.4, 2.6);
+        ctx.fillRect(-7, fy - 35, 14, 7.4);
+        // brilho no alto da calota + filete de borda
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(-4, fy - 37.4, 8, 1.6);
         ctx.fillStyle = L.helmDark;
-        ctx.fillRect(-6.6, fy - 36.2, 13.2, 1);
+        ctx.fillRect(-7, fy - 35.8, 14, 1);
+        // fenda de visão em cruz
+        ctx.fillStyle = '#0e1114';
+        ctx.fillRect(-1.6, fy - 31.8, 3.2, 4.6);
+        ctx.fillRect(-5, fy - 30.2, 10, 1.8);
+        // cruz vermelha frontal pintada na calota
         ctx.fillStyle = L.trim;
-        ctx.fillRect(-1, fy - 42.6, 2, 6);
-        ctx.fillRect(-3.4, fy - 40.2, 6.8, 2);
-        // pluma
+        ctx.fillRect(-1, fy - 37.2, 2, 3.6);
+        ctx.fillRect(-2.8, fy - 36, 5.6, 1.6);
+        // pluma pequena da ordem no alto
         ctx.fillStyle = L.trim;
         ctx.beginPath();
-        ctx.moveTo(-1.2, fy - 42.6);
-        ctx.quadraticCurveTo(-5, fy - 49, -2, fy - 51);
-        ctx.quadraticCurveTo(0, fy - 49, 0, fy - 42.6);
+        ctx.moveTo(-1, fy - 37.4);
+        ctx.quadraticCurveTo(-6, fy - 47, -2.6, fy - 49.5);
+        ctx.quadraticCurveTo(0.4, fy - 46.8, 0.2, fy - 37.4);
         ctx.fill();
+        // pescoço/gorjal sob o elmo
+        ctx.fillStyle = L.helmDark;
+        ctx.fillRect(-5.4, fy - 27.8, 10.8, 1.6);
+        ctx.fillStyle = '#0e1114';
+        ctx.fillRect(-5.4, fy - 26.6, 10.8, 1.2);
       } else if (s.id === 'arqueiro') {
-        // capuz de caçador
+        // capuz de campanha escuro (caçador do Templo) com coifa de malha e a
+        // cruz da ordem dividida nada na testa
         ctx.fillStyle = L.hoodDark;
         ctx.beginPath();
         ctx.arc(0, fy - 34, 7.2, Math.PI * 0.92, Math.PI * 2.08);
@@ -676,31 +710,48 @@ export class Player {
         ctx.beginPath();
         ctx.arc(0, fy - 31.2, 4.4, Math.PI, 0);
         ctx.fill();
-        // pena vermelha
+        // coifa de malha no pescoço
+        ctx.fillStyle = L.steel;
+        ctx.fillRect(-5, fy - 27.2, 10, 1.6);
+        ctx.fillStyle = L.steelDark;
+        ctx.fillRect(-5, fy - 28.4, 10, 1.2);
+        // cruz da ordem na testa do capuz
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-0.9, fy - 35.2, 1.8, 3.2);
+        ctx.fillRect(-2.4, fy - 34.1, 4.8, 1.4);
+        // pena vermelha da ordem
         ctx.fillStyle = L.trim;
         ctx.fillRect(-1, fy - 41.5, 1.6, 6.5);
         ctx.fillRect(-2.5, fy - 41.5, 1.6, 2.6);
         ctx.fillRect(-2.5, fy - 36.6, 1.6, 2.6);
       } else {
-        // inventor: cabelo curto + boné de couro + óculos erguidos
+        // inventor: coifa acolchoada de engenho com óculos de forja e a cruz
+        // lavrada na faixa da cabeça — o especialista da ordem
         ctx.fillStyle = L.hair;
         ctx.beginPath();
         ctx.arc(0, fy - 31, 4.6, Math.PI * 0.95, Math.PI * 2.05);
         ctx.fill();
-        ctx.fillRect(-4.9, fy - 29.6, 9.8, 1.2);
-        ctx.fillStyle = '#6b4a2e';
+        ctx.fillStyle = '#4a3a2a';
         ctx.beginPath();
-        ctx.arc(0, fy - 36.4, 4.6, Math.PI, 0);
+        ctx.arc(0, fy - 35.8, 4.8, Math.PI, 0);
         ctx.fill();
-        ctx.fillRect(-5.6, fy - 35.8, 11.2, 1.8);
-        ctx.fillStyle = '#3a3f46';
-        ctx.fillRect(-5.2, fy - 37.8, 10.4, 2.4);
+        // faixa/brim da coifa
+        ctx.fillRect(-5.8, fy - 35.2, 11.6, 2.2);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(-3.6, fy - 39.2, 7.2, 1.2);
+        ctx.fillStyle = L.steel;
+        ctx.fillRect(-5.4, fy - 38, 10.8, 1.6);
+        // óculos de forja (vidro azul)
         ctx.fillStyle = '#bfe4ff';
-        ctx.beginPath(); ctx.arc(-2.7, fy - 35.4, 1.9, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc(2.7, fy - 35.4, 1.9, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(-2.7, fy - 33.6, 1.9, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(2.7, fy - 33.6, 1.9, 0, 6.283); ctx.fill();
         ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(-2.2, fy - 35.9, 0.7, 0, 6.283); ctx.fill();
-        ctx.beginPath(); ctx.arc(3.2, fy - 35.9, 0.7, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(-2.2, fy - 34.1, 0.7, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(3.2, fy - 34.1, 0.7, 0, 6.283); ctx.fill();
+        // cruz da ordem lavrada na faixa da coifa
+        ctx.fillStyle = L.trim;
+        ctx.fillRect(-0.7, fy - 37.8, 1.4, 2.6);
+        ctx.fillRect(-1.7, fy - 37, 3.4, 1);
       }
     } else {
       // magos: cabelo simples + ornamento por classe
