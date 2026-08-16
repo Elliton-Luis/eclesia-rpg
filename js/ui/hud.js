@@ -4,10 +4,15 @@ import { HOTBAR_SLOTS } from '../data/constants.js';
 import { byId } from '../dom.js';
 
 export const hud = {
-  // Hotbar fixa de HOTBAR_SLOTS slots (rótulos 1–0, em ordem). Cada slot abriga
-  // uma habilidade equipada; a seleção é por scroll e a ativação por clique
-  // esquerdo. O ataque básico é separado (J/X), à esquerda da Hotbar.
+  // Hotbar de HOTBAR_SLOTS slots (rótulos 1–0, em ordem). Cada slot abriga uma
+  // habilidade equipada; a seleção é por scroll e a ativação por clique esquerdo.
+  // O ataque padrão é um slot EXTRA ("offhand", índice ATK_INDEX) que participa
+  // do mesmo ciclo de scroll: scroll até ele e clique para atacar — sem precisar
+  // da tecla J.
   HOTBAR_SLOTS,
+
+  // Índice do slot "offhand" do ataque padrão no ciclo de scroll da Hotbar.
+  ATK_INDEX: HOTBAR_SLOTS,
 
   SKILL_KEYS: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
 
@@ -22,16 +27,17 @@ export const hud = {
     bar.innerHTML = '';
     this.skillEls = [];
     if (this.hotSel === undefined) this.hotSel = 0;
-    this.hotSel = clamp(this.hotSel, 0, HOTBAR_SLOTS - 1);
-    // Ataque padrão: ação própria, separada da Hotbar — não ocupa slots 1–0 e
-    // não participa do scroll. Ativa-se com J/X ou clicando no próprio botão.
+    this.hotSel = clamp(this.hotSel, 0, this.ATK_INDEX);
+    // Ataque padrão em slot próprio ("offhand"), à esquerda da Hotbar: entra no
+    // ciclo de scroll junto com os slots 1–0. Clicar nele seleciona E ataca.
     const atk = document.createElement('div');
-    atk.className = 'atkbox';
-    atk.id = 'atkBox';
-    atk.title = 'Ataque padrão — tecla J (ou clique)';
-    atk.innerHTML = `<div class="atk-label">ATAQUE PADRÃO</div><div class="atk-name" id="atkName"></div><div class="atk-key">J</div>`;
-    atk.onclick = () => { if (this.state === 'play') this.doAttack(); };
+    atk.className = 'skill atkslot';
+    atk.dataset.slot = 'atk';
+    atk.title = 'Ataque padrão — selecione com o scroll e clique para atacar';
+    atk.innerHTML = `<span class="skey">A</span><span class="sicon atkIcon">⚔</span><span class="sname" id="atkName"></span><div class="cdfill"></div><div class="cdnum"></div>`;
+    atk.onclick = () => { if (this.state === 'play') { this.selectHot(this.ATK_INDEX); this.doAttack(); } };
     bar.appendChild(atk);
+    this.atkEl = atk;
     for (let i = 0; i < HOTBAR_SLOTS; i++) {
       const d = document.createElement('div');
       d.className = 'skill hotslot';
@@ -45,19 +51,22 @@ export const hud = {
   },
 
   selectHot(i) {
-    this.hotSel = clamp(i, 0, HOTBAR_SLOTS - 1);
+    this.hotSel = clamp(i, 0, this.ATK_INDEX);
     this.hudSlots();
   },
 
   scrollHot(dir) {
-    this.selectHot((this.hotSel + dir + HOTBAR_SLOTS) % HOTBAR_SLOTS);
+    this.selectHot((this.hotSel + dir + HOTBAR_SLOTS + 1) % (HOTBAR_SLOTS + 1));
   },
 
-  // Ativa o slot i (usado pelo clique esquerdo sobre o slot selecionado).
+  // Ativa o slot i (usado pelo clique esquerdo sobre o slot selecionado). O
+  // índice ATK_INDEX equivale ao slot "offhand" do ataque padrão: nada a lançar,
+  // apenas o ataque básico na direção da mira.
   useSlot(i) {
-    if (i < 0 || i >= HOTBAR_SLOTS) return;
+    if (i < 0 || i > this.ATK_INDEX) return;
     this.selectHot(i);
     if (this.state !== 'play') return;
+    if (i === this.ATK_INDEX) { this.doAttack(); return; }
     const s = this.player.hotSkill(i);
     if (s) this.castSkillId(s.id);
     else this.banner('Slot vazio — selecione outro com o scroll.', '#9aa0ab', 1.2);
@@ -106,10 +115,28 @@ export const hud = {
     this.hud();
   },
 
-  // Atualiza os 10 slots visíveis (ícone, nome, cooldown) a partir do estado real.
+  // Atualiza o slot "offhand" do ataque + os slots visíveis da Hotbar a partir
+  // do estado real (ícone, nome, cooldown, seleção).
   hudSlots() {
     const p = this.player;
-    if (!p || !this.skillEls) return;
+    if (!p) return;
+    if (this.atkEl) {
+      const el = this.atkEl;
+      const atkSel = (this.hotSel || 0) === this.ATK_INDEX;
+      el.classList.toggle('selected', atkSel);
+      const w = p.weapon;
+      const col = w.color || '#ffb020';
+      el.style.setProperty('--c', col);
+      const ic = el.querySelector('.sicon');
+      const nm = el.querySelector('.sname');
+      const cf = el.querySelector('.cdfill');
+      if (ic) ic.style.background = col;
+      if (nm) { nm.textContent = w.name + ' +' + w.tier + ' (dano ' + w.dmg + ')'; nm.style.color = '#fff'; }
+      if (cf) cf.style.height = '0%';
+      // Esmaece quando não está selecionada (mas continua visível para o scroll).
+      el.style.opacity = atkSel ? '' : '0.55';
+    }
+    if (!this.skillEls) return;
     for (let i = 0; i < HOTBAR_SLOTS; i++) {
       const el = this.skillEls[i];
       if (!el) continue;
@@ -157,9 +184,6 @@ export const hud = {
     byId('st_int').textContent = p.int;
     byId('classname').textContent = CASTAS[p.sub.casta].name + ' — ' + p.sub.name;
     byId('weapon').textContent = p.mw ? p.mw.name + ' (dano ' + p.weapon.dmg + ')' : p.weapon.name + ' +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')';
-    // Caixa do ataque padrão: acompanha o nome/dano da arma em tempo real.
-    const atkNameEl = byId('atkName');
-    if (atkNameEl) atkNameEl.textContent = p.weapon.name + ' +' + p.weapon.tier + ' (dano ' + p.weapon.dmg + ')';
     const lvEl = byId('lvlval');
     if (lvEl) lvEl.textContent = this.progressLevel;
 

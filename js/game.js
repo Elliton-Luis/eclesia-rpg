@@ -106,11 +106,11 @@ const GAME = {
     window.addEventListener('keyup', e => { this.keys[e.code] = false; if (e.code === 'KeyJ' || e.code === 'KeyX') this.attackHeld = false; if (e.code === 'KeyP' || e.code === 'KeyM') {} });
     this.canvas.addEventListener('mousemove', e => this.mousemove(e));
     this.canvas.addEventListener('mousedown', e => this.mousedown(e));
-    // Rodinha do mouse: seleciona os slots da Hotbar ciclicamente (scroll para
-    // cima avança 1→2→…→0→1; para baixo, 0→9→…→1→0). Nunca ativa a habilidade.
-    this.canvas.addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? 1 : -1); } });
+    // Rodinha do mouse: seleciona os slots da Hotbar ciclicamente. Scroll para
+    // CIMA volta para o slot anterior; para BAIXO avança (ex.: 1←2←… e 1→2→…).
+    this.canvas.addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? -1 : 1); } });
     // O scroll também funciona quando o cursor está sobre a própria Hotbar.
-    byId('skillbar').addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? 1 : -1); } });
+    byId('skillbar').addEventListener('wheel', e => { if (this.state === 'play') { e.preventDefault(); this.scrollHot(e.deltaY < 0 ? -1 : 1); } });
 
     byId('btnRespawn').onclick = () => this.respawn();
     byId('btnRecords').onclick = () => this.showRecords();
@@ -536,8 +536,9 @@ churchAura() {
     this.aim.y = this.mouse.y + this.cam.y;
     this.sfx.unlock();
     // Botão esquerdo do mouse = ativar o slot atualmente selecionado na Hotbar
-    // (seleção feita pelo scroll). O ataque padrão tem controle próprio (J/X) e
-    // não participa dos slots 1–0 — portanto o clique não ataca diretamente.
+    // (seleção feita pelo scroll). O ataque padrão é um slot "offhand" próprio
+    // (ATK_INDEX) dentro do mesmo ciclo de scroll — scrolle até ele e clique.
+    // A tecla J continua funcionando como atalho de teclado.
     if (this.state === 'play') this.useSlot(this.hotSel);
   },
 

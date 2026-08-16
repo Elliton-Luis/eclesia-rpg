@@ -183,28 +183,23 @@ html, body {
   z-index: 2;
 }
 
-/* Ataque padrão: caixa própria, separada da Hotbar (não ocupa slots 1–0). */
-.atkbox {
-  position: relative;
-  width: 104px;
-  height: 58px;
-  background: linear-gradient(180deg, rgba(255, 165, 32, 0.16), rgba(255, 165, 32, 0.04));
-  border: 2px solid var(--atk, #ffb020);
-  border-radius: 10px;
-  cursor: pointer;
+/* Ataque padrão: slot "offhand" à esquerda, dentro do ciclo de scroll da Hotbar. */
+.skill.atkslot {
+  width: 86px;
+  background: linear-gradient(180deg, rgba(255, 165, 32, 0.18), rgba(0, 0, 0, 0.5));
+  border-color: var(--atk, #ffb020);
+}
+.skill.atkslot .skey { color: #ffd23f; }
+.skill.atkslot .atkIcon {
+  border-color: rgba(255, 210, 63, 0.8);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  overflow: hidden;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
-  transition: transform 0.1s, border-color 0.1s;
+  font-size: 11px;
+  line-height: 1;
 }
-.atkbox:hover { transform: translateY(-3px); border-color: #ffd23f; }
-.atk-label { font-size: 9px; font-weight: 800; letter-spacing: 1.5px; color: #ffb020; line-height: 1; }
-.atk-name { font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9); white-space: nowrap; max-width: 96px; overflow: hidden; text-overflow: ellipsis; }
-.atk-key { font-size: 10px; font-weight: 800; color: #ffd23f; background: rgba(0, 0, 0, 0.45); border-radius: 4px; padding: 0 6px; line-height: 1.4; }
+.skill.atkslot .sname { color: #fff; }
+.skill.atkslot.selected { border-color: #ffd23f; }
 
 .sicon {
   position: absolute;
