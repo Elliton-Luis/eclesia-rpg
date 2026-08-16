@@ -54,6 +54,7 @@
     <p class="sub">Protótipo RPG 2D — escolha sua casta e subclasse</p>
     <div id="menuGrid"></div>
     <button class="btn ghost" id="btnRecords">Recordes Locais</button>
+    <button class="btn ghost" id="btnSaves">Salvar / Continuar</button>
     <div class="help">
       <b>Controles:</b> A/D/W/S mover · Shift correr ·
       scroll seleciona o slot (inclui o <b>ATAQUE</b>) · clique esquerdo usa ou ataca · J ataque (atalho) · I inventário · H Bênção Suprema · E Fulmen Ruptor · F interagir · P pausa · M som
@@ -89,7 +90,12 @@
   <div class="panel small">
     <h2>Pausado</h2>
     <p>Pressione <b>P</b> para continuar</p>
+    <button class="btn" id="btnQuickSave">Salvar jogo</button>
   </div>
+</div>
+
+<div id="saves" class="overlay hidden">
+  <div class="panel small" id="savesPanel"></div>
 </div>
 
 <div id="banner" class="hidden"></div>

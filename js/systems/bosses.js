@@ -45,10 +45,14 @@ export const bosses = {
 
     this.sfx.kill();
     this.stats.kills++;
+    if (!this.stats.killsByType) this.stats.killsByType = {};
+    this.stats.killsByType[d.id] = (this.stats.killsByType[d.id] || 0) + 1;
     this.addGoal(m);
     if (d.boss) {
       this.stats.bosses++;
       this.bossDefeated(m);
+      // Autosave: derrota de chefe é um marco importante da aventura.
+      if (this.saveSlot && !this._loading) this.saveGame(this.saveSlot, true);
     }
   },
 

@@ -110,7 +110,7 @@ export class Player {
   }
 
   // Garante o item Fulmen Ruptor como habilidade conhecida (compra no Vendedor
-  // ou restauro do estoque persistente no início da partida), equipando-o na
+  // de uma unidade da jornada atual), equipando-o na
   // hotbar quando ainda não estava aprendido.
   grantFulmen(n) {
     this.fulmen += n;

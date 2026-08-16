@@ -86,8 +86,7 @@ export const hud = {
 
   // Fulmen Ruptor (E): explosivo consagrado vendido pelo Vendedor da vila,
   // arrebenta árvores e rochedos e abre rotas fechadas pela natureza. Detona no
-  // ponto de mira e consome uma unidade do estoque de provisões (também
-  // descontada do perfil persistente).
+  // ponto de mira e consome uma unidade de Fulmen da jornada atual.
   useFulmen() {
     const p = this.player;
     if (!p) return;
@@ -104,8 +103,6 @@ export const hud = {
       return;
     }
     p.fulmen--;
-    const prof = this.loadRecords();
-    if (prof) { prof.fulmen = Math.max(0, (prof.fulmen || 0) - 1); this.persistProfile(prof); }
     this.burst(tx, ty, '#ffd23f', 26, 420);
     this.burst(tx, ty, '#e67e22', 14, 240);
     this.ring(tx, ty, R, 0.55, '#ffd23f', 5);

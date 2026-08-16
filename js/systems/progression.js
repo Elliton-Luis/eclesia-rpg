@@ -36,6 +36,8 @@ export const progression = {
     this.shake += 5;
     this.sfx.upgrade();
     this.hud();
+    // Autosave: avanço do nível de batalha (e abertura de barreiras dos selos).
+    if (this.saveSlot && !this._loading) this.saveGame(this.saveSlot, true);
   },
 
   // Diálogo genérico com NPC
@@ -84,6 +86,8 @@ export const progression = {
     this.flags.final = true;
     this.sfx.bossDie();
     this.saveRecord();
+    // Autosave do fim de jogo: ao recarregar, o jogador volta à tela de vitória.
+    if (this.saveSlot && !this._loading) this.saveGame(this.saveSlot, true);
 
     if (this.ending && this.ending.type === 'own') {
       this.banner(this.ending.msg, this.player.sub.accent, 4);

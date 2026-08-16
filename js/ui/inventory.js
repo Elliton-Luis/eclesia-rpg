@@ -127,7 +127,7 @@ export const inventory = {
         <div class="sicon" style="background:${s.color}"></div>
         <div class="meta">
           <b>${s.name}</b>
-          <div class="stats">${this.statsHtml(p, s)}${s.id === 'fulmen_ruptor' ? `<span class="stat" data-tip="Unidades restantes do estoque persistente de Fulmen Ruptor.">Estoque ${p.fulmen}</span>` : ''}</div>
+          <div class="stats">${this.statsHtml(p, s)}${s.id === 'fulmen_ruptor' ? `<span class="stat" data-tip="Unidades de Fulmen Ruptor desta jornada.">Estoque ${p.fulmen}</span>` : ''}</div>
           <div class="desc">${s.desc}</div>
         </div>
         <div class="side">${tag}</div>

@@ -24,6 +24,7 @@ import { playerDamage } from './systems/player-damage.js';
 import { enemyCombat } from './systems/enemy-combat.js';
 import { bosses } from './systems/bosses.js';
 import { progression } from './systems/progression.js';
+import { saves } from './systems/saves.js';
 import { sfx } from './systems/audio.js';
 
 const GAME = {
@@ -80,6 +81,10 @@ const GAME = {
   visited: {},
   defeatedBosses: {},
   stats: { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 },
+  // --- Sistema de salvamento ---
+  saveSlot: 1,
+  _lastAuto: 0,
+  _loading: false,
 
   init() {
     this.canvas = byId('game');
@@ -114,6 +119,8 @@ const GAME = {
 
     byId('btnRespawn').onclick = () => this.respawn();
     byId('btnRecords').onclick = () => this.showRecords();
+    byId('btnSaves').onclick = () => this.openSaveMenu();
+    byId('btnQuickSave').onclick = () => this.openSaveMenu();
     window.addEventListener('mouseup', () => { this.attackHeld = false; });
 
     const cheatInput = byId('cheatInput');
@@ -214,7 +221,7 @@ const GAME = {
     this.defeatedBosses = {};
     this.progressLevel = 0;
     this.auraT = 0;
-    this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0 };
+    this.stats = { time: 0, kills: 0, bosses: 0, deaths: 0, dmgDealt: 0, dmgTaken: 0, maxCombo: 0, powerups: 0, exploration: 0, killsByType: {} };
     this.newRecords = [];
     this.zoneId = '';
     this.hotSel = 0;
@@ -228,10 +235,6 @@ const GAME = {
     else if (Math.random() < 0.07) this.spawnAnjo();
 
     this.player = new Player(sub, this.startPos.x, this.startPos.y, this);
-    // Fulmen Ruptor comprado com o Vendedor da vila é levado para a jornada
-    // como consumível; o gasto em partida é descontado do estoque persistente.
-    const profile = this.loadRecords() || {};
-    this.player.grantFulmen(profile.fulmen || 0);
     // O mouse é sempre a referência de mira: o alvo inicia na posição do jogador
     // e só se move quando o cursor se move. Andar não altera a direção da mira.
     this.mouseActive = true;
@@ -261,6 +264,14 @@ const GAME = {
     this.buildSkillbar();
     this.hud();
     this.banner('Bem-vindo à Vila de Pedra', '#ffe9b0', 3);
+    // Autosave de nova partida: usa o primeiro slot livre para jamais apagar
+    // um save de outra sessão sem querer (a escolha manual do slot é feita no
+    // menu de salvamento — F5/O/botão). Durante um load o autosave é pulado.
+    if (!this._loading) {
+      const free = this.firstFreeSlot();
+      if (free) this.saveSlot = free;
+      this.saveGame(this.saveSlot || 1, true);
+    }
   },
 
   loop(ts) {
@@ -420,6 +431,8 @@ churchAura() {
       this.zoneTitle = name;
       this.zoneT = 2.2;
       if (name && !this.visited[name]) { this.visited[name] = true; this.stats.exploration++; }
+      // Autosave ao entrar numa região nova (ou ao trocar de região).
+      if (this.saveSlot && !this._loading) this.saveGame(this.saveSlot, true);
       // Mensagem ao entrar na área de proteção da igreja
       if (name === 'Cidade') {
         const msgEl = document.createElement('div');
@@ -499,6 +512,11 @@ churchAura() {
       if (e.code === 'KeyM') this.toggleMute();
       if (e.code === 'KeyI') this.openInventory();
       if (e.code === 'KeyH') this.useSupremeKey();
+      // F5 abre o menu de salvamento (escolher o slot) e F9 continua o slot atual.
+      if (e.code === 'F5') { e.preventDefault(); this.openSaveMenu(); return; }
+      if (e.code === 'F9') { e.preventDefault(); this.loadGame(this.saveSlot || 1); return; }
+      // O também abre o menu de salvamento dentro do jogo.
+      if (e.code === 'KeyO') { e.preventDefault(); this.openSaveMenu(); return; }
       // Teclas 1–9 e 0 apenas SELECIONAM o slot correspondente (não ativam o
       // efeito): a ativação é pelo clique esquerdo sobre o slot selecionado.
       if (e.code.indexOf('Digit') === 0) {
@@ -507,6 +525,7 @@ churchAura() {
       }
     } else if (this.state === 'paused') {
       if (e.code === 'KeyP' || e.code === 'Escape') this.pause(false);
+      if (e.code === 'KeyO') { e.preventDefault(); this.openSaveMenu(); }
     } else if (this.state === 'death') {
       if (e.code === 'Enter' || e.code === 'Escape') this.respawn();
     } else if (this.state === 'win') {
@@ -563,6 +582,6 @@ churchAura() {
 };
 
 GAME.sfx = sfx;
-Object.assign(GAME, menu, hud, dialog, buildings, shops, records, inventory, cheats, interactions, combat, effects, render, playerDamage, enemyCombat, bosses, progression);
+Object.assign(GAME, menu, hud, dialog, buildings, shops, records, inventory, cheats, interactions, combat, effects, render, playerDamage, enemyCombat, bosses, progression, saves);
 
 export { GAME };

@@ -49,7 +49,7 @@ export const BLESSINGS = {
   // Item consumível do Vendedor que vira uma habilidade dispensável: aprendida
   // ao ser comprada, aparece nas "Habilidades Aprendidas" do inventário e pode
   // ser equipada na hotbar como uma bênção comum. Cada uso consome 1 unidade
-  // do estoque persistente (`p.fulmen`).
+  // de Fulmen da jornada atual (`p.fulmen`) — começa zerado a cada nova partida.
   fulmen_ruptor: { id: 'fulmen_ruptor', name: 'Fulmen Ruptor', key: 'B', tier: 1, cd: 0.4, color: '#ffd23f',
     bless: 'fulmen', item: true,
     desc: 'Frasco de fogo consagrado que arrebenta árvores e rochedos, abrindo rotas fechadas pela natureza. Aponte e use: consome 1 unidade do estoque por explosão.' }
