@@ -475,6 +475,7 @@ export const combat = {
       case 'bolt': this.shootPlayerSkill(b); break;
       case 'beam': this.beam(b); break;
       case 'supreme': this.useSupreme(); break;
+      case 'fulmen': this.useFulmen(); break;
     }
   },
 

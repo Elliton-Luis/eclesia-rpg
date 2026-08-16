@@ -45,5 +45,12 @@ export const BLESSINGS = {
     desc: 'Coluna do julgamento: atravessa todos os inimigos em linha reta (até 420px).' },
   bencao_suprema: { id: 'bencao_suprema', name: 'Miraculum', key: 'H', tier: 4, cd: 0, color: '#fff',
     bless: 'supreme', radius: 430, singleUse: true,
-    desc: 'Milagre de uso único: a luz divina aniquila qualquer ser no raio de 430px do impacto.' }
+    desc: 'Milagre de uso único: a luz divina aniquila qualquer ser no raio de 430px do impacto.' },
+  // Item consumível do Vendedor que vira uma habilidade dispensável: aprendida
+  // ao ser comprada, aparece nas "Habilidades Aprendidas" do inventário e pode
+  // ser equipada na hotbar como uma bênção comum. Cada uso consome 1 unidade
+  // do estoque persistente (`p.fulmen`).
+  fulmen_ruptor: { id: 'fulmen_ruptor', name: 'Fulmen Ruptor', key: 'B', tier: 1, cd: 0.4, color: '#ffd23f',
+    bless: 'fulmen', item: true,
+    desc: 'Frasco de fogo consagrado que arrebenta árvores e rochedos, abrindo rotas fechadas pela natureza. Aponte e use: consome 1 unidade do estoque por explosão.' }
 };

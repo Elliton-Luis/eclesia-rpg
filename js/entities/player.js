@@ -103,6 +103,16 @@ export class Player {
     this.tryEquip('bencao_suprema');
   }
 
+  // Garante o item Fulmen Ruptor como habilidade conhecida (compra no Vendedor
+  // ou restauro do estoque persistente no início da partida), equipando-o na
+  // hotbar quando ainda não estava aprendido.
+  grantFulmen(n) {
+    this.fulmen += n;
+    if (n <= 0 || this.learnedSkill('fulmen_ruptor')) return;
+    this.blessings.push(Object.assign({}, BLESSINGS.fulmen_ruptor));
+    this.tryEquip('fulmen_ruptor');
+  }
+
   // Slot em que a habilidade está equipada, ou -1 se não estiver.
   findSlot(id) {
     for (let i = 0; i < this.hotKeys.length; i++) {

@@ -123,6 +123,7 @@ export const hud = {
       el.style.opacity = '';
       // Bênção Suprema consumida: o orbe esmaece para mostrar que não há mais uso.
       if (s.bless === 'supreme') el.style.opacity = p.supremeUses > 0 ? '' : '0.4';
+      if (s.bless === 'fulmen') el.style.opacity = p.fulmen > 0 ? '' : '0.4';
       const cd = p.cd[s.id] || 0;
       const mx = s.cd || 1;
       const f = clamp(cd / mx, 0, 1);
@@ -138,6 +139,7 @@ export const hud = {
     byId('hptext').textContent = Math.ceil(p.hp) + '/' + p.maxHp;
     byId('goldval').textContent = p.gold;
     byId('fulmenval').textContent = p.fulmen;
+    byId('fulmenTips').textContent = p.fulmen;
     byId('st_vida').textContent = p.maxHp;
     byId('st_vel').textContent = p.spd;
     byId('st_for').textContent = p.str;

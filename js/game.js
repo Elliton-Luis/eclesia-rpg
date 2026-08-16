@@ -221,7 +221,7 @@ const GAME = {
     // Fulmen Ruptor comprado com o Vendedor da vila é levado para a jornada
     // como consumível; o gasto em partida é descontado do estoque persistente.
     const profile = this.loadRecords() || {};
-    this.player.fulmen = profile.fulmen || 0;
+    this.player.grantFulmen(profile.fulmen || 0);
     // O mouse é sempre a referência de mira: o alvo inicia na posição do jogador
     // e só se move quando o cursor se move. Andar não altera a direção da mira.
     this.mouseActive = true;
