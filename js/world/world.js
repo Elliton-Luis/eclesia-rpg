@@ -22,6 +22,15 @@ export class World {
     this.buildPaths();
     this.buildTownWear();
     this.buildRegionGrid();
+    // Igrejas reais do mundo: toda região habitada por um Bispo tem um templo.
+    // A primeira é a Arquidiocese da vila (sede do Bispo Cedric); as demais
+    // são as catedrais/capelas dos Bispos Eleutério (Templo Ruinoso) e
+    // Anselmo (Forte) — mapeadas pelas mesmas regras em churchCell().
+    this.churches = [
+      { x: 113, y: 110, w: 11, h: 10 }, // Arquidiocese da Vila (Bispo 118,113)
+      { x: 291, y: 77, w: 11, h: 9 },   // Catedral do Templo (Bispo 296,82)
+      { x: 339, y: 182, w: 11, h: 9 }   // Capela do Forte (Bispo 344,186)
+    ];
   }
 
   // Desgaste natural dentro da vila: grama ao redor das portas fica "pisada",
@@ -230,6 +239,10 @@ export class World {
     if (!r) c = this.wildChar(gx, gy);
     else if (r.decor === 'town') c = this.townChar(gx, gy);
     else c = this.regionChar(gx, gy, r);
+    // Igrejas reais (Arquidiocese e catedrais dos Bispos): sobrepõem o terreno
+    // natural em qualquer bioma — sempre como construções fechadas.
+    const church = this.churchAt(gx, gy);
+    if (church) c = this.churchCell(gx, gy, church);
     // caminhos naturais atravessam o campo (nunca dentro da vila nem masmorras)
     if (this.pathTiles.has(gx + ',' + gy) && r && r.decor !== 'town' && this.canBePath(c)) return 'n';
     // trilhas pisadas dentro da vila (ligam portas à praça)
@@ -316,16 +329,14 @@ export class World {
   }
 
   // layout fixo da Vila de Pedra
+  // Regra de ouro: os EDIFÍCIOS decidem primeiro e a praça/ruas preenchem o
+  // resto. Assim nenhuma praça corta uma casa, nenhuma porta fica órfã e todo
+  // telhado está apoiado numa construção fechada.
   townChar(gx, gy) {
-    // praça central + ruas de pedra (a igreja ocupa o centro da praça)
-    const inPlaza =
-      (gx >= 112 && gx <= 123 && gy >= 115 && gy <= 124) ||
-      (gx >= 113 && gx <= 122 && gy >= 128 && gy <= 130) ||
-      (gx >= 108 && gx <= 112 && gy >= 129 && gy <= 130) ||
-      (gx >= 123 && gx <= 129 && gy >= 129 && gy <= 130) ||
-      (gx >= 107 && gx <= 109 && gy >= 113 && gy <= 133) ||
-      (gx >= 130 && gx <= 132 && gy >= 109 && gy <= 134);
-    if (inPlaza) return 'p';
+    // Arquidiocese (sede do Bispo): edifício religioso real, maior que as casas.
+    const arch = { x: 113, y: 110, w: 11, h: 10 };
+    const ch = this.churchCell(gx, gy, arch);
+    if (ch) return ch;
 
     const house = h => {
       const r = h;
@@ -334,22 +345,13 @@ export class World {
       const core = gx > r[0] && gx < r[0] + r[2] - 1 && gy > r[1] && gy < r[1] + r[3] - 1;
       if (gy === r[1] + r[3] - 1 && gx === Math.floor(r[0] + r[2] / 2) && r[5] !== 'none') return 'd';
       if (core) return r[4] || 'f';
-      if (r[5] === 'center') return r[4] || 'h';
       return 'h';
     };
 
     let c = '';
-    // igreja central na praça (gx 117-122, gy 118-123)
-    const centralChurch = (gx >= 117 && gx <= 122 && gy >= 118 && gy <= 123);
-    if (centralChurch) return 'p'; // mesma cor da pedra da praça para manter visual
-
-    // igreja
+    // igreja paroquial (Pároco Ambrósio)
     c = house([105, 108, 7, 5, 'f', 'none']);
     if (c) return c;
-    c = house([106, 108, 6, 5, 'f', 'none']);
-    if (c) return c;
-    // cruzeiro no altar da igreja
-    if (gx === 108 && gy === 109) return 'k';
     // taverna
     c = house([124, 110, 5, 4, 'f', 'none']);
     if (c) return c;
@@ -358,29 +360,60 @@ export class World {
     c = house([121, 132, 4, 4, 'f', 'none']);
     if (c) return c;
     if (gx === 123 && gy === 133) return 'T';
-    // casas do mercado
-    c = house([106, 128, 4, 4]);
-    if (c) return c;
-    c = house([111, 128, 4, 4]);
-    if (c) return c;
-    c = house([116, 128, 4, 4]);
-    if (c) return c;
+    // casas do mercado (porta ao sul de cada uma)
+    for (const hx of [106, 111, 116]) {
+      c = house([hx, 128, 4, 4]);
+      if (c) return c;
+    }
     // casas residenciais
-    c = house([104, 116, 3, 4]);
-    if (c) return c;
-    c = house([128, 116, 3, 4]);
-    if (c) return c;
-    c = house([128, 121, 3, 4]);
-    if (c) return c;
-    c = house([104, 135, 3, 4]);
-    if (c) return c;
-    c = house([127, 135, 3, 4]);
-    if (c) return c;
+    for (const [hx, hy] of [[104, 116], [127, 116], [127, 121]]) {
+      c = house([hx, hy, 3, 4]);
+      if (c) return c;
+    }
+    for (const [hx, hy] of [[104, 135], [127, 135]]) {
+      c = house([hx, hy, 3, 4]);
+      if (c) return c;
+    }
+    // praça e ruas — decididas DEPOIS dos edifícios (nunca cortam uma casa),
+    // formando ruas contínuas ao redor da Arquidiocese e entre as casas.
+    const plaza =
+      (gx >= 112 && gx <= 126 && gy >= 114 && gy <= 121) ||  // praça central ao redor da Arquidiocese
+      (gx >= 112 && gx <= 123 && gy >= 108 && gy <= 109) ||  // via norte
+      (gx >= 111 && gx <= 112 && gy >= 113 && gy <= 121) ||  // via oeste
+      (gx >= 120 && gx <= 126 && gy >= 122 && gy <= 124) ||  // praça leste
+      (gx >= 104 && gx <= 107 && gy >= 124 && gy <= 131) ||  // ruela a oeste do mercado
+      (gx >= 106 && gx <= 120 && gy >= 132 && gy <= 133) ||  // rua do mercado
+      (gx >= 120 && gx <= 126 && gy >= 132 && gy <= 134) ||  // acesso à torre
+      (gx >= 120 && gx <= 126 && gy >= 125 && gy <= 131) ||  // ruela a leste do mercado
+      (gx >= 104 && gx <= 129 && gy >= 139 && gy <= 140) ||  // rua sul
+      (gx >= 130 && gx <= 132 && gy >= 109 && gy <= 134);    // margem leste
+    if (plaza) return 'p';
     // varredura base
     const p2 = (hash2(gx, gy) >>> 0) % 1000 / 1000;
     if (p2 < 0.04) return 't';
     if (p2 < 0.06) return 'r';
     return 'g';
+  }
+
+  // Igreja que ocupa um tile, ou null. Usa a mesma regra dos edifícios civis:
+  // perímetro fechado de paredes ('C'), nave interior caminhável ('I') e uma
+  // entrada aberta ('E') ao centro da fachada sul — sempre numa construção
+  // completa, nunca peças soltas.
+  churchAt(gx, gy) {
+    for (const ch of this.churches) {
+      if (gx >= ch.x && gx < ch.x + ch.w && gy >= ch.y && gy < ch.y + ch.h) return ch;
+    }
+    return null;
+  }
+
+  churchCell(gx, gy, ch) {
+    if (gx < ch.x || gx >= ch.x + ch.w || gy < ch.y || gy >= ch.y + ch.h) return '';
+    const doorX = ch.x + Math.floor(ch.w / 2);
+    if (gx === doorX && gy === ch.y + ch.h - 1) return 'E';
+    const innerX = gx > ch.x && gx < ch.x + ch.w - 1;
+    const innerY = gy > ch.y && gy < ch.y + ch.h - 1;
+    if (innerX && innerY) return 'I';
+    return 'C';
   }
 
   genChunk(cx, cy) {
@@ -410,6 +443,8 @@ export class World {
     for (let ly = 0; ly < CHUNK; ly++) {
       for (let lx = 0; lx < CHUNK; lx++) {
         const gx = o + lx, gy = ot + ly;
+        // Igrejas são solo consagrado: nada nasce dentro delas.
+        if (this.churchAt(gx, gy)) continue;
         if (WALK_SPAWN.has(this.charFor(gx, gy))) candidates.push([gx, gy]);
       }
     }
@@ -1701,6 +1736,109 @@ export class World {
           }
         }
         break;
+      case 'C': {
+        // Parede de igreja: pedra clara lavrada, telhado de lousa escura com
+        // cumeeira, vitral na fachada e a cruz finial no alto do frontão —
+        // identidade religiosa distinta das casas civis de telha.
+        const ch = this.churchAt(tx, ty);
+        const above = this.tileAt(tx, ty - 1);
+        const isRoofTop = above !== 'C' && above !== 'I' && above !== 'E';
+        const isTopCenter = ch && ty === ch.y && tx === ch.x + Math.floor(ch.w / 2);
+        const isFront = ch && ty === ch.y + ch.h - 1;
+        const doorX = ch ? ch.x + Math.floor(ch.w / 2) : -1;
+        if (isRoofTop) {
+          ctx.fillStyle = '#56525c';
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fillRect(x, y, TILE, 2);
+          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          for (let k = 1; k < 4; k++) ctx.fillRect(x, y + k * 8, TILE, 1);
+          ctx.fillStyle = '#433f49';
+          ctx.fillRect(x, y + TILE - 4, TILE, 4);
+          if (isTopCenter) {
+            // finial: cruz de ferro sobre o frontão
+            ctx.fillStyle = '#cfd3d8';
+            ctx.fillRect(x + 14, y - 9, 4, 13);
+            ctx.fillRect(x + 9, y - 5.5, 14, 3.4);
+            // brasão da ordem no frontão
+            ctx.fillStyle = '#a32222';
+            ctx.fillRect(x + 13, y + 8, 6, 9);
+            ctx.fillRect(x + 10, y + 11, 12, 3.2);
+          }
+        } else {
+          ctx.fillStyle = '#9a958e';
+          ctx.fillRect(x, y, TILE, TILE);
+          ctx.fillStyle = 'rgba(50,48,44,0.45)';
+          for (let j = 0; j < 3; j++) ctx.fillRect(x + 4, y + 10 + j * 7, 24, 1);
+          ctx.fillStyle = 'rgba(255,255,255,0.10)';
+          ctx.fillRect(x + 12, y + 3, 8, 2);
+          // vitral alto em arco na fachada sul (fora do vão da porta)
+          if (ch && isFront && tx !== doorX) {
+            ctx.fillStyle = '#3b3f4a';
+            ctx.beginPath();
+            ctx.moveTo(x + 9, y + 24);
+            ctx.lineTo(x + 9, y + 8);
+            ctx.quadraticCurveTo(x + 16, y + 1, x + 23, y + 8);
+            ctx.lineTo(x + 23, y + 24);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,214,138,0.85)';
+            ctx.beginPath(); ctx.arc(x + 16, y + 10, 2.8, 0, 6.283); ctx.fill();
+            ctx.fillStyle = 'rgba(255,230,180,0.5)';
+            ctx.fillRect(x + 14, y + 15, 4, 7);
+          }
+          ctx.fillStyle = 'rgba(0,0,0,0.2)';
+          ctx.fillRect(x, y, TILE, 3);
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(x, y + TILE - 3, TILE, 3);
+        }
+        break;
+      }
+      case 'I': {
+        // Nave da igreja: lajes de pedra claras com juntas, e a passagem
+        // central em lonho vermelho conduzindo ao altar.
+        ctx.fillStyle = ((tx + ty) & 1) ? '#b8b1a5' : '#aca69a';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = 'rgba(0,0,0,0.16)';
+        ctx.fillRect(x, y, TILE, 2);
+        ctx.fillRect(x, y + 15, TILE, 1);
+        const ch = this.churchAt(tx, ty);
+        if (ch) {
+          const centerX = ch.x + Math.floor(ch.w / 2);
+          const centerY = ch.y + Math.floor(ch.h / 2);
+          if (tx === centerX) {
+            ctx.fillStyle = '#7e1220';
+            ctx.fillRect(x + 9, y, 14, TILE);
+            ctx.fillStyle = '#a32222';
+            ctx.fillRect(x + 13, y, 6, TILE);
+            ctx.fillStyle = 'rgba(255,255,255,0.14)';
+            ctx.fillRect(x + 13, y, 6, 2);
+          } else if (ty === centerY) {
+            ctx.fillStyle = 'rgba(133,18,34,0.4)';
+            ctx.fillRect(x, y + 13, TILE, 6);
+          }
+        }
+        break;
+      }
+      case 'E': {
+        // Entrada aberta da igreja (caminhável): vão em arco escuro com
+        // ombreiras de pedra e soleira — a igreja pode ser adentrada.
+        ctx.fillStyle = '#9a958e';
+        ctx.fillRect(x, y, TILE, TILE);
+        ctx.fillStyle = '#2a221d';
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y + 30);
+        ctx.lineTo(x + 5, y + 12);
+        ctx.quadraticCurveTo(x + 16, y + 2, x + 27, y + 12);
+        ctx.lineTo(x + 27, y + 30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(x + 5, y + 12, 22, 2);
+        ctx.fillStyle = '#767067';
+        ctx.fillRect(x, y + 28, TILE, 3);
+        break;
+      }
     }
   }
 

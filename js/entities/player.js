@@ -8,7 +8,7 @@ import { Particle } from './effects.js';
 const LOOKS = {
   diacono:    { robe: '#d6ece5', robeDark: '#a9d6cb', robeShade: '#d6ece5', trim: '#2f8a8a', trim2: '#ffffff', belt: '#2f8a8a', skin: '#e9c29b', hair: '#3a4a44' },
   padre:      { robe: '#2a2e35', robeDark: '#1b1e24', robeShade: '#3a3f4a', trim: '#cfaa5a', trim2: '#f6f2e6', belt: '#1b1e24', skin: '#e9c29b', hair: '#3a3a44' },
-  bispo:      { robe: '#b2002e', robeDark: '#7e0020', robeShade: '#d22a4e', trim: '#e6c64a', trim2: '#fdf6ec', belt: '#e6c64a', skin: '#e9c29b', hair: '#e8e8ee' },
+  bispo:      { robe: '#9e002a', robeDark: '#68001c', robeShade: '#c21f42', trim: '#d9b13f', trim2: '#fdf6ec', belt: '#d9b13f', skin: '#e9c29b', hair: '#e8e8ee' },
   guerreiro:  { tabard: '#ddd5c0', trim: '#a32222', steel: '#8a919c', steelDark: '#5c636e', helm: '#aab1bc', helmDark: '#747c89', skin: '#e9c29b' },
   arqueiro:   { hood: '#4e4a40', hoodDark: '#35322b', trim: '#a32222', tabard: '#ddd5c0', leather: '#3e3122', steel: '#8a919c', skin: '#e9c29b' },
   inventor:   { apron: '#6f4e2e', apronDark: '#553a20', trim: '#a32222', tabard: '#ddd5c0', leather: '#3e3122', steel: '#8a919c', skin: '#e9c29b', hair: '#4a3c26' },

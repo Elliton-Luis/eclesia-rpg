@@ -70,8 +70,10 @@ doTalk(npc) {
       this.hud();
       return;
     }
-    // Confissão para outros NPCs (pároco, etc.) - regras antigas
-    if (npc.event && npc.event === 'confess' && casta === 'clero' && !npc.eventDone) {
+    // Confissão para outros NPCs (pároco, etc.) - regras antigas.
+    // Só quem está ORDENADO (Padre/Bispo) administra confissão; a um Diácono
+    // os fiéis não se abrem — ele proclama e abençoa, mas não confessa.
+    if (npc.event && npc.event === 'confess' && sub.ordained && casta === 'clero' && !npc.eventDone) {
       this.blessingFx(this.player, '#ffe66d', 14);
       this.showDialog('⛪ Confissão', `"${finalLine}"<div class="confessTag">— O SENHOR OUVE ATRAVÉS DE VOCÊ —</div>`, '<button class="btn" id="dlgConfess">Perdoar</button>');
       byId('dlgConfess').onclick = () => this.doConfession(npc);

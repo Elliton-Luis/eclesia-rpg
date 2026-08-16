@@ -14,7 +14,8 @@ export const NPC_DEFS = [
     ] },
   { id: 'paroco', name: 'Pároco Ambrósio', kind: 'church', x: 110, y: 113, color: '#c9a227', accent: '#fff3b0', rank: 'padre',
     teaches: ['bencao_luz', 'bencao_cura'] },
-  { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 119, y: 119, color: '#e8b0b0', accent: '#a23b3b', rank: 'bispo',
+  { id: 'bispo_central', name: 'Bispo Cedric', kind: 'church', x: 118, y: 113, color: '#e8b0b0', accent: '#a23b3b', rank: 'bispo',
+    event: 'confess',
     teaches: ['bencao_cadencia', 'bencao_precisao'] },
   { id: 'taberneiro', name: 'Taberneiro', kind: 'tavern', x: 127, y: 113, color: '#a8823f', accent: '#ffb020' },
   { id: 'erudito', name: 'Erudito Tior', kind: 'tower', x: 120, y: 136, color: '#7a6bd8', accent: '#c0b4ff' },
@@ -107,7 +108,7 @@ export const NPC_DEFS = [
       templarios: 'Lendas falam de um tesouro. Lendas também falam de hordas de criaturas, cavaleiro.',
       mago: 'Aqui o véu é fino. Sinta a vibração arcana nas colunas quebradas.'
     } },
-  { id: 'catedral_templo', name: 'Bispo Eleutério', kind: 'church', rank: 'bispo', x: 296, y: 86, color: '#e8b0b0', accent: '#8a3b3b',
+  { id: 'catedral_templo', name: 'Bispo Eleutério', kind: 'church', rank: 'bispo', x: 296, y: 82, color: '#e8b0b0', accent: '#8a3b3b',
     teaches: ['bencao_furia', 'bencao_julgamento'] },
   // Forte
   { id: 'taberneira_fronteira', name: 'Taverneira da Fronteira', kind: 'tavern', x: 330, y: 190, color: '#c8a880', accent: '#e0b878' },
@@ -117,7 +118,7 @@ export const NPC_DEFS = [
       templarios: 'Treinei na fronteira. Se quer o respeito do Templo, lute até a última gota.',
       mago: 'Aquelas armas engolem sombras. Melhor nem entender.'
     } },
-  { id: 'capela_forte', name: 'Bispo Anselmo', kind: 'church', rank: 'bispo', x: 344, y: 192, color: '#e8b0b0', accent: '#6a2b2b',
+  { id: 'capela_forte', name: 'Bispo Anselmo', kind: 'church', rank: 'bispo', x: 344, y: 186, color: '#e8b0b0', accent: '#6a2b2b',
     teaches: ['bencao_cadencia', 'bencao_furia'] },
   // Cova
   { id: 'devoto_trevas', name: 'Devoto das Trevas', kind: 'talk', x: 326, y: 70, color: '#5a4a6a', accent: '#a0a0ff',
