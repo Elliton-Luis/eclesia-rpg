@@ -140,7 +140,9 @@ export const SUBCLASSES = {
   }
 };
 
-export const SUB_ORDER = ['diacono', 'padre', 'bispo', 'papa', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
+// O Papa (SUBCLASSES.papa) NÃO entra na ordem de seleção: é a variante especial
+// do Bispo, apresentada dentro do próprio card do Bispo (ver js/ui/menu.js).
+export const SUB_ORDER = ['diacono', 'padre', 'bispo', 'guerreiro', 'arqueiro', 'inventor', 'elemental', 'psiquico', 'abencoador'];
 export const CASTA_ORDER = ['clero', 'templarios', 'mago'];
 
 // Nível de desbloqueio de cada subclasse dentro da sua casta:

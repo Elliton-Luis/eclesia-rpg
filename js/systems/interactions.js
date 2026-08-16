@@ -103,7 +103,7 @@ export const interactions = {
     const rec = this.loadRecords() || {};
     const ownedPope = !!rec.popeUnlocked;
     const buyBtn = ownedPope
-      ? '<div class="confessTag">A cátedra de São Pedro já vos pertence — encontrai o Papa no menu, na casta do Clero.</div>'
+      ? '<div class="confessTag">A cátedra de São Pedro já vos pertence — encontrai o Papa no card do Bispo, no Clero.</div>'
       : (p.gold >= 20000
           ? '<button class="btn" id="dlgBuyPapa" style="margin-top:8px">⚜ Comprar o Papa como personagem jogável · 20.000 ●</button>'
           : '<button class="btn ghost" id="dlgBuyPapa" style="margin-top:8px">⚜ Adquirir a cátedra (20.000 ●) — ouro insuficiente</button>');
@@ -176,7 +176,7 @@ export const interactions = {
     this.sparkleFx(p, '#ffd23f', 26);
     this.hud();
     this.showDialog('👑 A CÁTEDRA DE SÃO PEDRO',
-      'O Papa Leão XI deposita o pálio sobre os vossos ombros. Roma reconhece o novo Pontífice.<div class="confessTag">⚜ O PAPA agora é uma classe jogável! Procurai por «Papa» no menu inicial, dentro do Clero.</div>',
+      'O Papa Leão XI deposita o pálio sobre os vossos ombros. Roma reconhece o novo Pontífice.<div class="confessTag">⚜ O PAPA é agora a variante do Bispo! Selecionai-o pelo card do Bispo, no menu inicial do Clero.</div>',
       '<button class="btn" id="dlgOk">Gloria in Excelsis Deo</button>');
     byId('dlgOk').onclick = () => this.closeDialog();
   },

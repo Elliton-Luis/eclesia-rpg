@@ -85,6 +85,7 @@ export const cheats = {
       switch (key) {
         case 'curar': case 'heal': p.hp = p.maxHp; this.burst(p.x, p.y - 20, '#7cff8a', 14, 200); this.banner('Curado!', '#7cff8a', 1.2); return;
         case 'matar': case 'kill': this.monsters.forEach(m => this.killMonster(m)); this.banner('Monstros eliminados', '#ff6b6b', 1.5); return;
+        case 'encontrar_papa': case 'papa_aqui': this.spawnPopeCheat(); return;
         case 'ajuda': case 'help': this.helpCheats(); return;
         case 'get': case 'obter': this.giveItem(cmd); return;
       }
@@ -101,10 +102,22 @@ export const cheats = {
       'dano 200 · tier 10',
       'Bênçãos por comando: get bencao_luz · bencao_cura · bencao_coragem · bencao_escudo · bencao_passo · bencao_cadencia · bencao_precisao · bencao_furia · bencao_julgamento · bencao_suprema',
       'As bênçãos também são ensinadas por Padres e Bispos espalhados pelo mundo.',
-      'curar · matar · ajuda',
+      'curar · matar · encontrar_papa — faz o Papa surgir no mapa',
       'Dev (sessão, some ao recarregar): libera_tudo · fantasma · /bispo · /padre · /diacono · /guerreiro · /arqueiro · /inventor · /elemental · /psiquico · /abencoador'
     ];
     this.banner(list.join('  |  '), '#ffe9b0', 4);
+  },
+
+  // Cheat "encontrar_papa": faz o Papa Leão XI surgir no mapa desta partida,
+  // reaproveitando o mesmo spawn do evento raro (região de perigo >= 2).
+  spawnPopeCheat() {
+    if (this.npcs.some(n => n.id === 'papa')) {
+      this.banner('O Papa já vaga pelo mapa.', '#ffe9b0', 2);
+      return;
+    }
+    if (!this.spawnPope()) {
+      this.banner('Não há um bom lugar para o Papa surgir agora.', '#ffd23f', 2.5);
+    }
   },
 
   giveItem(cmd) {

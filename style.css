@@ -391,6 +391,41 @@ html, body {
 .card.locked { opacity: 0.5; filter: grayscale(0.6); }
 .card.locked:hover { transform: none; border-color: rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); }
 
+/* Card do Bispo com a variante Papa desbloqueada (skin especial, não um novo card). */
+.card { position: relative; }
+.card.pope-variant { border-color: rgba(230, 180, 34, 0.55); }
+.card.pope-variant:hover { border-color: #e6b422; }
+
+/* Indicador ● de variante desbloqueada sobre o card. */
+.vdot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd23f 55%, #b8860b);
+  box-shadow: 0 0 10px rgba(255, 210, 63, 0.9), 0 0 3px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+
+/* Alternância Bispo ⇄ Papa dentro do card do Bispo. */
+.vtoggle { margin-top: 8px; }
+.vtbtn {
+  display: block;
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #ffd23f;
+  background: rgba(255, 210, 63, 0.10);
+  border: 1px solid rgba(255, 210, 63, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.vtbtn:hover { background: rgba(255, 210, 63, 0.22); }
+
 .card .cswatch {
   width: 46px;
   height: 46px;
