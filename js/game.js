@@ -218,6 +218,10 @@ const GAME = {
     if (this.popeHere) this.spawnPope();
 
     this.player = new Player(sub, this.startPos.x, this.startPos.y, this);
+    // Fulmen Ruptor comprado com o Vendedor da vila é levado para a jornada
+    // como consumível; o gasto em partida é descontado do estoque persistente.
+    const profile = this.loadRecords() || {};
+    this.player.fulmen = profile.fulmen || 0;
     // O mouse é sempre a referência de mira: o alvo inicia na posição do jogador
     // e só se move quando o cursor se move. Andar não altera a direção da mira.
     this.mouseActive = true;
@@ -473,13 +477,14 @@ churchAura() {
       return; // ignore qualquer outra tecla de jogo durante overlays
     }
 
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyF', 'KeyP', 'KeyX', 'KeyM', 'KeyH', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'].includes(e.code)) e.preventDefault();
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyJ', 'KeyF', 'KeyE', 'KeyP', 'KeyX', 'KeyM', 'KeyH', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'].includes(e.code)) e.preventDefault();
     this.keys[e.code] = true;
     this.sfx.unlock();
 
     if (this.state === 'play') {
       if (e.code === 'KeyJ' || e.code === 'KeyX') { this.attackHeld = true; this.doAttack(); }
       if (e.code === 'KeyF') this.tryInteract();
+      if (e.code === 'KeyE') this.useFulmen();
       if (e.code === 'KeyP') this.pause(true);
       if (e.code === 'KeyM') this.toggleMute();
       if (e.code === 'KeyI') this.openInventory();

@@ -124,17 +124,17 @@ export const MONSTERS = {
   // --- Chefes finais por casta ---
   demonio: {
     id: 'demonio', name: 'Mastema, o Demônio', color: '#c0504a', dark: '#5f1f1f', size: 88,
-    hp: 2800, dmg: 60, speed: 150, behavior: 'boss', gold: [1500, 1500],
+    hp: 6800, dmg: 60, speed: 150, behavior: 'boss', gold: [1500, 1500],
     resist: [T.PHYS], weak: [T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'clero', tier: 5
   },
   general: {
     id: 'general', name: 'General Tarraske', color: '#a0a8a0', dark: '#4b524b', size: 82,
-    hp: 2600, dmg: 55, speed: 142, behavior: 'boss', gold: [1500, 1500],
+    hp: 5200, dmg: 55, speed: 142, behavior: 'boss', gold: [1500, 1500],
     resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'templarios', tier: 5
   },
   arcano: {
     id: 'arcano', name: 'O Arcano Devorador', color: '#a08ad8', dark: '#4b3f7a', size: 86,
-    hp: 3000, dmg: 60, speed: 118, behavior: 'boss', gold: [1500, 1500],
+    hp: 6000, dmg: 60, speed: 118, behavior: 'boss', gold: [1500, 1500],
     resist: [T.MAGIC], weak: [T.PHYS, T.HOLY], aggro: 720, boss: true, finalBoss: true, casta: 'mago', tier: 5
   }
 };

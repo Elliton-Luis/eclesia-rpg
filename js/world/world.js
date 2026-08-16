@@ -247,6 +247,9 @@ export class World {
     if (this.pathTiles.has(gx + ',' + gy) && r && r.decor !== 'town' && this.canBePath(c)) return 'n';
     // trilhas pisadas dentro da vila (ligam portas à praça)
     if (r && r.decor === 'town' && c === 'g' && this.wornTiles.has(gx + ',' + gy)) return 'n';
+    // árvores e rochedos destruídos (Fulmen Ruptor) nunca renascem: a chave
+    // registrada em destroyedKeys sobrepõe a geração procedural do terreno.
+    if ((c === 't' || c === 'r') && this.destroyedKeys.has(gx + ',' + gy)) return 'g';
     return c;
   }
 
@@ -634,8 +637,9 @@ export class World {
     let m;
     const def = MONSTERS[d.kind];
     if (!def) { d.cool = 999; return; }
-    // chefe definitivo: só revive de novo se o final ainda não ocorreu
-    if (d.bossRoom && def.finalBoss && g.ending) { d.cool = 999; return; }
+    // chefe final: só deixa de surgir quando a partida termina (os três chefes
+    // finais derrotados). Derrotar um NÃO impede o spawn dos outros dois.
+    if (d.bossRoom && def.finalBoss && g.finished) { d.cool = 999; return; }
     if (d.bossRoom) {
       // Nível de batalha insuficiente: o chefe não aparece até o requisito ser cumprido.
       const reqLevel = BOSS_LEVEL_REQ[def.id];

@@ -32,6 +32,7 @@ export class Player {
     this.int = sub.int;
     this.weapon = Object.assign({}, sub.weapon, { tier: 0, dmg: sub.weapon.base });
     this.gold = 0;
+    this.fulmen = 0;
     this.vx = 0;
     this.vy = 0;
     this.facing = 1;

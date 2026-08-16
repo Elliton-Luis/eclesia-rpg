@@ -64,6 +64,37 @@ export const hud = {
     this.useSlot(i);
   },
 
+  // Fulmen Ruptor (E): explosivo consagrado vendido pelo Vendedor da vila,
+  // arrebenta árvores e rochedos e abre rotas fechadas pela natureza. Detona no
+  // ponto de mira e consome uma unidade do estoque de provisões (também
+  // descontada do perfil persistente).
+  useFulmen() {
+    const p = this.player;
+    if (!p) return;
+    if (!p.fulmen) {
+      this.banner('Sem Fulmen Ruptor — adquira-o com o Vendedor da vila.', '#ffd6a5', 2.2);
+      return;
+    }
+    const tx = this.aim.x, ty = this.aim.y;
+    const R = 80;
+    const before = this.world.destroyedKeys.size;
+    this.world.destroyScenery(tx, ty, R);
+    if (this.world.destroyedKeys.size === before) {
+      this.banner('Nada aqui para arrebentar — aponte para árvores ou rochedos.', '#ffd6a5', 2);
+      return;
+    }
+    p.fulmen--;
+    const prof = this.loadRecords();
+    if (prof) { prof.fulmen = Math.max(0, (prof.fulmen || 0) - 1); this.persistProfile(prof); }
+    this.burst(tx, ty, '#ffd23f', 26, 420);
+    this.burst(tx, ty, '#e67e22', 14, 240);
+    this.ring(tx, ty, R, 0.55, '#ffd23f', 5);
+    this.shake += 9;
+    this.sfx.explosion();
+    this.banner('FULMEN RUPTOR — o caminho se abre!', '#ffd23f', 2.4);
+    this.hud();
+  },
+
   // Atualiza os 10 slots visíveis (ícone, nome, cooldown) a partir do estado real.
   hudSlots() {
     const p = this.player;
@@ -106,6 +137,7 @@ export const hud = {
     byId('hpbar').style.width = (clamp(p.hp / p.maxHp, 0, 1) * 100) + '%';
     byId('hptext').textContent = Math.ceil(p.hp) + '/' + p.maxHp;
     byId('goldval').textContent = p.gold;
+    byId('fulmenval').textContent = p.fulmen;
     byId('st_vida').textContent = p.maxHp;
     byId('st_vel').textContent = p.spd;
     byId('st_for').textContent = p.str;

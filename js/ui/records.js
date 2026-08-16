@@ -58,6 +58,11 @@ export const records = {
     } catch (e) { return {}; }
   },
 
+  // Persiste o perfil local (recordes + estoque de provisões, ex.: Fulmen).
+  persistProfile(rec) {
+    try { localStorage.setItem('eclesia_v1', JSON.stringify(rec || {})); } catch (e) {}
+  },
+
   formatTime(t) {
     t = Math.max(0, Math.floor(t));
     const h = Math.floor(t / 3600);

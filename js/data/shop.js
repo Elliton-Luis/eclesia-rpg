@@ -1,4 +1,14 @@
 export const SHOP = {
+  fulmen: {
+    name: 'Fulmen Ruptor', desc: 'Frasco de fogo consagrado que arrebenta árvores e rochedos, abrindo rotas fechadas pela natureza. Acumula no estoque de provisões e usa-se em partida com a tecla E.',
+    cost: () => 150,
+    effect: (g, p) => {
+      const rec = g.loadRecords() || {};
+      rec.fulmen = (rec.fulmen || 0) + 1;
+      g.persistProfile(rec);
+      p.fulmen++;
+    }
+  },
   potion: {
     name: 'Poção de Cura', desc: 'Recupera 60% da vida máxima.',
     cost: n => 30 + n * 12,
